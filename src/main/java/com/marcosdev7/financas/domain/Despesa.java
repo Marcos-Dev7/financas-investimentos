@@ -21,4 +21,10 @@ public class Despesa {
     @Enumerated(EnumType.STRING)
     Mes mes;
     BigDecimal valor;
+
+    public Despesa(String descricao, Mes mes, BigDecimal valor) {
+        this.descricao = descricao;
+        this.mes = mes;
+        this.valor = valor;
+    }
 }
