@@ -1,5 +1,6 @@
 package com.marcosdev7.financas.domain;
 
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -10,6 +11,7 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @AllArgsConstructor
 @ToString
+@JsonPropertyOrder({"id", "descricao", "mes", "valor"})
 @Entity
 @Table(name = "despesas")
 public class Despesa {
