@@ -21,7 +21,14 @@ public class DespesaController {
     }
 
     @PostMapping
-    public Despesa cadastrar(@RequestBody Despesa despesa) {
+    public Despesa cadastrarDespesa(@RequestBody Despesa despesa) {
+        return despesaRepository.save(despesa);
+    }
+
+    @PutMapping("/{id}")
+    public Despesa atualizarDespesa(@PathVariable Long id, @RequestBody Despesa despesa){
+        var busca = despesaRepository.findById(id).orElseThrow();
+        despesa.setId(id);
         return despesaRepository.save(despesa);
     }
 }
