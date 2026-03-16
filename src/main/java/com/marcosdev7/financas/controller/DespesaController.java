@@ -16,8 +16,7 @@ public class DespesaController {
 
     @GetMapping
     public List<Despesa> listarDespesar(){
-        var listaDespesas = despesaRepository.findAll();
-        return listaDespesas;
+        return despesaRepository.findAll();
     }
 
     @PostMapping
@@ -27,8 +26,14 @@ public class DespesaController {
 
     @PutMapping("/{id}")
     public Despesa atualizarDespesa(@PathVariable Long id, @RequestBody Despesa despesa){
-        var busca = despesaRepository.findById(id).orElseThrow();
+        despesaRepository.findById(id).orElseThrow();
         despesa.setId(id);
         return despesaRepository.save(despesa);
+    }
+
+    @DeleteMapping("/{id}")
+    public void ApagarDespesa(@PathVariable Long id){
+        var buscarDespesa = despesaRepository.findById(id).orElseThrow();
+        despesaRepository.deleteById(buscarDespesa.getId());
     }
 }
