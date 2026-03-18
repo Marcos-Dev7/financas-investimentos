@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 @Getter
 @Setter
@@ -22,6 +23,8 @@ public class Despesa {
     String descricao;
     @Enumerated(EnumType.STRING)
     Mes mes;
+    LocalDate dataVencimento;
+    Boolean isPaga;
     BigDecimal valor;
 
     public Despesa(String descricao, Mes mes, BigDecimal valor) {
