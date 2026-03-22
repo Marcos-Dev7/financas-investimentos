@@ -25,11 +25,16 @@ public class Despesa {
     Mes mes;
     LocalDate dataVencimento;
     Boolean isPaga;
+    Boolean isFixa;
     BigDecimal valor;
+    String categoria;
 
-    public Despesa(String descricao, Mes mes, BigDecimal valor) {
+    public Despesa(String descricao, Mes mes, BigDecimal valor, Boolean isFixa,LocalDate dataVencimento, String categoria) {
         this.descricao = descricao;
         this.mes = mes;
         this.valor = valor;
+        this.isFixa = isFixa;
+        this.categoria = categoria;
+        this.dataVencimento = dataVencimento;
     }
 }
