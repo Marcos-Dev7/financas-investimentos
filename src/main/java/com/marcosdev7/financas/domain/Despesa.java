@@ -1,6 +1,7 @@
 package com.marcosdev7.financas.domain;
 
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.marcosdev7.financas.dto.DespesaRequestDTO;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -36,5 +37,14 @@ public class Despesa {
         this.isFixa = isFixa;
         this.categoria = categoria;
         this.dataVencimento = dataVencimento;
+    }
+
+    public void atualizarInformacoes(DespesaRequestDTO despesaRequestDTO) {
+        this.descricao = despesaRequestDTO.descricao();
+        this.mes = despesaRequestDTO.mes();
+        this.valor = despesaRequestDTO.valor();
+        this.dataVencimento = despesaRequestDTO.dataVencimento();
+        this.isFixa = despesaRequestDTO.isFixa();
+        this.categoria = despesaRequestDTO.categoria();
     }
 }
