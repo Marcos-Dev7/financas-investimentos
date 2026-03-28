@@ -8,6 +8,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.NoSuchElementException;
 
@@ -29,5 +30,10 @@ public class TratamentoDeErros {
         var listaErros = exception.getFieldErrors().stream()
                 .map(erro -> new DadosErroValidacaoDTO(erro.getField(), erro.getDefaultMessage())).toList();
         return ResponseEntity.badRequest().body(listaErros);
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity tratarErroDeRota(){
+       return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new DadosErroMensagemDTO("Rota não encontrada"));
     }
 }

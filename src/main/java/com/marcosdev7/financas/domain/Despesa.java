@@ -46,4 +46,12 @@ public class Despesa {
         this.isFixa = despesaRequestDTO.isFixa();
         this.categoria = despesaRequestDTO.categoria();
     }
+
+    public void pagar(){
+        this.isPaga = true;
+    }
+
+    public void estornar() {
+        this.isPaga = false;
+    }
 }

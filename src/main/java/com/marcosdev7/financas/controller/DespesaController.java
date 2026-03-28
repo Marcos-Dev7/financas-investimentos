@@ -33,6 +33,16 @@ public class DespesaController {
         return ResponseEntity.ok(despesaService.atualizarDespesas(id, despesaDTO));
     }
 
+    @PatchMapping("/{id}/pagar")
+    public ResponseEntity<Despesa> pagar(@PathVariable Long id) {
+        return ResponseEntity.ok(despesaService.pagarDespesa(id));
+    }
+
+    @PatchMapping("/{id}/estornar")
+    public ResponseEntity<Despesa> estornar(@PathVariable Long id) {
+        return ResponseEntity.ok(despesaService.estornarDespesa(id));
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> ApagarDespesa(@PathVariable Long id){
         despesaService.deletarDespesas(id);

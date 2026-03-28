@@ -19,6 +19,11 @@ public class DespesaService {
             return despesaRepository.findAll();
     }
 
+    public Despesa encontrarDespesa(Long id){
+        var despesaEncontrada = despesaRepository.findById(id).orElseThrow();
+        return despesaEncontrada;
+    }
+
     public Despesa cadastrarDespesas(DespesaRequestDTO despesaRequestDTO) {
         Despesa despesa = new Despesa(despesaRequestDTO.descricao(),
                 despesaRequestDTO.mes(),
@@ -30,13 +35,25 @@ public class DespesaService {
     }
 
     public Despesa atualizarDespesas(Long id, DespesaRequestDTO despesaRequestDTO) {
-        var despesaEncontrada = despesaRepository.findById(id).orElseThrow();
-        despesaEncontrada.atualizarInformacoes(despesaRequestDTO);
-        return despesaRepository.save(despesaEncontrada);
+        var despesa = encontrarDespesa(id);
+        despesa.atualizarInformacoes(despesaRequestDTO);
+        return despesaRepository.save(despesa);
     }
 
     public void deletarDespesas(Long id) {
-        var despesaEncontrada = despesaRepository.findById(id).orElseThrow();
-        despesaRepository.deleteById(despesaEncontrada.getId());
+        var despesa = encontrarDespesa(id);
+        despesaRepository.delete(despesa);
+    }
+
+    public Despesa pagarDespesa(Long id) {
+        var despesa = encontrarDespesa(id);
+        despesa.pagar();
+        return despesaRepository.save(despesa);
+    }
+
+    public Despesa estornarDespesa(Long id) {
+        var despesa = encontrarDespesa(id);
+        despesa.estornar();
+        return despesaRepository.save(despesa);
     }
 }
