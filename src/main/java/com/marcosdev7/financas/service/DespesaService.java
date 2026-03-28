@@ -16,11 +16,16 @@ public class DespesaService {
 
 
     public List<Despesa> listarDespesas(){
-        return despesaRepository.findAll();
+            return despesaRepository.findAll();
     }
 
     public Despesa cadastrarDespesas(DespesaRequestDTO despesaRequestDTO) {
-        Despesa despesa = new Despesa(despesaRequestDTO.descricao(), despesaRequestDTO.mes(), despesaRequestDTO.valor(), despesaRequestDTO.isFixa(), despesaRequestDTO.dataVencimento(), despesaRequestDTO.categoria());
+        Despesa despesa = new Despesa(despesaRequestDTO.descricao(),
+                despesaRequestDTO.mes(),
+                despesaRequestDTO.valor(),
+                despesaRequestDTO.isFixa(),
+                despesaRequestDTO.dataVencimento(),
+                despesaRequestDTO.categoria());
         return despesaRepository.save(despesa);
     }
 

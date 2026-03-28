@@ -9,7 +9,6 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 @Getter
-@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @ToString
@@ -20,15 +19,15 @@ public class Despesa {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    Long id;
-    String descricao;
+    private Long id;
+    private String descricao;
     @Enumerated(EnumType.STRING)
-    Mes mes;
-    LocalDate dataVencimento;
-    Boolean isPaga;
-    Boolean isFixa;
-    BigDecimal valor;
-    String categoria;
+    private Mes mes;
+    private LocalDate dataVencimento;
+    private Boolean isPaga;
+    private Boolean isFixa;
+    private BigDecimal valor;
+    private String categoria;
 
     public Despesa(String descricao, Mes mes, BigDecimal valor, Boolean isFixa,LocalDate dataVencimento, String categoria) {
         this.descricao = descricao;
