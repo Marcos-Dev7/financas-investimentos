@@ -4,7 +4,6 @@ import com.marcosdev7.financas.domain.Despesa;
 import com.marcosdev7.financas.domain.Mes;
 import com.marcosdev7.financas.dto.DespesaRequestDTO;
 import com.marcosdev7.financas.repository.DespesaRepository;
-import com.marcosdev7.financas.repository.SaldoRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -16,8 +15,6 @@ import java.util.List;
 public class DespesaService {
 
     private final DespesaRepository despesaRepository;
-    private final SaldoRepository saldoRepository;
-
     public List<Despesa> listarDespesas(){
             return despesaRepository.findAll();
     }
@@ -60,15 +57,12 @@ public class DespesaService {
         return despesaRepository.save(despesa);
     }
 
-    public BigDecimal sobraLivre(Mes mes){
+    public BigDecimal somarSaidaMes(Mes mes){
         var resumoDespesasMes = despesaRepository.findByMes(mes);
-        var resumoSaldoMes = saldoRepository.findByMes(mes);
-        var totalEntradas = resumoSaldoMes.stream().map(saldo -> saldo.getValor())
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
         var totalSaidas = resumoDespesasMes.stream()
                 .filter(d -> d.getIsPaga())
                 .map(d -> d.getValor())
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
-        return totalEntradas.subtract(totalSaidas);
+        return totalSaidas;
     }
 }

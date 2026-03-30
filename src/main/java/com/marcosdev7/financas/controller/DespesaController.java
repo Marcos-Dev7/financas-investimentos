@@ -2,9 +2,12 @@ package com.marcosdev7.financas.controller;
 
 import com.marcosdev7.financas.domain.Despesa;
 import com.marcosdev7.financas.dto.DespesaRequestDTO;
+import com.marcosdev7.financas.dto.SaldoRequestDTO;
 import com.marcosdev7.financas.service.DespesaService;
+import com.marcosdev7.financas.service.SaldoService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -16,6 +19,7 @@ import java.util.List;
 public class DespesaController {
 
     private final DespesaService despesaService;
+    private final SaldoService saldoService;
 
     @GetMapping
     public ResponseEntity<List<Despesa>> listarDespesar(){
@@ -27,6 +31,7 @@ public class DespesaController {
         despesaService.cadastrarDespesas(despesaDTO);
         return ResponseEntity.status(201).build();
     }
+
 
     @PutMapping("/{id}")
     public ResponseEntity<Despesa> atualizarDespesa(@PathVariable Long id, @RequestBody DespesaRequestDTO despesaDTO){
