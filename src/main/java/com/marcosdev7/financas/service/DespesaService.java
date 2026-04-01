@@ -60,7 +60,7 @@ public class DespesaService {
     public BigDecimal somarSaidaMes(Mes mes){
         var resumoDespesasMes = despesaRepository.findByMes(mes);
         var totalSaidas = resumoDespesasMes.stream()
-                .filter(d -> d.getIsPaga())
+                .filter(d -> Boolean.TRUE.equals(d.getIsPaga()))
                 .map(d -> d.getValor())
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         return totalSaidas;
