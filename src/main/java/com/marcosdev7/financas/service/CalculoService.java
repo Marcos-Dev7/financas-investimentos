@@ -1,6 +1,7 @@
 package com.marcosdev7.financas.service;
 
 import com.marcosdev7.financas.domain.Mes;
+import com.marcosdev7.financas.dto.SobraMesResponseDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -13,10 +14,10 @@ public class CalculoService {
     private final SaldoService saldoService;
     private final DespesaService despesaService;
 
-    public BigDecimal calculaSobraLivreMes(Mes mes){
+    public SobraMesResponseDTO calculaSobraLivreMes(Mes mes){
         var entradas = saldoService.somarTotalEntradas(mes);
         var saidas = despesaService.somarSaidaMes(mes);
-
-        return entradas.subtract(saidas);
+        var sobraLivre = entradas.subtract(saidas);
+        return new SobraMesResponseDTO(mes, entradas, saidas, sobraLivre);
     }
 }

@@ -2,12 +2,10 @@ package com.marcosdev7.financas.controller;
 
 import com.marcosdev7.financas.domain.Despesa;
 import com.marcosdev7.financas.dto.DespesaRequestDTO;
-import com.marcosdev7.financas.dto.SaldoRequestDTO;
 import com.marcosdev7.financas.service.DespesaService;
 import com.marcosdev7.financas.service.SaldoService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 

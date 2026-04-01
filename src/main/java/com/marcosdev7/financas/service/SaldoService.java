@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -26,8 +27,12 @@ public class SaldoService {
 
     public BigDecimal somarTotalEntradas(Mes mes){
         var resumoSaldoMes = saldoRepository.findByMes(mes);
-        var totalEntradas = resumoSaldoMes.stream().map(saldo -> saldo.getValor())
+        var totalEntradas = resumoSaldoMes.stream().map(Saldo::getValor)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         return totalEntradas;
+    }
+
+    public List<Saldo> listarSaldos() {
+        return saldoRepository.findAll();
     }
 }
