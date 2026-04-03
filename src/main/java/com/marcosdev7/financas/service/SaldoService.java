@@ -3,6 +3,7 @@ package com.marcosdev7.financas.service;
 import com.marcosdev7.financas.domain.Mes;
 import com.marcosdev7.financas.domain.Saldo;
 import com.marcosdev7.financas.dto.SaldoRequestDTO;
+import com.marcosdev7.financas.dto.SaldoResponseDTO;
 import com.marcosdev7.financas.repository.SaldoRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -32,7 +33,10 @@ public class SaldoService {
         return totalEntradas;
     }
 
-    public List<Saldo> listarSaldos() {
-        return saldoRepository.findAll();
+    public List<SaldoResponseDTO> listarSaldos() {
+        return saldoRepository.findAll()
+                .stream()
+                .map(s -> new SaldoResponseDTO(s.getId(),s.getDescricao(), s.getValor(), s.getMes(), s.getAno()))
+                .toList();
     }
 }
