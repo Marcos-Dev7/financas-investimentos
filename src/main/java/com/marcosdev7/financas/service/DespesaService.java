@@ -6,21 +6,21 @@ import com.marcosdev7.financas.dto.DespesaRequestDTO;
 import com.marcosdev7.financas.dto.DespesaResponseDTO;
 import com.marcosdev7.financas.repository.DespesaRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class DespesaService {
 
     private final DespesaRepository despesaRepository;
-    public List<DespesaResponseDTO> listarDespesas(){
-            return despesaRepository.findAll()
-                    .stream()
-                    .map(d -> new DespesaResponseDTO(d.getDescricao(), d.getValor(), d.getMes(), d.getDataVencimento(), d.getIsFixa(), d.getCategoria(), d.getIsPaga()))
-                    .toList();
+
+    public Page<DespesaResponseDTO> listarDespesas(Pageable paginacao){
+            return despesaRepository.findAll(paginacao)
+                    .map(this::paraDTO);
     }
 
     public Despesa encontrarDespesa(Long id){
