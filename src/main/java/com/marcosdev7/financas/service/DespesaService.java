@@ -72,6 +72,7 @@ public class DespesaService {
 
     private DespesaResponseDTO paraDTO(Despesa despesa) {
         return new DespesaResponseDTO(
+                despesa.getId(),
                 despesa.getDescricao(),
                 despesa.getValor(),
                 despesa.getMes(),

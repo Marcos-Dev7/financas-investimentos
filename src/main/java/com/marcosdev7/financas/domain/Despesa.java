@@ -24,7 +24,8 @@ public class Despesa {
     @Enumerated(EnumType.STRING)
     private Mes mes;
     private LocalDate dataVencimento;
-    private Boolean isPaga;
+    @Column(nullable = false)
+    private Boolean isPaga = false;
     private Boolean isFixa;
     private BigDecimal valor;
     private String categoria;
@@ -39,12 +40,12 @@ public class Despesa {
     }
 
     public void atualizarInformacoes(DespesaRequestDTO despesaRequestDTO) {
-        this.descricao = despesaRequestDTO.descricao();
-        this.mes = despesaRequestDTO.mes();
-        this.valor = despesaRequestDTO.valor();
-        this.dataVencimento = despesaRequestDTO.dataVencimento();
-        this.isFixa = despesaRequestDTO.isFixa();
-        this.categoria = despesaRequestDTO.categoria();
+        if (despesaRequestDTO.descricao() != null) {this.descricao = despesaRequestDTO.descricao();}
+        if (despesaRequestDTO.mes() != null) {this.mes = despesaRequestDTO.mes();}
+        if (despesaRequestDTO.valor() != null) {this.valor = despesaRequestDTO.valor();}
+        if (despesaRequestDTO.dataVencimento() != null) {this.dataVencimento = despesaRequestDTO.dataVencimento();}
+        if (despesaRequestDTO.isFixa() != null) {this.isFixa = despesaRequestDTO.isFixa();}
+        if (despesaRequestDTO.categoria() != null) {this.categoria = despesaRequestDTO.categoria();}
     }
 
     public void pagar(){

@@ -5,7 +5,7 @@ import com.marcosdev7.financas.domain.Mes;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
-public record DespesaResponseDTO(
+public record DespesaResponseDTO(Long id,
                                  String descricao,
                                  BigDecimal valor,
                                  Mes mes,
