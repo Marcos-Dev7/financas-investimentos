@@ -1,7 +1,5 @@
 package com.marcosdev7.financas.controller;
 
-import com.marcosdev7.financas.dto.DespesaRequestDTO;
-import com.marcosdev7.financas.dto.DespesaResponseDTO;
 import com.marcosdev7.financas.dto.SaldoRequestDTO;
 import com.marcosdev7.financas.dto.SaldoResponseDTO;
 import com.marcosdev7.financas.service.SaldoService;

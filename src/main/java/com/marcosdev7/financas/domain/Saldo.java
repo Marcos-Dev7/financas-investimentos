@@ -1,6 +1,5 @@
 package com.marcosdev7.financas.domain;
 
-import com.marcosdev7.financas.dto.DespesaRequestDTO;
 import com.marcosdev7.financas.dto.SaldoRequestDTO;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;

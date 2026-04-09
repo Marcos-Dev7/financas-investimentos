@@ -4,7 +4,6 @@ import com.marcosdev7.financas.domain.Mes;
 import com.marcosdev7.financas.domain.Saldo;
 import com.marcosdev7.financas.dto.SaldoRequestDTO;
 import com.marcosdev7.financas.dto.SaldoResponseDTO;
-import com.marcosdev7.financas.repository.DespesaRepository;
 import com.marcosdev7.financas.repository.SaldoRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

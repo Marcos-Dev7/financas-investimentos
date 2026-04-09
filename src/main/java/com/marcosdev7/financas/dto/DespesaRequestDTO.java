@@ -1,5 +1,6 @@
 package com.marcosdev7.financas.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.marcosdev7.financas.domain.Mes;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -18,6 +19,7 @@ public record DespesaRequestDTO (
         @NotNull
         Mes mes,
         @NotNull
+        @JsonFormat(pattern = "dd/MM/yyyy")
         LocalDate dataVencimento,
         Boolean isFixa,
         String categoria ) {}
