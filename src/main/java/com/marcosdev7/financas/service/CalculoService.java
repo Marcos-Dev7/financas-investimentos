@@ -16,19 +16,20 @@ public class CalculoService {
     private final DespesaService despesaService;
 
     public SobraMesResponseDTO calculaSobraLivreMes(Mes mes){
-        var entradas = saldoService.somarTotalEntradas(mes);
-        var saidas = despesaService.somarSaidaMes(mes);
-        var sobraLivre = entradas.subtract(saidas);
+        var receitaTotal = saldoService.somarTotalEntradas(mes);
+        var despesasPagas = despesaService.somarSaidaMes(mes);
+        var saldoDisponivel = receitaTotal.subtract(despesasPagas);
+        var bruto = despesaService.somarTotalBruto(mes);
         Status status;
 
-        if (sobraLivre.compareTo(BigDecimal.ZERO) < 0) {
+        if (saldoDisponivel.compareTo(BigDecimal.ZERO) < 0) {
             status = Status.DEFICIT;
-        } else if (sobraLivre.compareTo(BigDecimal.ZERO) == 0) {
+        } else if (saldoDisponivel.compareTo(BigDecimal.ZERO) == 0) {
             status = Status.LIMITE;
         } else {
             status = Status.POSITIVO;
         }
 
-        return new SobraMesResponseDTO(mes, entradas, saidas, sobraLivre, status);
+        return new SobraMesResponseDTO(mes, receitaTotal, despesasPagas, saldoDisponivel, status, bruto);
     }
 }

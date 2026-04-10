@@ -82,4 +82,13 @@ public class DespesaService {
                 despesa.getIsPaga()
         );
     }
+
+    public BigDecimal somarTotalBruto(Mes mes) {
+        var resultado = despesaRepository.somarTotalPorMes(mes);
+        if (resultado == null){
+            return BigDecimal.ZERO;
+        } else
+            return resultado;
+    }
+
 }
