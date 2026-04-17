@@ -14,4 +14,6 @@ public interface DespesaRepository extends JpaRepository<Despesa, Long> {
 
     @Query("SELECT SUM(d.valor) FROM Despesa d WHERE d.mes = :mes")
     BigDecimal somarTotalPorMes(@Param("mes") Mes mes);
+
+    List<Despesa> findByIsFixaTrueAndMes(Mes mes);
 }

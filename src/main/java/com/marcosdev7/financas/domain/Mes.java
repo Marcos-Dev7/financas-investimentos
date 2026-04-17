@@ -32,4 +32,16 @@ public enum Mes {
     public String getMesCase() {
         return mesCase;
     }
+
+    public Mes proximo(){
+        Mes[] meses = Mes.values();
+        int proximoIndice = (this.ordinal() + 1) % meses.length;
+        return meses[proximoIndice];
+    }
+
+    public Mes anterior(){
+        Mes[] meses = Mes.values();
+        int indiceAnterior = (this.ordinal() - 1 + meses.length) % meses.length;
+        return meses[indiceAnterior];
+    }
 }
