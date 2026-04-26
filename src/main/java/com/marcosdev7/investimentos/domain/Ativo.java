@@ -5,7 +5,6 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Value;
 
 import java.math.BigDecimal;
 
@@ -19,6 +18,7 @@ public class Ativo {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    private String ticker;
     @Enumerated(value = EnumType.STRING)
     private TipoAtivo tipoAtivo;
     private Integer quantidadeTotal = 0;

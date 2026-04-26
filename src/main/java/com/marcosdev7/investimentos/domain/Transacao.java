@@ -24,12 +24,12 @@ public class Transacao {
     private Long id;
     @Enumerated(value = EnumType.STRING)
     private TipoOperacao tipoOperacao;
-    private Integer quantidade;
+    private Integer quantidade = 0;
     @Column(precision = 18, scale = 2)
-    private BigDecimal precoUnitario;
+    private BigDecimal precoUnitario = BigDecimal.ZERO;
     @Column(precision = 18, scale = 2)
-    private BigDecimal taxas;
-    private LocalDate dateExecucao;
+    private BigDecimal taxa = BigDecimal.ZERO;
+    private LocalDate dataExecucao;
     @CreatedDate
     private LocalDateTime dataCriacao;
     @ManyToOne
