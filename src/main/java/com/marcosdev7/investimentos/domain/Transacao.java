@@ -1,7 +1,9 @@
 package com.marcosdev7.investimentos.domain;
 
+import com.marcosdev7.usuarios.domain.Usuario;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
@@ -11,7 +13,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-@Getter
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
@@ -35,5 +37,8 @@ public class Transacao {
     @ManyToOne
     @JoinColumn(name = "ativo_id")
     private Ativo ativo;
+    @ManyToOne
+    @JoinColumn(name = "usuario_id")
+    private Usuario usuario;
 
 }
