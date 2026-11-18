@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinancialFamily — Gestão Financeira Inteligente</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Top Header -->
+    <header class="topbar">
+        <div class="container topbar-inner">
+            <div class="brand">
+                <div class="brand-icon">🏦</div>
+                <div>
+                    <h1>FinancialFamily</h1>
+                    <p>Gestão Financeira Familiar &amp; Sobra Livre</p>
+                </div>
+            </div>
+
+            <div class="topbar-controls">
+                <div class="month-selector-wrap">
+                    <button id="btnPrevMes" class="btn-icon" title="Mês anterior">&#8592;</button>
+                    <select id="selectMesGlobal" class="select-mes" aria-label="Selecionar mês">
+                        <option value="janeiro">Janeiro</option>
+                        <option value="fevereiro">Fevereiro</option>
+                        <option value="marco">Março</option>
+                        <option value="abril">Abril</option>
+                        <option value="maio">Maio</option>
+                        <option value="junho">Junho</option>
+                        <option value="julho">Julho</option>
+                        <option value="agosto">Agosto</option>
+                        <option value="setembro">Setembro</option>
+                        <option value="outubro">Outubro</option>
+                        <option value="novembro">Novembro</option>
+                        <option value="dezembro">Dezembro</option>
+                    </select>
+                    <button id="btnNextMes" class="btn-icon" title="Próximo mês">&#8594;</button>
+                </div>
+
+                <div id="apiStatusBadge" class="api-badge checking" title="Status de conexão com a API">
+                    <span class="dot"></span>
+                    <span id="apiStatusText">Conectando...</span>
+                </div>
+
+                <a href="/swagger-ui/index.html" target="_blank" class="btn btn-outline btn-sm">
+                    Swagger UI ↗
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main class="container main-content">
+        <!-- Summary Cards (Motor de Cálculo /calculos/sobra/{mes}) -->
+        <section class="summary-grid" aria-label="Resumo financeiro do mês">
+            <article class="kpi-card kpi-income">
+                <div class="kpi-header">
+                    <span class="kpi-label">Receita Total (Entradas)</span>
+                    <span class="kpi-icon">📈</span>
+                </div>
+                <div class="kpi-value" id="kpiReceitaTotal">R$ 0,00</div>
+                <div class="kpi-sub">Total de saldos cadastrados no mês</div>
+            </article>
+
+            <article class="kpi-card kpi-paid">
+                <div class="kpi-header">
+                    <span class="kpi-label">Despesas Pagas (Saídas)</span>
+                    <span class="kpi-icon">✅</span>
+                </div>
+                <div class="kpi-value" id="kpiDespesasPagas">R$ 0,00</div>
+                <div class="kpi-sub">Despesas com baixa confirmada</div>
+            </article>
+
+            <article class="kpi-card kpi-gross">
+                <div class="kpi-header">
+                    <span class="kpi-label">Despesas Brutas (Previsto)</span>
+                    <span class="kpi-icon">📋</span>
+                </div>
+                <div class="kpi-value" id="kpiDespesasBrutas">R$ 0,00</div>
+                <div class="progress-wrap">
+                    <div class="progress-bar" id="progressPagas" style="width: 0%"></div>
+                </div>
+                <div class="kpi-sub" id="kpiProgressoTexto">0% das despesas do mês quitadas</div>
+            </article>
+
+            <article class="kpi-card kpi-balance" id="cardSobraLivre">
+                <div class="kpi-header">
+                    <span class="kpi-label">Sobra Livre Disponível</span>
+                    <span class="status-pill" id="badgeStatusFinanceiro">LIMITE</span>
+                </div>
+                <div class="kpi-value" id="kpiSaldoDisponivel">R$ 0,00</div>
+                <div class="kpi-sub">Receita Total − Despesas Pagas</div>
+            </article>
+        </section>
+
+        <!-- Main Workspace Grid -->
+        <section class="workspace-grid">
+            <!-- Left/Main Column: Despesas -->
+            <div class="panel">
+                <div class="panel-header">
+                    <div>
+                        <h2>Despesas</h2>
+                        <p class="panel-subtitle">Controle de contas fixas, variáveis e baixas de pagamento</p>
+                    </div>
+                    <button class="btn btn-primary" id="btnNovaDespesa">
+                        + Nova Despesa
+                    </button>
+                </div>
+
+                <div class="filters-bar">
+                    <div class="filter-tabs" role="tablist">
+                        <button class="tab-btn active" data-filter="mes">Deste Mês</button>
+                        <button class="tab-btn" data-filter="pendentes">Pendentes (Mês)</button>
+                        <button class="tab-btn" data-filter="pagas">Pagas (Mês)</button>
+                        <button class="tab-btn" data-filter="todas">Todas (Geral)</button>
+                    </div>
+                    <input type="search" id="inputBuscaDespesa" class="input-search" placeholder="Buscar por descrição ou categoria...">
+                </div>
+
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Status</th>
+                                <th>Descrição</th>
+                                <th>Categoria</th>
+                                <th>Vencimento</th>
+                                <th>Tipo</th>
+                                <th class="text-right">Valor</th>
+                                <th class="text-right">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbodyDespesas">
+                            <tr>
+                                <td colspan="7" class="empty-state">Carregando despesas...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="pagination-bar" id="paginationBar">
+                    <span id="pageInfo">Página 1 de 1</span>
+                    <div class="pagination-actions">
+                        <button class="btn btn-outline btn-sm" id="btnPrevPage" disabled>Anterior</button>
+                        <button class="btn btn-outline btn-sm" id="btnNextPage" disabled>Próxima</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Saldos (Entradas / Rendas) -->
+            <div class="panel">
+                <div class="panel-header">
+                    <div>
+                        <h2>Saldos &amp; Receitas</h2>
+                        <p class="panel-subtitle">Fontes de renda familiares</p>
+                    </div>
+                    <button class="btn btn-success" id="btnNovoSaldo">
+                        + Nova Receita
+                    </button>
+                </div>
+
+                <div class="filters-bar">
+                    <label class="checkbox-inline">
+                        <input type="checkbox" id="chkApenasSaldosMes" checked>
+                        <span>Mostrar apenas receitas do mês selecionado</span>
+                    </label>
+                </div>
+
+                <div id="listaSaldos" class="income-list">
+                    <div class="empty-state">Carregando receitas...</div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modal: Despesa (Criar / Editar) -->
+    <div class="modal-backdrop hidden" id="modalDespesa">
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalDespesaTitulo">
+            <div class="modal-header">
+                <h3 id="modalDespesaTitulo">Nova Despesa</h3>
+                <button class="btn-close" id="btnFecharModalDespesa" aria-label="Fechar">&times;</button>
+            </div>
+            <form id="formDespesa">
+                <input type="hidden" id="despesaId">
+
+                <div class="form-group">
+                    <label for="despesaDescricao">Descrição *</label>
+                    <input type="text" id="despesaDescricao" required minlength="3" maxlength="100" placeholder="Ex.: Conta de Energia, Aluguel, Supermercado">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="despesaValor">Valor (R$) *</label>
+                        <input type="number" id="despesaValor" required min="0.01" step="0.01" placeholder="0.00">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="despesaDataVencimento">Data de Vencimento *</label>
+                        <input type="date" id="despesaDataVencimento" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="despesaMes">Mês de Referência *</label>
+                        <select id="despesaMes" required>
+                            <option value="janeiro">Janeiro</option>
+                            <option value="fevereiro">Fevereiro</option>
+                            <option value="marco">Março</option>
+                            <option value="abril">Abril</option>
+                            <option value="maio">Maio</option>
+                            <option value="junho">Junho</option>
+                            <option value="julho">Julho</option>
+                            <option value="agosto">Agosto</option>
+                            <option value="setembro">Setembro</option>
+                            <option value="outubro">Outubro</option>
+                            <option value="novembro">Novembro</option>
+                            <option value="dezembro">Dezembro</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="despesaCategoria">Categoria</label>
+                        <input type="text" id="despesaCategoria" list="listaCategorias" placeholder="Ex.: Moradia, Alimentação">
+                        <datalist id="listaCategorias">
+                            <option value="Moradia"></option>
+                            <option value="Alimentação"></option>
+                            <option value="Transporte"></option>
+                            <option value="Saúde"></option>
+                            <option value="Educação"></option>
+                            <option value="Lazer"></option>
+                            <option value="Assinaturas"></option>
+                            <option value="Outros"></option>
+                        </datalist>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="checkbox-inline">
+                        <input type="checkbox" id="despesaIsFixa">
+                        <span>Despesa Fixa Mensal (projetada automaticamente todo dia 1º)</span>
+                    </label>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" id="btnCancelarDespesa">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" id="btnSalvarDespesa">Salvar Despesa</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Saldo / Receita (Criar / Editar) -->
+    <div class="modal-backdrop hidden" id="modalSaldo">
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalSaldoTitulo">
+            <div class="modal-header">
+                <h3 id="modalSaldoTitulo">Nova Receita</h3>
+                <button class="btn-close" id="btnFecharModalSaldo" aria-label="Fechar">&times;</button>
+            </div>
+            <form id="formSaldo">
+                <input type="hidden" id="saldoId">
+
+                <div class="form-group">
+                    <label for="saldoDescricao">Descrição da Renda *</label>
+                    <input type="text" id="saldoDescricao" required minlength="3" maxlength="100" placeholder="Ex.: Salário Mensal, Freelance, Bônus">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="saldoValor">Valor (R$) *</label>
+                        <input type="number" id="saldoValor" required min="0.01" step="0.01" placeholder="0.00">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="saldoAno">Ano *</label>
+                        <input type="number" id="saldoAno" required min="2020" max="2100" value="2026">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="saldoMes">Mês de Referência *</label>
+                    <select id="saldoMes" required>
+                        <option value="janeiro">Janeiro</option>
+                        <option value="fevereiro">Fevereiro</option>
+                        <option value="marco">Março</option>
+                        <option value="abril">Abril</option>
+                        <option value="maio">Maio</option>
+                        <option value="junho">Junho</option>
+                        <option value="julho">Julho</option>
+                        <option value="agosto">Agosto</option>
+                        <option value="setembro">Setembro</option>
+                        <option value="outubro">Outubro</option>
+                        <option value="novembro">Novembro</option>
+                        <option value="dezembro">Dezembro</option>
+                    </select>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" id="btnCancelarSaldo">Cancelar</button>
+                    <button type="submit" class="btn btn-success" id="btnSalvarSaldo">Salvar Receita</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="toast-container" aria-live="polite"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>
