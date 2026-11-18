@@ -67,6 +67,12 @@ public class Usuario implements UserDetails {
         }
     }
 
+    public void atualizarEmail(String novoEmail) {
+        if (novoEmail != null && !novoEmail.isBlank()) {
+            this.email = novoEmail.trim().toLowerCase();
+        }
+    }
+
     public void atualizarSenha(String novaSenhaCriptografada) {
         this.senha = novaSenhaCriptografada;
     }

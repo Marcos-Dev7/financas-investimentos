@@ -39,6 +39,7 @@ public class SecurityConfig {
                                 "/index.html",
                                 "/styles.css",
                                 "/app.js",
+                                "/logo.svg",
                                 "/favicon.ico",
                                 "/assets/**",
                                 "/v3/api-docs/**",

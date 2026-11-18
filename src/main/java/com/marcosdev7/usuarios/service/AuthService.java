@@ -122,19 +122,31 @@ public class AuthService {
     }
 
     @Transactional
-    public UsuarioResponseDTO atualizarPerfil(AtualizarPerfilDTO dto) {
+    public AuthResponseDTO atualizarPerfil(AtualizarPerfilDTO dto) {
         Usuario autenticado = exigirUsuarioAutenticado();
         Usuario usuario = usuarioRepository.findById(autenticado.getId())
                 .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado"));
 
         usuario.atualizarNome(dto.nome());
-        Usuario salvo = usuarioRepository.save(usuario);
 
-        return new UsuarioResponseDTO(
+        if (dto.email() != null && !dto.email().isBlank()) {
+            String novoEmail = dto.email().trim().toLowerCase();
+            if (!novoEmail.equals(usuario.getEmail())) {
+                if (usuarioRepository.existsByEmail(novoEmail)) {
+                    throw new IllegalArgumentException("Este e-mail já está em uso por outra conta");
+                }
+                usuario.atualizarEmail(novoEmail);
+            }
+        }
+
+        Usuario salvo = usuarioRepository.save(usuario);
+        String novoToken = tokenService.gerarToken(salvo);
+
+        return new AuthResponseDTO(
+                novoToken,
                 salvo.getId(),
                 salvo.getNome(),
-                salvo.getEmail(),
-                salvo.getEmailVerificado()
+                salvo.getEmail()
         );
     }
 

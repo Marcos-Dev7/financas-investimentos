@@ -54,10 +54,10 @@ public class AuthController {
         return ResponseEntity.ok(authService.obterPerfilAtual());
     }
 
-    @Operation(summary = "Atualiza os dados do perfil do usuário logado",
-            description = "Permite alterar o nome de exibição do usuário autenticado.")
+    @Operation(summary = "Atualiza os dados da conta do usuário logado",
+            description = "Permite alterar nome e e-mail do usuário autenticado e retorna um novo token JWT atualizado.")
     @PutMapping("/perfil")
-    public ResponseEntity<UsuarioResponseDTO> atualizarPerfil(@RequestBody @Valid AtualizarPerfilDTO dto) {
+    public ResponseEntity<AuthResponseDTO> atualizarPerfil(@RequestBody @Valid AtualizarPerfilDTO dto) {
         return ResponseEntity.ok(authService.atualizarPerfil(dto));
     }
 

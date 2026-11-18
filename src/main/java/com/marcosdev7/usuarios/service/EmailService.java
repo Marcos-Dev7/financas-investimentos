@@ -1,5 +1,6 @@
 package com.marcosdev7.usuarios.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.mail.internet.MimeMessage;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -8,11 +9,29 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
+import java.util.List;
+import java.util.Map;
+
 @Slf4j
 @Service
 public class EmailService {
 
     private final JavaMailSender mailSender;
+    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final HttpClient httpClient = HttpClient.newBuilder()
+            .connectTimeout(Duration.ofSeconds(8))
+            .build();
+
+    @Value("${BREVO_API_KEY:}")
+    private String brevoApiKey;
+
+    @Value("${MAIL_FROM:}")
+    private String mailFrom;
 
     @Value("${spring.mail.username:}")
     private String mailUsername;
@@ -25,42 +44,96 @@ public class EmailService {
     }
 
     public boolean enviarCodigoVerificacao(String emailDestino, String nomeUsuario, String codigo) {
-        if (mailSender == null || mailUsername == null || mailUsername.isBlank()
-                || mailPassword == null || mailPassword.isBlank()) {
-            log.info("============================================================");
-            log.info("[MODO DEMO / SEM SMTP CONFIGURADO] Código de verificação para {}: {}", emailDestino, codigo);
-            log.info("============================================================");
-            return false;
+        String assunto = "FinancialFamily — Código de verificação: " + codigo;
+        String html = montarTemplateHtml(nomeUsuario, codigo);
+
+        // 1. Prioridade para API HTTPS (Brevo) — funciona no plano gratuito do Render (porta 443)
+        if (brevoApiKey != null && !brevoApiKey.isBlank()) {
+            String remetente = (mailFrom != null && !mailFrom.isBlank())
+                    ? mailFrom.trim()
+                    : (mailUsername != null && !mailUsername.isBlank() ? mailUsername.trim() : "noreply@financialfamily.app");
+
+            if (enviarViaBrevoApi(remetente, emailDestino, nomeUsuario, assunto, html)) {
+                return true;
+            }
         }
 
+        // 2. Fallback para SMTP tradicional (Gmail / Outlook / etc. local)
+        if (mailSender != null && mailUsername != null && !mailUsername.isBlank()
+                && mailPassword != null && !mailPassword.isBlank()) {
+            try {
+                MimeMessage message = mailSender.createMimeMessage();
+                MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+                String remetente = (mailFrom != null && !mailFrom.isBlank()) ? mailFrom.trim() : mailUsername.trim();
+                helper.setFrom(remetente);
+                helper.setTo(emailDestino);
+                helper.setSubject(assunto);
+                helper.setText(html, true);
+
+                mailSender.send(message);
+                log.info("E-mail de verificação enviado via SMTP para {}", emailDestino);
+                return true;
+            } catch (Exception e) {
+                log.warn("Falha no envio SMTP para {}: {}", emailDestino, e.getMessage());
+            }
+        }
+
+        log.info("============================================================");
+        log.info("[AVISO: Configure BREVO_API_KEY + MAIL_FROM para envio real de e-mail]");
+        log.info("Código de verificação gerado para {}: {}", emailDestino, codigo);
+        log.info("============================================================");
+        return false;
+    }
+
+    private boolean enviarViaBrevoApi(String remetenteEmail, String emailDestino, String nomeDestino, String assunto, String html) {
         try {
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            Map<String, Object> payload = Map.of(
+                    "sender", Map.of("name", "FinancialFamily", "email", remetenteEmail),
+                    "to", List.of(Map.of("email", emailDestino, "name", nomeDestino)),
+                    "subject", assunto,
+                    "htmlContent", html
+            );
 
-            helper.setFrom(mailUsername);
-            helper.setTo(emailDestino);
-            helper.setSubject("FinancialFamily — Seu código de verificação: " + codigo);
+            String jsonBody = objectMapper.writeValueAsString(payload);
 
-            String html = """
-                    <div style="font-family: Inter, Arial, sans-serif; max-width: 520px; margin: 0 auto; background: #0f172a; color: #f8fafc; padding: 32px; border-radius: 16px; border: 1px solid #334155;">
-                        <h2 style="margin-top: 0; color: #38bdf8;">🏦 FinancialFamily</h2>
-                        <p style="color: #cbd5e1; font-size: 15px;">Olá, <strong>%s</strong>!</p>
-                        <p style="color: #94a3b8; font-size: 14px;">Use o código de 6 dígitos abaixo para confirmar seu e-mail e ativar sua conta:</p>
-                        <div style="background: #1e293b; border: 1px solid #3b82f6; border-radius: 12px; padding: 20px; text-align: center; margin: 24px 0;">
-                            <span style="font-size: 32px; font-weight: 800; letter-spacing: 8px; color: #f8fafc;">%s</span>
-                        </div>
-                        <p style="color: #64748b; font-size: 12px;">Este código expira em 15 minutos. Se você não solicitou este cadastro, ignore este e-mail.</p>
-                    </div>
-                    """.formatted(nomeUsuario, codigo);
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create("https://api.brevo.com/v3/smtp/email"))
+                    .timeout(Duration.ofSeconds(10))
+                    .header("accept", "application/json")
+                    .header("content-type", "application/json")
+                    .header("api-key", brevoApiKey.trim())
+                    .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+                    .build();
 
-            helper.setText(html, true);
-            mailSender.send(message);
-            log.info("E-mail de verificação enviado com sucesso para {}", emailDestino);
-            return true;
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() >= 200 && response.statusCode() < 300) {
+                log.info("E-mail de verificação enviado via Brevo HTTPS API para {}", emailDestino);
+                return true;
+            } else {
+                log.warn("Brevo API retornou status {}: {}", response.statusCode(), response.body());
+                return false;
+            }
         } catch (Exception e) {
-            log.warn("Falha ao enviar e-mail SMTP para {} ({}). Usando fallback de código.", emailDestino, e.getMessage());
-            log.info("Código de verificação gerado para {}: {}", emailDestino, codigo);
+            log.warn("Erro ao chamar Brevo HTTPS API: {}", e.getMessage());
             return false;
         }
+    }
+
+    private String montarTemplateHtml(String nomeUsuario, String codigo) {
+        return """
+                <div style="font-family: Inter, -apple-system, BlinkMacSystemFont, Arial, sans-serif; max-width: 520px; margin: 0 auto; background: #0b1120; color: #f8fafc; padding: 36px 32px; border-radius: 16px; border: 1px solid #1e293b;">
+                    <div style="margin-bottom: 24px;">
+                        <span style="display: inline-block; background: linear-gradient(135deg, #2563eb, #10b981); color: #ffffff; font-weight: 800; font-size: 14px; padding: 6px 12px; border-radius: 8px; letter-spacing: 0.5px;">FINANCIAL FAMILY</span>
+                    </div>
+                    <h2 style="margin: 0 0 12px 0; font-size: 22px; color: #f8fafc;">Confirme seu endereço de e-mail</h2>
+                    <p style="color: #cbd5e1; font-size: 15px; line-height: 1.6;">Olá, <strong>%s</strong>!</p>
+                    <p style="color: #94a3b8; font-size: 14px; line-height: 1.6;">Utilize o código de segurança de 6 dígitos abaixo para validar sua conta no FinancialFamily:</p>
+                    <div style="background: #151f32; border: 1px solid #3b82f6; border-radius: 12px; padding: 22px; text-align: center; margin: 26px 0;">
+                        <span style="font-size: 34px; font-weight: 800; letter-spacing: 10px; color: #f8fafc;">%s</span>
+                    </div>
+                    <p style="color: #64748b; font-size: 12px; line-height: 1.5; margin-bottom: 0;">Este código é válido por 15 minutos. Caso você não tenha solicitado este cadastro, basta ignorar esta mensagem.</p>
+                </div>
+                """.formatted(nomeUsuario, codigo);
     }
 }

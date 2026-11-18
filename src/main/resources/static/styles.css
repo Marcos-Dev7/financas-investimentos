@@ -73,22 +73,60 @@ body {
 .auth-hero-brand {
     display: flex;
     align-items: center;
-    gap: 0.85rem;
-    font-size: 1.35rem;
-    font-weight: 800;
-    letter-spacing: -0.02em;
+    gap: 0.9rem;
 }
 
-.brand-icon-lg {
+.brand-logo-lg {
     width: 48px;
     height: 48px;
-    border-radius: 14px;
-    background: rgba(59, 130, 246, 0.15);
-    border: 1px solid rgba(59, 130, 246, 0.35);
+    border-radius: 13px;
+    box-shadow: 0 8px 20px rgba(37, 99, 235, 0.35);
+}
+
+.brand-logo-sm {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+}
+
+.brand-logo {
+    width: 42px;
+    height: 42px;
+    border-radius: 11px;
+    box-shadow: 0 6px 16px rgba(37, 99, 235, 0.3);
+}
+
+.brand-wordmark {
     display: flex;
+    flex-direction: column;
+    line-height: 1.15;
+}
+
+.wordmark-main {
+    font-size: 1.35rem;
+    font-weight: 800;
+    letter-spacing: -0.025em;
+    color: #f8fafc;
+}
+
+.wordmark-accent {
+    background: linear-gradient(90deg, #60a5fa, #34d399);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.wordmark-tag {
+    font-size: 0.74rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.auth-mobile-brand {
+    display: none;
     align-items: center;
     justify-content: center;
-    font-size: 1.6rem;
+    gap: 0.65rem;
+    margin-bottom: 1.35rem;
 }
 
 .auth-hero-content {
@@ -257,22 +295,49 @@ body {
     flex-wrap: wrap;
 }
 
+.topbar-left {
+    display: flex;
+    align-items: center;
+    gap: 1.75rem;
+    flex-wrap: wrap;
+}
+
 .brand {
     display: flex;
     align-items: center;
-    gap: 0.85rem;
+    gap: 0.8rem;
+    cursor: pointer;
 }
 
-.brand-icon {
-    font-size: 1.65rem;
-    background: rgba(59, 130, 246, 0.15);
-    border: 1px solid rgba(59, 130, 246, 0.3);
-    width: 44px;
-    height: 44px;
-    border-radius: 12px;
+.main-nav {
     display: flex;
     align-items: center;
-    justify-content: center;
+    gap: 0.35rem;
+    background: var(--bg-input);
+    border: 1px solid var(--border-color);
+    padding: 0.25rem;
+    border-radius: var(--radius-md);
+}
+
+.nav-link {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 0.84rem;
+    font-weight: 600;
+    padding: 0.45rem 0.95rem;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.nav-link:hover {
+    color: var(--text-primary);
+}
+
+.nav-link.active {
+    background: var(--accent-primary);
+    color: #fff;
 }
 
 .brand h1 {
@@ -1158,6 +1223,128 @@ body {
     border-left-color: var(--accent-danger);
 }
 
+/* Dedicated Account Management Page */
+.account-page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.35rem;
+    flex-wrap: wrap;
+}
+
+.account-page-header h2 {
+    font-size: 1.4rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+}
+
+.account-hero-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    margin-bottom: 1.35rem;
+    flex-wrap: wrap;
+}
+
+.account-hero-left {
+    display: flex;
+    align-items: center;
+    gap: 1.15rem;
+}
+
+.user-avatar-xl {
+    width: 64px;
+    height: 64px;
+    font-size: 1.35rem;
+    border-radius: 16px;
+}
+
+.profile-title-row {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.2rem;
+}
+
+.profile-summary-info h3 {
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+
+.profile-summary-info p {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.25rem;
+}
+
+.account-id-tag {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-weight: 600;
+}
+
+.account-stats-mini {
+    display: flex;
+    gap: 0.85rem;
+}
+
+.stat-mini-box {
+    background: var(--bg-input);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 0.75rem 1.15rem;
+    min-width: 150px;
+}
+
+.stat-mini-label {
+    display: block;
+    font-size: 0.73rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.2rem;
+}
+
+.stat-mini-box strong {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--text-primary);
+}
+
+.account-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+    margin-bottom: 1.35rem;
+    align-items: start;
+}
+
+.danger-panel {
+    border-color: rgba(239, 68, 68, 0.35);
+    background: linear-gradient(180deg, rgba(239, 68, 68, 0.06), rgba(21, 31, 50, 0.95));
+}
+
+.danger-panel-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.25rem;
+    flex-wrap: wrap;
+}
+
+.danger-panel-inner h4 {
+    color: #f87171;
+    font-size: 1rem;
+    margin-bottom: 0.25rem;
+}
+
+.danger-panel-inner p {
+    font-size: 0.84rem;
+    color: var(--text-secondary);
+    max-width: 680px;
+}
+
 @media (max-width: 1024px) {
     .auth-Split {
         grid-template-columns: 1fr;
@@ -1165,9 +1352,16 @@ body {
     .auth-hero {
         display: none;
     }
+    .auth-mobile-brand {
+        display: flex;
+    }
     .summary-grid,
-    .analytics-grid {
+    .analytics-grid,
+    .account-grid {
         grid-template-columns: repeat(2, 1fr);
+    }
+    .account-grid {
+        grid-template-columns: 1fr;
     }
     .workspace-grid {
         grid-template-columns: 1fr;

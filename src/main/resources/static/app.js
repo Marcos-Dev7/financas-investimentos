@@ -28,6 +28,7 @@ const MESES_LABEL = {
 const state = {
     token: localStorage.getItem(STORAGE_TOKEN_KEY) || null,
     user: JSON.parse(localStorage.getItem(STORAGE_USER_KEY) || 'null'),
+    abaAtiva: 'dashboard', // 'dashboard' | 'account'
     pendingVerifyEmail: '',
     mesAtual: MESES[new Date().getMonth()],
     filtroDespesa: 'mes',
@@ -36,6 +37,7 @@ const state = {
     page: 0,
     size: 50,
     totalPages: 1,
+    totalDespesasCount: 0,
     despesas: [],
     saldos: [],
     resumo: null
@@ -78,15 +80,7 @@ const showToast = (msg, type = 'success') => {
     setTimeout(() => toast.remove(), 4200);
 };
 
-const setApiOnline = (online) => {
-    const badge = document.getElementById('apiStatusBadge');
-    const text = document.getElementById('apiStatusText');
-    if (!badge || !text) return;
-    badge.className = `api-badge ${online ? 'online' : 'offline'}`;
-    text.textContent = online ? 'Online' : 'Offline';
-};
-
-// Validação de regras de senha forte
+// Regras de Senha Forte
 function avaliarRegrasSenha(senha) {
     const s = senha || '';
     return {
@@ -149,12 +143,39 @@ function atualizarDadosUsuarioNaTela() {
     document.getElementById('userEmailDisplay').textContent = state.user.email;
     document.getElementById('userAvatar').textContent = iniciais;
 
-    // Modal de perfil
+    // Área Minha Conta
     document.getElementById('perfilAvatarLg').textContent = iniciais;
     document.getElementById('perfilNomeHeader').textContent = state.user.nome;
     document.getElementById('perfilEmailHeader').textContent = state.user.email;
+    document.getElementById('perfilIdTag').textContent = `ID da Conta: #${state.user.id || 1}`;
     document.getElementById('perfilInputEmail').value = state.user.email;
     document.getElementById('perfilInputNome').value = state.user.nome;
+}
+
+function navegarPara(aba) {
+    state.abaAtiva = aba;
+    const dashboardView = document.getElementById('dashboardView');
+    const accountView = document.getElementById('accountView');
+    const navDashboardBtn = document.getElementById('navDashboardBtn');
+    const navAccountBtn = document.getElementById('navAccountBtn');
+    const monthSelectorBar = document.getElementById('monthSelectorBar');
+
+    if (aba === 'account') {
+        dashboardView.classList.add('hidden');
+        accountView.classList.remove('hidden');
+        navDashboardBtn.classList.remove('active');
+        navAccountBtn.classList.add('active');
+        monthSelectorBar.classList.add('hidden');
+        atualizarDadosUsuarioNaTela();
+        document.getElementById('statTotalDespesas').textContent = String(state.totalDespesasCount || state.despesas.length);
+        document.getElementById('statTotalSaldos').textContent = String(state.saldos.length);
+    } else {
+        accountView.classList.add('hidden');
+        dashboardView.classList.remove('hidden');
+        navAccountBtn.classList.remove('active');
+        navDashboardBtn.classList.add('active');
+        monthSelectorBar.classList.remove('hidden');
+    }
 }
 
 function limparSessao() {
@@ -210,6 +231,7 @@ function mostrarTelaAuth(modo = 'login', emailVerificacao = '', codigoDemo = nul
 function mostrarTelaApp() {
     document.getElementById('authScreen').classList.add('hidden');
     document.getElementById('appScreen').classList.remove('hidden');
+    navegarPara('dashboard');
     atualizarDadosUsuarioNaTela();
 }
 
@@ -223,49 +245,40 @@ async function apiFetch(path, options = {}) {
         headers['Authorization'] = `Bearer ${state.token}`;
     }
 
-    try {
-        const response = await fetch(`${API_BASE}${path}`, {
-            ...options,
-            headers
-        });
+    const response = await fetch(`${API_BASE}${path}`, {
+        ...options,
+        headers
+    });
 
-        setApiOnline(true);
-
-        if (response.status === 401 && !path.startsWith('/auth/')) {
-            limparSessao();
-            throw new Error('Sessão expirada. Faça login novamente.');
-        }
-
-        if (!response.ok) {
-            let errMsg = `Erro HTTP ${response.status}`;
-            const rawText = await response.text();
-            if (rawText) {
-                try {
-                    const errData = JSON.parse(rawText);
-                    if (Array.isArray(errData)) {
-                        errMsg = errData.map(e => `${e.campo}: ${e.mensagem}`).join(' | ');
-                    } else if (errData.mensagem) {
-                        errMsg = errData.mensagem;
-                    }
-                } catch (_) {
-                    errMsg = rawText;
-                }
-            }
-            throw new Error(errMsg);
-        }
-
-        if (response.status === 204) {
-            return null;
-        }
-
-        const text = await response.text();
-        return text ? JSON.parse(text) : null;
-    } catch (error) {
-        if (error.name === 'TypeError') {
-            setApiOnline(false);
-        }
-        throw error;
+    if (response.status === 401 && !path.startsWith('/auth/')) {
+        limparSessao();
+        throw new Error('Sessão expirada. Faça login novamente.');
     }
+
+    if (!response.ok) {
+        let errMsg = `Erro HTTP ${response.status}`;
+        const rawText = await response.text();
+        if (rawText) {
+            try {
+                const errData = JSON.parse(rawText);
+                if (Array.isArray(errData)) {
+                    errMsg = errData.map(e => `${e.campo}: ${e.mensagem}`).join(' | ');
+                } else if (errData.mensagem) {
+                    errMsg = errData.mensagem;
+                }
+            } catch (_) {
+                errMsg = rawText;
+            }
+        }
+        throw new Error(errMsg);
+    }
+
+    if (response.status === 204) {
+        return null;
+    }
+
+    const text = await response.text();
+    return text ? JSON.parse(text) : null;
 }
 
 // 1. Carregar Resumo do Mês (/calculos/sobra/{mes})
@@ -319,6 +332,7 @@ async function carregarDespesas() {
         const pageData = await apiFetch(`/despesas?page=${state.page}&size=${state.size}&sort=dataVencimento,asc`);
         state.despesas = pageData?.content || [];
         state.totalPages = Math.max(1, pageData?.totalPages || 1);
+        state.totalDespesasCount = pageData?.totalElements ?? state.despesas.length;
         renderizarDespesas();
         renderizarDistribuicaoCategorias();
     } catch (err) {
@@ -402,7 +416,7 @@ function renderizarDespesas() {
         <tr>
             <td>
                 <span class="badge ${d.isPaga ? 'badge-paga' : 'badge-pendente'}">
-                    ${d.isPaga ? '✓ Paga' : '⏳ Pendente'}
+                    ${d.isPaga ? '✓ Paga' : 'Pendente'}
                 </span>
             </td>
             <td>
@@ -420,11 +434,11 @@ function renderizarDespesas() {
             <td class="text-right">
                 <div class="action-group">
                     ${d.isPaga
-                        ? `<button class="btn btn-outline btn-sm" onclick="estornarDespesa(${d.id})" title="Estornar pagamento">↩ Estornar</button>`
-                        : `<button class="btn btn-success btn-sm" onclick="pagarDespesa(${d.id})" title="Dar baixa como paga">✓ Pagar</button>`
+                        ? `<button class="btn btn-outline btn-sm" onclick="estornarDespesa(${d.id})" title="Estornar pagamento">Estornar</button>`
+                        : `<button class="btn btn-success btn-sm" onclick="pagarDespesa(${d.id})" title="Dar baixa como paga">Pagar</button>`
                     }
-                    <button class="btn btn-outline btn-sm" onclick="abrirEditarDespesa(${d.id})" title="Editar">✎</button>
-                    <button class="btn btn-danger-ghost btn-sm" onclick="excluirDespesa(${d.id})" title="Excluir">🗑</button>
+                    <button class="btn btn-outline btn-sm" onclick="abrirEditarDespesa(${d.id})" title="Editar">Editar</button>
+                    <button class="btn btn-danger-ghost btn-sm" onclick="excluirDespesa(${d.id})" title="Excluir">Excluir</button>
                 </div>
             </td>
         </tr>
@@ -469,8 +483,8 @@ function renderizarSaldos() {
             <div class="income-right">
                 <span class="income-amount">${formatCurrency(s.valor)}</span>
                 <div class="action-group">
-                    <button class="btn btn-outline btn-sm" onclick="abrirEditarSaldo(${s.id})" title="Editar">✎</button>
-                    <button class="btn btn-danger-ghost btn-sm" onclick="excluirSaldo(${s.id})" title="Excluir">🗑</button>
+                    <button class="btn btn-outline btn-sm" onclick="abrirEditarSaldo(${s.id})" title="Editar">Editar</button>
+                    <button class="btn btn-danger-ghost btn-sm" onclick="excluirSaldo(${s.id})" title="Excluir">Excluir</button>
                 </div>
             </div>
         </div>
@@ -565,6 +579,10 @@ async function atualizarTudo() {
         carregarDespesas(),
         carregarSaldos()
     ]);
+    if (state.abaAtiva === 'account') {
+        document.getElementById('statTotalDespesas').textContent = String(state.totalDespesasCount || state.despesas.length);
+        document.getElementById('statTotalSaldos').textContent = String(state.saldos.length);
+    }
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -572,6 +590,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('tabLoginBtn').addEventListener('click', () => mostrarTelaAuth('login'));
     document.getElementById('tabRegisterBtn').addEventListener('click', () => mostrarTelaAuth('register'));
     document.getElementById('btnBackToLogin').addEventListener('click', () => mostrarTelaAuth('login'));
+
+    // Navegação entre Visão Geral e Minha Conta
+    document.getElementById('navDashboardBtn').addEventListener('click', () => navegarPara('dashboard'));
+    document.getElementById('brandHomeLink').addEventListener('click', () => navegarPara('dashboard'));
+    document.getElementById('btnVoltarPainel').addEventListener('click', () => navegarPara('dashboard'));
+    document.getElementById('navAccountBtn').addEventListener('click', () => navegarPara('account'));
+    document.getElementById('btnAbrirMinhaConta').addEventListener('click', () => navegarPara('account'));
 
     // Checklist em tempo real da senha no Cadastro
     const regSenha = document.getElementById('regSenha');
@@ -584,7 +609,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         atualizarDicaConfirmacao(regSenha.value, regConf.value, 'regMatchHint');
     });
 
-    // Checklist em tempo real na alteração de senha (Perfil)
+    // Checklist em tempo real na alteração de senha (Minha Conta)
     const novaSenhaInput = document.getElementById('novaSenhaInput');
     const confNovaSenhaInput = document.getElementById('confirmacaoNovaSenhaInput');
     novaSenhaInput.addEventListener('input', () => {
@@ -719,64 +744,31 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    // Modal de Meu Perfil
-    const modalPerfil = document.getElementById('modalPerfil');
-    const abrirModalPerfil = () => {
-        atualizarDadosUsuarioNaTela();
-        modalPerfil.classList.remove('hidden');
-    };
-    document.getElementById('btnAbrirPerfil').addEventListener('click', abrirModalPerfil);
-    document.getElementById('btnPerfilBtn').addEventListener('click', abrirModalPerfil);
-    document.getElementById('btnFecharModalPerfil').addEventListener('click', () => modalPerfil.classList.add('hidden'));
-
-    // Abas internas do Modal de Perfil
-    const tabPerfilDadosBtn = document.getElementById('tabPerfilDadosBtn');
-    const tabPerfilSenhaBtn = document.getElementById('tabPerfilSenhaBtn');
-    const tabPerfilContaBtn = document.getElementById('tabPerfilContaBtn');
-    const formAtualizarPerfil = document.getElementById('formAtualizarPerfil');
-    const formAlterarSenha = document.getElementById('formAlterarSenha');
-    const painelExcluirConta = document.getElementById('painelExcluirConta');
-
-    const alternarAbaPerfil = (aba) => {
-        [tabPerfilDadosBtn, tabPerfilSenhaBtn, tabPerfilContaBtn].forEach(b => b.classList.remove('active'));
-        [formAtualizarPerfil, formAlterarSenha, painelExcluirConta].forEach(p => p.classList.add('hidden'));
-
-        if (aba === 'dados') {
-            tabPerfilDadosBtn.classList.add('active');
-            formAtualizarPerfil.classList.remove('hidden');
-        } else if (aba === 'senha') {
-            tabPerfilSenhaBtn.classList.add('active');
-            formAlterarSenha.classList.remove('hidden');
-        } else {
-            tabPerfilContaBtn.classList.add('active');
-            painelExcluirConta.classList.remove('hidden');
-        }
-    };
-
-    tabPerfilDadosBtn.addEventListener('click', () => alternarAbaPerfil('dados'));
-    tabPerfilSenhaBtn.addEventListener('click', () => alternarAbaPerfil('senha'));
-    tabPerfilContaBtn.addEventListener('click', () => alternarAbaPerfil('conta'));
-
-    // Atualizar Nome no Perfil
-    formAtualizarPerfil.addEventListener('submit', async (e) => {
+    // Atualizar Dados na Área "Minha Conta"
+    document.getElementById('formAtualizarPerfil').addEventListener('submit', async (e) => {
         e.preventDefault();
+        const btn = document.getElementById('btnSalvarPerfil');
+        btn.disabled = true;
         try {
-            const atualizado = await apiFetch('/auth/perfil', {
+            const authAtualizado = await apiFetch('/auth/perfil', {
                 method: 'PUT',
                 body: JSON.stringify({
-                    nome: document.getElementById('perfilInputNome').value.trim()
+                    nome: document.getElementById('perfilInputNome').value.trim(),
+                    email: document.getElementById('perfilInputEmail').value.trim()
                 })
             });
-            state.user = atualizado;
-            localStorage.setItem(STORAGE_USER_KEY, JSON.stringify(atualizado));
+            salvarSessao(authAtualizado);
             atualizarDadosUsuarioNaTela();
-            showToast('Perfil atualizado com sucesso!');
+            showToast('Dados da conta atualizados com sucesso!');
         } catch (err) {
             showToast(err.message, 'error');
+        } finally {
+            btn.disabled = false;
         }
     });
 
-    // Alterar Senha no Perfil
+    // Alterar Senha na Área "Minha Conta"
+    const formAlterarSenha = document.getElementById('formAlterarSenha');
     formAlterarSenha.addEventListener('submit', async (e) => {
         e.preventDefault();
         const novaSenha = novaSenhaInput.value;
@@ -791,6 +783,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
+        const btn = document.getElementById('btnAtualizarSenha');
+        btn.disabled = true;
         try {
             await apiFetch('/auth/alterar-senha', {
                 method: 'PUT',
@@ -806,6 +800,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             showToast('Sua senha foi alterada com sucesso!');
         } catch (err) {
             showToast(err.message, 'error');
+        } finally {
+            btn.disabled = false;
         }
     });
 
@@ -814,7 +810,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!confirm('Tem certeza absoluta que deseja excluir sua conta e todos os seus dados financeiros?')) return;
         try {
             await apiFetch('/auth/conta', { method: 'DELETE' });
-            modalPerfil.classList.add('hidden');
             limparSessao();
             showToast('Sua conta foi excluída permanentemente.');
         } catch (err) {
