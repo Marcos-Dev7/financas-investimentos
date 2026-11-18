@@ -25,6 +25,12 @@
     padding: 0;
 }
 
+html, body {
+    overflow-x: hidden;
+    width: 100%;
+    max-width: 100vw;
+}
+
 body {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     background-color: var(--bg-body);
@@ -1365,23 +1371,34 @@ h1, h2, h3, h4, .wordmark-main, .kpi-value {
 }
 
 /* ==========================================
-   RESPONSIVE: TABLET & CELULAR (COM INTRODUÇÃO VISÍVEL!)
+   RESPONSIVE: TABLET & CELULAR (100% CENTRALIZADO E SIMÉTRICO)
    ========================================== */
 @media (max-width: 1024px) {
     .auth-Split {
-        grid-template-columns: 1fr;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 100%;
     }
 
-    /* No celular e tablet, a introdução aparece no topo com visual compacto e elegante */
     .auth-hero {
+        width: 100%;
         border-right: none;
         border-bottom: 1px solid var(--border-color);
-        padding: 2rem 1.5rem;
+        padding: 2rem 1.25rem;
+        align-items: center;
+        text-align: center;
+    }
+
+    .auth-hero-brand {
+        justify-content: center;
+        text-align: left;
     }
 
     .auth-hero-content {
-        margin: 1.25rem 0;
-        max-width: 100%;
+        margin: 1.35rem auto;
+        max-width: 500px;
+        width: 100%;
     }
 
     .auth-hero-content h1 {
@@ -1389,12 +1406,26 @@ h1, h2, h3, h4, .wordmark-main, .kpi-value {
     }
 
     .hero-lead {
-        font-size: 0.92rem;
-        margin-bottom: 1.25rem;
+        font-size: 0.93rem;
+        margin-bottom: 1.35rem;
+    }
+
+    .hero-features {
+        text-align: left;
     }
 
     .auth-card-container {
-        padding: 1.75rem 1.25rem 2.5rem;
+        width: 100%;
+        padding: 1.75rem 1.15rem 2.5rem;
+    }
+
+    .auth-card {
+        margin: 0 auto;
+        padding: 1.65rem 1.35rem;
+    }
+
+    .auth-card-brand-top {
+        justify-content: center;
     }
 
     .summary-grid,
@@ -1408,19 +1439,251 @@ h1, h2, h3, h4, .wordmark-main, .kpi-value {
     }
 }
 
+@media (max-width: 768px) {
+    .container {
+        padding: 0 1rem;
+    }
+
+    /* Topbar centralizada e organizada em blocos simétricos no mobile */
+    .topbar-inner {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.75rem;
+        padding-top: 0.75rem;
+        padding-bottom: 0.75rem;
+    }
+
+    .topbar-left {
+        flex-direction: column;
+        align-items: center;
+        gap: 0.7rem;
+        width: 100%;
+    }
+
+    .brand {
+        justify-content: center;
+    }
+
+    .main-nav {
+        width: 100%;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .nav-link {
+        justify-content: center;
+        padding: 0.5rem 0.5rem;
+    }
+
+    .topbar-controls {
+        flex-direction: column;
+        align-items: stretch;
+        width: 100%;
+        gap: 0.6rem;
+    }
+
+    .month-selector-wrap {
+        width: 100%;
+        justify-content: space-between;
+        padding: 0.22rem 0.45rem;
+    }
+
+    .select-mes {
+        flex: 1;
+        text-align: center;
+        text-align-last: center;
+    }
+
+    .user-profile-pill {
+        width: 100%;
+        justify-content: space-between;
+        padding: 0.35rem 0.55rem;
+    }
+
+    /* Painéis e Filtros no Mobile */
+    .panel {
+        padding: 1.15rem 1rem;
+    }
+
+    .panel-header {
+        flex-direction: column;
+        align-items: stretch;
+        text-align: center;
+        gap: 0.85rem;
+    }
+
+    .panel-header .btn {
+        width: 100%;
+    }
+
+    .filters-bar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .filter-tabs {
+        width: 100%;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.35rem;
+    }
+
+    .tab-btn {
+        text-align: center;
+        padding: 0.5rem 0.4rem;
+    }
+
+    .input-search {
+        width: 100%;
+        min-width: 0;
+    }
+
+    /* Tabela de Despesas transformada em Cards Nativos no Mobile */
+    .data-table thead {
+        display: none;
+    }
+
+    .data-table,
+    .data-table tbody {
+        display: block;
+        width: 100%;
+    }
+
+    .data-table tbody tr {
+        display: flex;
+        flex-direction: column;
+        background: var(--bg-input);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-md);
+        padding: 0.9rem 1rem;
+        margin-bottom: 0.75rem;
+        gap: 0.45rem;
+    }
+
+    .data-table tbody td {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.3rem 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+        text-align: right;
+        gap: 0.75rem;
+    }
+
+    .data-table tbody td:last-child {
+        border-bottom: none;
+        padding-top: 0.55rem;
+    }
+
+    .data-table tbody td::before {
+        content: attr(data-label);
+        font-size: 0.73rem;
+        font-weight: 600;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        text-align: left;
+        flex-shrink: 0;
+    }
+
+    .data-table tbody td.td-actions {
+        justify-content: flex-end;
+    }
+
+    .data-table tbody td.td-actions::before {
+        display: none;
+    }
+
+    .data-table tbody td.td-actions .action-group {
+        width: 100%;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.45rem;
+    }
+
+    .data-table tbody td.empty-state {
+        justify-content: center;
+        text-align: center;
+        padding: 1.5rem 0.75rem;
+    }
+
+    .data-table tbody td.empty-state::before {
+        display: none;
+    }
+
+    /* Minha Conta centralizada no Mobile */
+    .account-page-header {
+        flex-direction: column;
+        align-items: stretch;
+        text-align: center;
+    }
+
+    .account-page-header .btn {
+        width: 100%;
+    }
+
+    .account-hero-card {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+
+    .account-hero-left {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        width: 100%;
+    }
+
+    .profile-title-row {
+        justify-content: center;
+    }
+
+    .account-stats-mini {
+        width: 100%;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .stat-mini-box {
+        min-width: 0;
+        text-align: center;
+    }
+
+    .danger-panel-inner {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .danger-panel-inner .btn {
+        width: 100%;
+    }
+
+    .modal-footer .btn {
+        width: 100%;
+    }
+}
+
 @media (max-width: 640px) {
     .summary-grid,
     .analytics-grid {
         grid-template-columns: 1fr;
     }
+
+    .kpi-card {
+        text-align: center;
+        align-items: center;
+    }
+
+    .kpi-header {
+        width: 100%;
+    }
+
     .form-row {
         grid-template-columns: 1fr;
     }
-    .account-stats-mini {
-        width: 100%;
-    }
-    .stat-mini-box {
-        flex: 1;
-        min-width: 0;
+
+    .pwd-rules {
+        grid-template-columns: 1fr;
     }
 }

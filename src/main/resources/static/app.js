@@ -436,24 +436,26 @@ function renderizarDespesas() {
 
     tbody.innerHTML = filtradas.map(d => `
         <tr>
-            <td>
+            <td data-label="Status">
                 <span class="badge ${d.isPaga ? 'badge-paga' : 'badge-pendente'}">
                     ${d.isPaga ? '✓ Paga' : 'Pendente'}
                 </span>
             </td>
-            <td>
-                <strong>${escapeHtml(d.descricao)}</strong>
-                <div class="income-meta">${MESES_LABEL[(d.mes || '').toLowerCase()] || d.mes}</div>
+            <td data-label="Descrição">
+                <div class="td-desc-wrap">
+                    <strong>${escapeHtml(d.descricao)}</strong>
+                    <div class="income-meta">${MESES_LABEL[(d.mes || '').toLowerCase()] || d.mes}</div>
+                </div>
             </td>
-            <td>
+            <td data-label="Categoria">
                 <span class="badge badge-cat">${escapeHtml(d.categoria || 'Outros')}</span>
             </td>
-            <td>${escapeHtml(d.dataVencimento || '-')}</td>
-            <td>
+            <td data-label="Vencimento">${escapeHtml(d.dataVencimento || '-')}</td>
+            <td data-label="Tipo">
                 ${d.isFixa ? '<span class="badge badge-fixa">Fixa</span>' : '<span class="income-meta">Variável</span>'}
             </td>
-            <td class="text-right"><strong>${formatCurrency(d.valor)}</strong></td>
-            <td class="text-right">
+            <td data-label="Valor" class="text-right"><strong>${formatCurrency(d.valor)}</strong></td>
+            <td data-label="Ações" class="text-right td-actions">
                 <div class="action-group">
                     ${d.isPaga
                         ? `<button class="btn btn-outline btn-sm" onclick="estornarDespesa(${d.id})" title="Estornar pagamento">Estornar</button>`
