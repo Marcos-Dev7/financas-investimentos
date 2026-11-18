@@ -197,22 +197,20 @@ public class AuthService {
         usuario.definirCodigoVerificacao(codigo, expiracao);
         usuarioRepository.save(usuario);
 
-        boolean enviadoViaSmtp = emailService.enviarCodigoVerificacao(
+        boolean enviado = emailService.enviarCodigoVerificacao(
                 usuario.getEmail(),
                 usuario.getNome(),
                 codigo
         );
 
-        String mensagem = enviadoViaSmtp
-                ? "Enviamos um código de 6 dígitos para o seu e-mail."
-                : "Conta criada! Utilize o código de segurança gerado para confirmar seu e-mail.";
+        String mensagem = "Enviamos um código de verificação de 6 dígitos para o seu e-mail.";
 
         return new CadastroResponseDTO(
                 mensagem,
                 usuario.getEmail(),
                 true,
-                enviadoViaSmtp,
-                enviadoViaSmtp ? null : codigo
+                enviado,
+                null
         );
     }
 

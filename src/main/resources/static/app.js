@@ -228,15 +228,7 @@ function mostrarTelaAuth(modo = 'login', emailVerificacao = '', codigoDemo = nul
         formVerifyEmail.classList.remove('hidden');
         state.pendingVerifyEmail = emailVerificacao;
         document.getElementById('verifyEmailTarget').textContent = emailVerificacao;
-        document.getElementById('inputCodigoVerificacao').value = codigoDemo || '';
-
-        const banner = document.getElementById('demoCodeBanner');
-        if (codigoDemo) {
-            document.getElementById('demoCodeValue').textContent = codigoDemo;
-            banner.classList.remove('hidden');
-        } else {
-            banner.classList.add('hidden');
-        }
+        document.getElementById('inputCodigoVerificacao').value = '';
     } else if (modo === 'register') {
         tabsWrap.classList.remove('hidden');
         tabRegisterBtn.classList.add('active');
