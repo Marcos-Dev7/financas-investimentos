@@ -170,7 +170,6 @@ function atualizarDadosUsuarioNaTela() {
     // Área Minha Conta
     document.getElementById('perfilNomeHeader').textContent = state.user.nome;
     document.getElementById('perfilEmailHeader').textContent = state.user.email;
-    document.getElementById('perfilIdTag').textContent = `ID da Conta: #${state.user.id || 1}`;
     document.getElementById('perfilInputEmail').value = state.user.email;
     document.getElementById('perfilInputNome').value = state.user.nome;
 }
@@ -499,16 +498,16 @@ function renderizarSaldos() {
 
     container.innerHTML = filtrados.map(s => `
         <div class="income-item">
-            <div class="income-info">
-                <h4>${escapeHtml(s.descricao)}</h4>
-                <span class="income-meta">${MESES_LABEL[(s.mes || '').toLowerCase()] || s.mes} / ${s.ano}</span>
-            </div>
-            <div class="income-right">
-                <span class="income-amount">${formatCurrency(s.valor)}</span>
-                <div class="action-group">
-                    <button class="btn btn-outline btn-sm" onclick="abrirEditarSaldo(${s.id})" title="Editar">Editar</button>
-                    <button class="btn btn-danger-ghost btn-sm" onclick="excluirSaldo(${s.id})" title="Excluir">Excluir</button>
+            <div class="income-top">
+                <div class="income-info">
+                    <h4>${escapeHtml(s.descricao)}</h4>
+                    <span class="income-meta">${MESES_LABEL[(s.mes || '').toLowerCase()] || s.mes} / ${s.ano}</span>
                 </div>
+                <span class="income-amount">${formatCurrency(s.valor)}</span>
+            </div>
+            <div class="income-bottom">
+                <button class="btn btn-outline btn-sm" onclick="abrirEditarSaldo(${s.id})" title="Editar receita">Editar</button>
+                <button class="btn btn-danger-ghost btn-sm" onclick="excluirSaldo(${s.id})" title="Excluir receita">Excluir</button>
             </div>
         </div>
     `).join('');
