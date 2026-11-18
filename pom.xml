@@ -10,7 +10,7 @@
 	</parent>
 	<groupId>com.marcosdev7</groupId>
 	<artifactId>financas-investimentos</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>1.0.0</version>
 	<name>financas-investimentos</name>
 	<description>API REST para gestão de despesas e carteira de investimentos.</description>
 	<url/>
