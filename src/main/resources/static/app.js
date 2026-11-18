@@ -1,6 +1,9 @@
-const API_BASE = window.location.origin.includes('localhost:8080')
+const API_BASE = window.location.origin.includes('localhost:8080') || window.location.protocol.startsWith('http')
     ? ''
     : 'http://localhost:8080';
+
+const STORAGE_TOKEN_KEY = 'ff_auth_token';
+const STORAGE_USER_KEY = 'ff_auth_user';
 
 const MESES = [
     'janeiro', 'fevereiro', 'marco', 'abril', 'maio', 'junho',
@@ -23,36 +26,46 @@ const MESES_LABEL = {
 };
 
 const state = {
+    token: localStorage.getItem(STORAGE_TOKEN_KEY) || null,
+    user: JSON.parse(localStorage.getItem(STORAGE_USER_KEY) || 'null'),
     mesAtual: MESES[new Date().getMonth()],
-    filtroDespesa: 'mes', // 'mes' | 'pendentes' | 'pagas' | 'todas'
+    filtroDespesa: 'mes',
     buscaDespesa: '',
     apenasSaldosMes: true,
     page: 0,
-    size: 20,
+    size: 50,
     totalPages: 1,
     despesas: [],
-    saldos: []
+    saldos: [],
+    resumo: null
 };
 
-// Formatadores
 const formatCurrency = (valor) => {
     const num = Number(valor || 0);
     return num.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 };
 
-// Converte YYYY-MM-DD (input date) para dd/MM/yyyy (backend @JsonFormat)
 const toBackendDate = (isoDate) => {
     if (!isoDate) return null;
     const [yyyy, mm, dd] = isoDate.split('-');
     return `${dd}/${mm}/${yyyy}`;
 };
 
-// Converte dd/MM/yyyy (backend) para YYYY-MM-DD (input date)
 const toInputDate = (brDate) => {
     if (!brDate) return '';
     if (brDate.includes('-')) return brDate;
     const [dd, mm, yyyy] = brDate.split('/');
     return `${yyyy}-${mm}-${dd}`;
+};
+
+const getInitials = (name) => {
+    if (!name) return 'U';
+    return name
+        .trim()
+        .split(/\s+/)
+        .slice(0, 2)
+        .map(p => p[0].toUpperCase())
+        .join('');
 };
 
 const showToast = (msg, type = 'success') => {
@@ -67,39 +80,88 @@ const showToast = (msg, type = 'success') => {
 const setApiOnline = (online) => {
     const badge = document.getElementById('apiStatusBadge');
     const text = document.getElementById('apiStatusText');
+    if (!badge || !text) return;
     badge.className = `api-badge ${online ? 'online' : 'offline'}`;
-    text.textContent = online ? 'API Online' : 'API Offline';
+    text.textContent = online ? 'Online' : 'Offline';
 };
 
+function salvarSessao(authData) {
+    state.token = authData.token;
+    state.user = {
+        id: authData.id,
+        nome: authData.nome,
+        email: authData.email
+    };
+    localStorage.setItem(STORAGE_TOKEN_KEY, state.token);
+    localStorage.setItem(STORAGE_USER_KEY, JSON.stringify(state.user));
+}
+
+function limparSessao() {
+    state.token = null;
+    state.user = null;
+    localStorage.removeItem(STORAGE_TOKEN_KEY);
+    localStorage.removeItem(STORAGE_USER_KEY);
+    mostrarTelaAuth();
+}
+
+function mostrarTelaAuth() {
+    document.getElementById('authScreen').classList.remove('hidden');
+    document.getElementById('appScreen').classList.add('hidden');
+}
+
+function mostrarTelaApp() {
+    document.getElementById('authScreen').classList.add('hidden');
+    document.getElementById('appScreen').classList.remove('hidden');
+
+    if (state.user) {
+        document.getElementById('userNameDisplay').textContent = state.user.nome;
+        document.getElementById('userEmailDisplay').textContent = state.user.email;
+        document.getElementById('userAvatar').textContent = getInitials(state.user.nome);
+    }
+}
+
 async function apiFetch(path, options = {}) {
+    const headers = {
+        'Content-Type': 'application/json',
+        ...(options.headers || {})
+    };
+
+    if (state.token) {
+        headers['Authorization'] = `Bearer ${state.token}`;
+    }
+
     try {
         const response = await fetch(`${API_BASE}${path}`, {
-            headers: {
-                'Content-Type': 'application/json',
-                ...(options.headers || {})
-            },
-            ...options
+            ...options,
+            headers
         });
 
         setApiOnline(true);
 
+        if (response.status === 401 && !path.startsWith('/auth/')) {
+            limparSessao();
+            throw new Error('Sessão expirada. Faça login novamente.');
+        }
+
         if (!response.ok) {
             let errMsg = `Erro HTTP ${response.status}`;
-            try {
-                const errData = await response.json();
-                if (Array.isArray(errData)) {
-                    errMsg = errData.map(e => `${e.campo}: ${e.mensagem}`).join(' | ');
-                } else if (errData.mensagem) {
-                    errMsg = errData.mensagem;
+            const rawText = await response.text();
+            if (rawText) {
+                try {
+                    const errData = JSON.parse(rawText);
+                    if (Array.isArray(errData)) {
+                        errMsg = errData.map(e => `${e.campo}: ${e.mensagem}`).join(' | ');
+                    } else if (errData.mensagem) {
+                        errMsg = errData.mensagem;
+                    }
+                } catch (_) {
+                    errMsg = rawText;
                 }
-            } catch (_) {
-                const text = await response.text();
-                if (text) errMsg = text;
             }
             throw new Error(errMsg);
         }
 
-        if (response.status === 204 || response.status === 201) {
+        if (response.status === 204) {
             return null;
         }
 
@@ -118,22 +180,43 @@ async function carregarResumoMes() {
     try {
         const resumo = await apiFetch(`/calculos/sobra/${state.mesAtual}`);
         if (!resumo) return;
+        state.resumo = resumo;
 
-        document.getElementById('kpiReceitaTotal').textContent = formatCurrency(resumo.receitaTotal);
-        document.getElementById('kpiDespesasPagas').textContent = formatCurrency(resumo.despesasPagas);
-        document.getElementById('kpiDespesasBrutas').textContent = formatCurrency(resumo.despesasBrutas);
+        const receita = Number(resumo.receitaTotal || 0);
+        const pagas = Number(resumo.despesasPagas || 0);
+        const brutas = Number(resumo.despesasBrutas || 0);
+        const faltaPagar = Math.max(0, brutas - pagas);
+
+        document.getElementById('kpiReceitaTotal').textContent = formatCurrency(receita);
+        document.getElementById('kpiDespesasPagas').textContent = formatCurrency(pagas);
+        document.getElementById('kpiFaltaPagar').textContent = `Falta pagar no mês: ${formatCurrency(faltaPagar)}`;
+        document.getElementById('kpiDespesasBrutas').textContent = formatCurrency(brutas);
         document.getElementById('kpiSaldoDisponivel').textContent = formatCurrency(resumo.saldoDisponivel);
 
         const badge = document.getElementById('badgeStatusFinanceiro');
         badge.textContent = resumo.status;
         badge.className = `status-pill status-${resumo.status}`;
 
-        const brutas = Number(resumo.despesasBrutas || 0);
-        const pagas = Number(resumo.despesasPagas || 0);
-        const pct = brutas > 0 ? Math.min(100, Math.round((pagas / brutas) * 100)) : 0;
+        const pctQuitado = brutas > 0 ? Math.min(100, Math.round((pagas / brutas) * 100)) : 0;
+        document.getElementById('progressPagas').style.width = `${pctQuitado}%`;
+        document.getElementById('kpiProgressoTexto').textContent = `${pctQuitado}% das despesas do mês quitadas`;
 
-        document.getElementById('progressPagas').style.width = `${pct}%`;
-        document.getElementById('kpiProgressoTexto').textContent = `${pct}% das despesas do mês quitadas`;
+        // Comprometimento da Renda
+        const pctComprometido = receita > 0 ? Math.min(100, Math.round((brutas / receita) * 100)) : (brutas > 0 ? 100 : 0);
+        document.getElementById('lblComprometimento').textContent = `${pctComprometido}%`;
+        const barComp = document.getElementById('barComprometimento');
+        barComp.style.width = `${pctComprometido}%`;
+
+        const txtRec = document.getElementById('txtSaudeRecomendacao');
+        if (receita === 0 && brutas === 0) {
+            txtRec.textContent = 'Cadastre suas receitas e despesas do mês para acompanhar a saúde do orçamento.';
+        } else if (pctComprometido <= 70) {
+            txtRec.textContent = 'Excelente! Mais de 30% da sua renda está livre para reserva ou investimentos.';
+        } else if (pctComprometido <= 95) {
+            txtRec.textContent = 'Atenção: Suas despesas previstas consomem boa parte da renda mensal.';
+        } else {
+            txtRec.textContent = 'Alerta: As despesas previstas atingiram ou superaram a receita cadastrada no mês.';
+        }
     } catch (err) {
         console.error('Erro ao carregar resumo:', err);
     }
@@ -146,11 +229,49 @@ async function carregarDespesas() {
         state.despesas = pageData?.content || [];
         state.totalPages = Math.max(1, pageData?.totalPages || 1);
         renderizarDespesas();
+        renderizarDistribuicaoCategorias();
     } catch (err) {
         document.getElementById('tbodyDespesas').innerHTML = `
             <tr><td colspan="7" class="empty-state">Não foi possível carregar as despesas (${err.message}).</td></tr>
         `;
     }
+}
+
+function renderizarDistribuicaoCategorias() {
+    const container = document.getElementById('categoryBreakdown');
+    const despesasMes = state.despesas.filter(d => (d.mes || '').toLowerCase() === state.mesAtual);
+
+    if (despesasMes.length === 0) {
+        container.innerHTML = `<div class="empty-state-sm">Nenhuma despesa em <strong>${MESES_LABEL[state.mesAtual]}</strong> para exibir por categoria.</div>`;
+        return;
+    }
+
+    const totaisPorCat = {};
+    let somaTotal = 0;
+
+    despesasMes.forEach(d => {
+        const cat = d.categoria || 'Outros';
+        const val = Number(d.valor || 0);
+        totaisPorCat[cat] = (totaisPorCat[cat] || 0) + val;
+        somaTotal += val;
+    });
+
+    const categoriasOrdenadas = Object.entries(totaisPorCat).sort((a, b) => b[1] - a[1]);
+
+    container.innerHTML = categoriasOrdenadas.map(([cat, valor]) => {
+        const pct = somaTotal > 0 ? Math.round((valor / somaTotal) * 100) : 0;
+        return `
+            <div class="cat-bar-item">
+                <div class="cat-bar-top">
+                    <span>${escapeHtml(cat)}</span>
+                    <span>${formatCurrency(valor)} (${pct}%)</span>
+                </div>
+                <div class="progress-wrap" style="margin-bottom:0">
+                    <div class="progress-bar" style="width: ${pct}%"></div>
+                </div>
+            </div>
+        `;
+    }).join('');
 }
 
 function renderizarDespesas() {
@@ -198,7 +319,7 @@ function renderizarDespesas() {
                 <div class="income-meta">${MESES_LABEL[(d.mes || '').toLowerCase()] || d.mes}</div>
             </td>
             <td>
-                <span class="badge badge-cat">${escapeHtml(d.categoria || 'Sem categoria')}</span>
+                <span class="badge badge-cat">${escapeHtml(d.categoria || 'Outros')}</span>
             </td>
             <td>${escapeHtml(d.dataVencimento || '-')}</td>
             <td>
@@ -348,6 +469,7 @@ function escapeHtml(str) {
 }
 
 async function atualizarTudo() {
+    if (!state.token) return;
     await Promise.all([
         carregarResumoMes(),
         carregarDespesas(),
@@ -355,8 +477,91 @@ async function atualizarTudo() {
     ]);
 }
 
-// Inicialização de Eventos
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    // Alternância Login / Cadastro
+    const tabLoginBtn = document.getElementById('tabLoginBtn');
+    const tabRegisterBtn = document.getElementById('tabRegisterBtn');
+    const formLogin = document.getElementById('formLogin');
+    const formRegister = document.getElementById('formRegister');
+
+    tabLoginBtn.addEventListener('click', () => {
+        tabLoginBtn.classList.add('active');
+        tabRegisterBtn.classList.remove('active');
+        formLogin.classList.remove('hidden');
+        formRegister.classList.add('hidden');
+    });
+
+    tabRegisterBtn.addEventListener('click', () => {
+        tabRegisterBtn.classList.add('active');
+        tabLoginBtn.classList.remove('active');
+        formRegister.classList.remove('hidden');
+        formLogin.classList.add('hidden');
+    });
+
+    // Submit Login
+    formLogin.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('btnSubmitLogin');
+        btn.disabled = true;
+        btn.textContent = 'Autenticando...';
+
+        try {
+            const data = await apiFetch('/auth/login', {
+                method: 'POST',
+                body: JSON.stringify({
+                    email: document.getElementById('loginEmail').value.trim(),
+                    senha: document.getElementById('loginSenha').value
+                })
+            });
+            salvarSessao(data);
+            formLogin.reset();
+            mostrarTelaApp();
+            showToast(`Bem-vindo(a), ${data.nome}!`);
+            await atualizarTudo();
+        } catch (err) {
+            showToast(err.message, 'error');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Acessar Plataforma';
+        }
+    });
+
+    // Submit Cadastro
+    formRegister.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('btnSubmitRegister');
+        btn.disabled = true;
+        btn.textContent = 'Criando sua conta...';
+
+        try {
+            const data = await apiFetch('/auth/registrar', {
+                method: 'POST',
+                body: JSON.stringify({
+                    nome: document.getElementById('regNome').value.trim(),
+                    email: document.getElementById('regEmail').value.trim(),
+                    senha: document.getElementById('regSenha').value
+                })
+            });
+            salvarSessao(data);
+            formRegister.reset();
+            mostrarTelaApp();
+            showToast(`Conta criada com sucesso! Bem-vindo(a), ${data.nome}!`);
+            await atualizarTudo();
+        } catch (err) {
+            showToast(err.message, 'error');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Criar Conta e Entrar';
+        }
+    });
+
+    // Logout
+    document.getElementById('btnLogout').addEventListener('click', () => {
+        limparSessao();
+        showToast('Você saiu da sua conta.');
+    });
+
+    // Seletor de Mês
     const selectMes = document.getElementById('selectMesGlobal');
     selectMes.value = state.mesAtual;
 
@@ -379,7 +584,7 @@ document.addEventListener('DOMContentLoaded', () => {
         atualizarTudo();
     });
 
-    // Abas de filtro de despesas
+    // Filtros de despesas
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -414,7 +619,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Modal Nova Despesa
+    // Modal Despesa
     const modalDespesa = document.getElementById('modalDespesa');
     document.getElementById('btnNovaDespesa').addEventListener('click', () => {
         document.getElementById('formDespesa').reset();
@@ -462,7 +667,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Modal Novo Saldo
+    // Modal Saldo
     const modalSaldo = document.getElementById('modalSaldo');
     document.getElementById('btnNovoSaldo').addEventListener('click', () => {
         document.getElementById('formSaldo').reset();
@@ -508,5 +713,21 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    atualizarTudo();
+    // Verificar sessão existente ao abrir a página
+    if (state.token) {
+        try {
+            const perfil = await apiFetch('/auth/me');
+            if (perfil) {
+                state.user = perfil;
+                localStorage.setItem(STORAGE_USER_KEY, JSON.stringify(perfil));
+                mostrarTelaApp();
+                await atualizarTudo();
+                return;
+            }
+        } catch (_) {
+            limparSessao();
+        }
+    } else {
+        mostrarTelaAuth();
+    }
 });

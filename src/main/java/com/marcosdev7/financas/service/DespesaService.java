@@ -5,6 +5,8 @@ import com.marcosdev7.financas.domain.Mes;
 import com.marcosdev7.financas.dto.DespesaRequestDTO;
 import com.marcosdev7.financas.dto.DespesaResponseDTO;
 import com.marcosdev7.financas.repository.DespesaRepository;
+import com.marcosdev7.usuarios.domain.Usuario;
+import com.marcosdev7.usuarios.service.AuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -19,13 +21,21 @@ public class DespesaService {
     private final DespesaRepository despesaRepository;
 
     public Page<DespesaResponseDTO> listarDespesas(Pageable paginacao){
-            return despesaRepository.findAll(paginacao)
+        Usuario usuario = AuthService.obterUsuarioAutenticado();
+        if (usuario != null) {
+            return despesaRepository.findByUsuarioId(usuario.getId(), paginacao)
                     .map(this::paraDTO);
+        }
+        return despesaRepository.findAll(paginacao)
+                .map(this::paraDTO);
     }
 
     public Despesa encontrarDespesa(Long id){
-        var despesaEncontrada = despesaRepository.findById(id).orElseThrow();
-        return despesaEncontrada;
+        Usuario usuario = AuthService.obterUsuarioAutenticado();
+        if (usuario != null) {
+            return despesaRepository.findByIdAndUsuarioId(id, usuario.getId()).orElseThrow();
+        }
+        return despesaRepository.findById(id).orElseThrow();
     }
 
     public DespesaResponseDTO cadastrarDespesas(DespesaRequestDTO despesaRequestDTO) {
@@ -35,6 +45,12 @@ public class DespesaService {
                 despesaRequestDTO.isFixa(),
                 despesaRequestDTO.dataVencimento(),
                 despesaRequestDTO.categoria());
+
+        Usuario usuario = AuthService.obterUsuarioAutenticado();
+        if (usuario != null) {
+            despesa.setUsuario(usuario);
+        }
+
         return paraDTO(despesaRepository.save(despesa));
     }
 
@@ -62,12 +78,15 @@ public class DespesaService {
     }
 
     public BigDecimal somarSaidaMes(Mes mes){
-        var resumoDespesasMes = despesaRepository.findByMes(mes);
-        var totalSaidas = resumoDespesasMes.stream()
+        Usuario usuario = AuthService.obterUsuarioAutenticado();
+        var resumoDespesasMes = (usuario != null)
+                ? despesaRepository.findByMesAndUsuarioId(mes, usuario.getId())
+                : despesaRepository.findByMes(mes);
+
+        return resumoDespesasMes.stream()
                 .filter(d -> Boolean.TRUE.equals(d.getIsPaga()))
-                .map(d -> d.getValor())
+                .map(Despesa::getValor)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
-        return totalSaidas;
     }
 
     private DespesaResponseDTO paraDTO(Despesa despesa) {
@@ -84,11 +103,16 @@ public class DespesaService {
     }
 
     public BigDecimal somarTotalBruto(Mes mes) {
-        var resultado = despesaRepository.somarTotalPorMes(mes);
+        Usuario usuario = AuthService.obterUsuarioAutenticado();
+        var resultado = (usuario != null)
+                ? despesaRepository.somarTotalPorMesEUsuario(mes, usuario.getId())
+                : despesaRepository.somarTotalPorMes(mes);
+
         if (resultado == null){
             return BigDecimal.ZERO;
-        } else
+        } else {
             return resultado;
+        }
     }
 
 }

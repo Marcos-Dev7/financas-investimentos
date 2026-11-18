@@ -34,6 +34,7 @@ public class AgendadorService {
                             proximaData,
                             d.getCategoria()
                     );
+                    novaDespesa.setUsuario(d.getUsuario());
 
                     despesaRepository.save(novaDespesa);
                 });

@@ -1,7 +1,9 @@
 package com.marcosdev7.financas.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.marcosdev7.financas.dto.DespesaRequestDTO;
+import com.marcosdev7.usuarios.domain.Usuario;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -11,7 +13,7 @@ import java.time.LocalDate;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-@ToString
+@ToString(exclude = "usuario")
 @JsonPropertyOrder({"id", "descricao", "mes", "valor"})
 @Entity
 @Table(name = "despesas")
@@ -30,7 +32,24 @@ public class Despesa {
     private BigDecimal valor;
     private String categoria;
 
-    public Despesa(String descricao, Mes mes, BigDecimal valor, Boolean isFixa,LocalDate dataVencimento, String categoria) {
+    @Setter
+    @JsonIgnore
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "usuario_id")
+    private Usuario usuario;
+
+    public Despesa(Long id, String descricao, Mes mes, LocalDate dataVencimento, Boolean isPaga, Boolean isFixa, BigDecimal valor, String categoria) {
+        this.id = id;
+        this.descricao = descricao;
+        this.mes = mes;
+        this.dataVencimento = dataVencimento;
+        this.isPaga = isPaga;
+        this.isFixa = isFixa;
+        this.valor = valor;
+        this.categoria = categoria;
+    }
+
+    public Despesa(String descricao, Mes mes, BigDecimal valor, Boolean isFixa, LocalDate dataVencimento, String categoria) {
         this.descricao = descricao;
         this.mes = mes;
         this.valor = valor;

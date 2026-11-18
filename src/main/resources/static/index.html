@@ -10,171 +10,333 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <!-- Top Header -->
-    <header class="topbar">
-        <div class="container topbar-inner">
-            <div class="brand">
-                <div class="brand-icon">🏦</div>
-                <div>
-                    <h1>FinancialFamily</h1>
-                    <p>Gestão Financeira Familiar &amp; Sobra Livre</p>
+
+    <!-- ==========================================
+         TELA DE AUTENTICAÇÃO (LOGIN & CADASTRO)
+         ========================================== -->
+    <div id="authScreen" class="auth-wrapper">
+        <div class="auth-Split">
+            <!-- Lado Esquerdo: Apresentação SaaS -->
+            <div class="auth-hero">
+                <div class="auth-hero-brand">
+                    <div class="brand-icon-lg">🏦</div>
+                    <span>FinancialFamily</span>
+                </div>
+                <div class="auth-hero-content">
+                    <h1>Clareza total sobre o orçamento da sua família.</h1>
+                    <p>Separe o que é conta prevista do que já foi efetivamente pago e descubra sua verdadeira <strong>Sobra Livre</strong> todos os meses.</p>
+
+                    <div class="hero-features">
+                        <div class="hero-feature-item">
+                            <span class="feature-check">✓</span>
+                            <div>
+                                <strong>Motor de Sobra Livre Real</strong>
+                                <span>Cálculo automático de entradas menos despesas quitadas.</span>
+                            </div>
+                        </div>
+                        <div class="hero-feature-item">
+                            <span class="feature-check">✓</span>
+                            <div>
+                                <strong>Projeção Automática Mensal</strong>
+                                <span>Suas despesas fixas são projetadas todo dia 1º automaticamente.</span>
+                            </div>
+                        </div>
+                        <div class="hero-feature-item">
+                            <span class="feature-check">✓</span>
+                            <div>
+                                <strong>Ambiente Isolado e Seguro</strong>
+                                <span>Autenticação criptografada com BCrypt e sessões via Token JWT.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="auth-hero-footer">
+                    <span>Java 25 &bull; Spring Boot 4 &bull; PostgreSQL &bull; Spring Security JWT</span>
                 </div>
             </div>
 
-            <div class="topbar-controls">
-                <div class="month-selector-wrap">
-                    <button id="btnPrevMes" class="btn-icon" title="Mês anterior">&#8592;</button>
-                    <select id="selectMesGlobal" class="select-mes" aria-label="Selecionar mês">
-                        <option value="janeiro">Janeiro</option>
-                        <option value="fevereiro">Fevereiro</option>
-                        <option value="marco">Março</option>
-                        <option value="abril">Abril</option>
-                        <option value="maio">Maio</option>
-                        <option value="junho">Junho</option>
-                        <option value="julho">Julho</option>
-                        <option value="agosto">Agosto</option>
-                        <option value="setembro">Setembro</option>
-                        <option value="outubro">Outubro</option>
-                        <option value="novembro">Novembro</option>
-                        <option value="dezembro">Dezembro</option>
-                    </select>
-                    <button id="btnNextMes" class="btn-icon" title="Próximo mês">&#8594;</button>
-                </div>
+            <!-- Lado Direito: Formulários de Login e Cadastro -->
+            <div class="auth-card-container">
+                <div class="auth-card">
+                    <div class="auth-tabs" role="tablist">
+                        <button type="button" class="auth-tab active" id="tabLoginBtn">Entrar na Conta</button>
+                        <button type="button" class="auth-tab" id="tabRegisterBtn">Criar Conta</button>
+                    </div>
 
-                <div id="apiStatusBadge" class="api-badge checking" title="Status de conexão com a API">
-                    <span class="dot"></span>
-                    <span id="apiStatusText">Conectando...</span>
-                </div>
+                    <!-- Formulário de Login -->
+                    <form id="formLogin" class="auth-form">
+                        <div class="auth-form-header">
+                            <h2>Bem-vindo de volta</h2>
+                            <p>Informe suas credenciais para acessar seu painel financeiro.</p>
+                        </div>
 
-                <a href="/swagger-ui/index.html" target="_blank" class="btn btn-outline btn-sm">
-                    Swagger UI ↗
-                </a>
+                        <div class="form-group">
+                            <label for="loginEmail">E-mail</label>
+                            <input type="email" id="loginEmail" required placeholder="seu@email.com" autocomplete="email">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="loginSenha">Senha</label>
+                            <input type="password" id="loginSenha" required placeholder="••••••••" autocomplete="current-password">
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-block btn-lg" id="btnSubmitLogin">
+                            Acessar Plataforma
+                        </button>
+                    </form>
+
+                    <!-- Formulário de Cadastro -->
+                    <form id="formRegister" class="auth-form hidden">
+                        <div class="auth-form-header">
+                            <h2>Crie sua conta gratuita</h2>
+                            <p>Comece a organizar suas receitas e despesas em segundos.</p>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="regNome">Seu Nome Completo</label>
+                            <input type="text" id="regNome" required minlength="3" maxlength="100" placeholder="Ex.: Marcos Paulo" autocomplete="name">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="regEmail">E-mail</label>
+                            <input type="email" id="regEmail" required placeholder="seu@email.com" autocomplete="email">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="regSenha">Senha (mín. 6 caracteres)</label>
+                            <input type="password" id="regSenha" required minlength="6" maxlength="100" placeholder="Crie uma senha segura" autocomplete="new-password">
+                        </div>
+
+                        <button type="submit" class="btn btn-success btn-block btn-lg" id="btnSubmitRegister">
+                            Criar Conta e Entrar
+                        </button>
+                    </form>
+
+                    <div class="auth-card-footer">
+                        <a href="/swagger-ui/index.html" target="_blank" class="link-muted">Documentação da API (Swagger) ↗</a>
+                    </div>
+                </div>
             </div>
         </div>
-    </header>
+    </div>
 
-    <main class="container main-content">
-        <!-- Summary Cards (Motor de Cálculo /calculos/sobra/{mes}) -->
-        <section class="summary-grid" aria-label="Resumo financeiro do mês">
-            <article class="kpi-card kpi-income">
-                <div class="kpi-header">
-                    <span class="kpi-label">Receita Total (Entradas)</span>
-                    <span class="kpi-icon">📈</span>
-                </div>
-                <div class="kpi-value" id="kpiReceitaTotal">R$ 0,00</div>
-                <div class="kpi-sub">Total de saldos cadastrados no mês</div>
-            </article>
-
-            <article class="kpi-card kpi-paid">
-                <div class="kpi-header">
-                    <span class="kpi-label">Despesas Pagas (Saídas)</span>
-                    <span class="kpi-icon">✅</span>
-                </div>
-                <div class="kpi-value" id="kpiDespesasPagas">R$ 0,00</div>
-                <div class="kpi-sub">Despesas com baixa confirmada</div>
-            </article>
-
-            <article class="kpi-card kpi-gross">
-                <div class="kpi-header">
-                    <span class="kpi-label">Despesas Brutas (Previsto)</span>
-                    <span class="kpi-icon">📋</span>
-                </div>
-                <div class="kpi-value" id="kpiDespesasBrutas">R$ 0,00</div>
-                <div class="progress-wrap">
-                    <div class="progress-bar" id="progressPagas" style="width: 0%"></div>
-                </div>
-                <div class="kpi-sub" id="kpiProgressoTexto">0% das despesas do mês quitadas</div>
-            </article>
-
-            <article class="kpi-card kpi-balance" id="cardSobraLivre">
-                <div class="kpi-header">
-                    <span class="kpi-label">Sobra Livre Disponível</span>
-                    <span class="status-pill" id="badgeStatusFinanceiro">LIMITE</span>
-                </div>
-                <div class="kpi-value" id="kpiSaldoDisponivel">R$ 0,00</div>
-                <div class="kpi-sub">Receita Total − Despesas Pagas</div>
-            </article>
-        </section>
-
-        <!-- Main Workspace Grid -->
-        <section class="workspace-grid">
-            <!-- Left/Main Column: Despesas -->
-            <div class="panel">
-                <div class="panel-header">
+    <!-- ==========================================
+         TELA PRINCIPAL DO SISTEMA (DASHBOARD)
+         ========================================== -->
+    <div id="appScreen" class="hidden">
+        <!-- Top Header -->
+        <header class="topbar">
+            <div class="container topbar-inner">
+                <div class="brand">
+                    <div class="brand-icon">🏦</div>
                     <div>
-                        <h2>Despesas</h2>
-                        <p class="panel-subtitle">Controle de contas fixas, variáveis e baixas de pagamento</p>
+                        <h1>FinancialFamily</h1>
+                        <p>Gestão Financeira Inteligente</p>
                     </div>
-                    <button class="btn btn-primary" id="btnNovaDespesa">
-                        + Nova Despesa
-                    </button>
                 </div>
 
-                <div class="filters-bar">
-                    <div class="filter-tabs" role="tablist">
-                        <button class="tab-btn active" data-filter="mes">Deste Mês</button>
-                        <button class="tab-btn" data-filter="pendentes">Pendentes (Mês)</button>
-                        <button class="tab-btn" data-filter="pagas">Pagas (Mês)</button>
-                        <button class="tab-btn" data-filter="todas">Todas (Geral)</button>
+                <div class="topbar-controls">
+                    <div class="month-selector-wrap">
+                        <button id="btnPrevMes" class="btn-icon" title="Mês anterior">&#8592;</button>
+                        <select id="selectMesGlobal" class="select-mes" aria-label="Selecionar mês">
+                            <option value="janeiro">Janeiro</option>
+                            <option value="fevereiro">Fevereiro</option>
+                            <option value="marco">Março</option>
+                            <option value="abril">Abril</option>
+                            <option value="maio">Maio</option>
+                            <option value="junho">Junho</option>
+                            <option value="julho">Julho</option>
+                            <option value="agosto">Agosto</option>
+                            <option value="setembro">Setembro</option>
+                            <option value="outubro">Outubro</option>
+                            <option value="novembro">Novembro</option>
+                            <option value="dezembro">Dezembro</option>
+                        </select>
+                        <button id="btnNextMes" class="btn-icon" title="Próximo mês">&#8594;</button>
                     </div>
-                    <input type="search" id="inputBuscaDespesa" class="input-search" placeholder="Buscar por descrição ou categoria...">
-                </div>
 
-                <div class="table-responsive">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Status</th>
-                                <th>Descrição</th>
-                                <th>Categoria</th>
-                                <th>Vencimento</th>
-                                <th>Tipo</th>
-                                <th class="text-right">Valor</th>
-                                <th class="text-right">Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tbodyDespesas">
-                            <tr>
-                                <td colspan="7" class="empty-state">Carregando despesas...</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+                    <div id="apiStatusBadge" class="api-badge online" title="Status de conexão com a API">
+                        <span class="dot"></span>
+                        <span id="apiStatusText">Online</span>
+                    </div>
 
-                <div class="pagination-bar" id="paginationBar">
-                    <span id="pageInfo">Página 1 de 1</span>
-                    <div class="pagination-actions">
-                        <button class="btn btn-outline btn-sm" id="btnPrevPage" disabled>Anterior</button>
-                        <button class="btn btn-outline btn-sm" id="btnNextPage" disabled>Próxima</button>
+                    <a href="/swagger-ui/index.html" target="_blank" class="btn btn-outline btn-sm">
+                        Swagger ↗
+                    </a>
+
+                    <div class="user-profile-pill">
+                        <div class="user-avatar" id="userAvatar">MP</div>
+                        <div class="user-details">
+                            <span class="user-name" id="userNameDisplay">Usuário</span>
+                            <span class="user-email" id="userEmailDisplay">email@dominio.com</span>
+                        </div>
+                        <button id="btnLogout" class="btn btn-danger-ghost btn-sm" title="Sair da conta">
+                            Sair
+                        </button>
                     </div>
                 </div>
             </div>
+        </header>
 
-            <!-- Right Column: Saldos (Entradas / Rendas) -->
-            <div class="panel">
-                <div class="panel-header">
-                    <div>
-                        <h2>Saldos &amp; Receitas</h2>
-                        <p class="panel-subtitle">Fontes de renda familiares</p>
+        <main class="container main-content">
+            <!-- Summary Cards (Motor de Cálculo /calculos/sobra/{mes}) -->
+            <section class="summary-grid" aria-label="Resumo financeiro do mês">
+                <article class="kpi-card kpi-income">
+                    <div class="kpi-header">
+                        <span class="kpi-label">Receita Total (Entradas)</span>
+                        <span class="kpi-icon-box income-box">↑</span>
                     </div>
-                    <button class="btn btn-success" id="btnNovoSaldo">
-                        + Nova Receita
-                    </button>
+                    <div class="kpi-value" id="kpiReceitaTotal">R$ 0,00</div>
+                    <div class="kpi-sub">Soma das rendas cadastradas no mês</div>
+                </article>
+
+                <article class="kpi-card kpi-paid">
+                    <div class="kpi-header">
+                        <span class="kpi-label">Despesas Pagas (Saídas)</span>
+                        <span class="kpi-icon-box paid-box">✓</span>
+                    </div>
+                    <div class="kpi-value" id="kpiDespesasPagas">R$ 0,00</div>
+                    <div class="kpi-sub" id="kpiFaltaPagar">Falta pagar: R$ 0,00</div>
+                </article>
+
+                <article class="kpi-card kpi-gross">
+                    <div class="kpi-header">
+                        <span class="kpi-label">Despesas Brutas (Previsto)</span>
+                        <span class="kpi-icon-box gross-box">≡</span>
+                    </div>
+                    <div class="kpi-value" id="kpiDespesasBrutas">R$ 0,00</div>
+                    <div class="progress-wrap">
+                        <div class="progress-bar" id="progressPagas" style="width: 0%"></div>
+                    </div>
+                    <div class="kpi-sub" id="kpiProgressoTexto">0% das despesas do mês quitadas</div>
+                </article>
+
+                <article class="kpi-card kpi-balance" id="cardSobraLivre">
+                    <div class="kpi-header">
+                        <span class="kpi-label">Sobra Livre Disponível</span>
+                        <span class="status-pill status-LIMITE" id="badgeStatusFinanceiro">LIMITE</span>
+                    </div>
+                    <div class="kpi-value" id="kpiSaldoDisponivel">R$ 0,00</div>
+                    <div class="kpi-sub">Receita Total − Despesas Pagas</div>
+                </article>
+            </section>
+
+            <!-- Barra Analítica: Distribuição por Categoria & Saúde do Mês -->
+            <section class="analytics-grid">
+                <div class="panel analytics-panel">
+                    <div class="panel-header-compact">
+                        <div>
+                            <h3>Distribuição de Gastos por Categoria</h3>
+                            <p class="panel-subtitle">Análise das despesas cadastradas no mês selecionado</p>
+                        </div>
+                    </div>
+                    <div id="categoryBreakdown" class="category-bars">
+                        <div class="empty-state-sm">Cadastre despesas neste mês para visualizar a distribuição por categoria.</div>
+                    </div>
                 </div>
 
-                <div class="filters-bar">
-                    <label class="checkbox-inline">
-                        <input type="checkbox" id="chkApenasSaldosMes" checked>
-                        <span>Mostrar apenas receitas do mês selecionado</span>
-                    </label>
+                <div class="panel analytics-panel">
+                    <div class="panel-header-compact">
+                        <div>
+                            <h3>Comprometimento da Renda no Mês</h3>
+                            <p class="panel-subtitle">Proporção entre Receita Total e Despesas Brutas previstas</p>
+                        </div>
+                    </div>
+                    <div class="health-meter-box">
+                        <div class="health-stat-row">
+                            <span>Renda Comprometida (Bruto)</span>
+                            <strong id="lblComprometimento">0%</strong>
+                        </div>
+                        <div class="progress-wrap progress-lg">
+                            <div class="progress-bar" id="barComprometimento" style="width: 0%"></div>
+                        </div>
+                        <p class="kpi-sub" id="txtSaudeRecomendacao">
+                            Mantenha suas despesas brutas abaixo de 80% da receita para preservar margem de investimento.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Main Workspace Grid -->
+            <section class="workspace-grid">
+                <!-- Left/Main Column: Despesas -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <div>
+                            <h2>Despesas</h2>
+                            <p class="panel-subtitle">Controle de contas fixas, variáveis e baixas de pagamento</p>
+                        </div>
+                        <button class="btn btn-primary" id="btnNovaDespesa">
+                            + Nova Despesa
+                        </button>
+                    </div>
+
+                    <div class="filters-bar">
+                        <div class="filter-tabs" role="tablist">
+                            <button class="tab-btn active" data-filter="mes">Deste Mês</button>
+                            <button class="tab-btn" data-filter="pendentes">Pendentes (Mês)</button>
+                            <button class="tab-btn" data-filter="pagas">Pagas (Mês)</button>
+                            <button class="tab-btn" data-filter="todas">Todas (Geral)</button>
+                        </div>
+                        <input type="search" id="inputBuscaDespesa" class="input-search" placeholder="Filtrar por descrição ou categoria...">
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Status</th>
+                                    <th>Descrição</th>
+                                    <th>Categoria</th>
+                                    <th>Vencimento</th>
+                                    <th>Tipo</th>
+                                    <th class="text-right">Valor</th>
+                                    <th class="text-right">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbodyDespesas">
+                                <tr>
+                                    <td colspan="7" class="empty-state">Carregando despesas...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="pagination-bar" id="paginationBar">
+                        <span id="pageInfo">Página 1 de 1</span>
+                        <div class="pagination-actions">
+                            <button class="btn btn-outline btn-sm" id="btnPrevPage" disabled>Anterior</button>
+                            <button class="btn btn-outline btn-sm" id="btnNextPage" disabled>Próxima</button>
+                        </div>
+                    </div>
                 </div>
 
-                <div id="listaSaldos" class="income-list">
-                    <div class="empty-state">Carregando receitas...</div>
+                <!-- Right Column: Saldos (Entradas / Rendas) -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <div>
+                            <h2>Saldos &amp; Receitas</h2>
+                            <p class="panel-subtitle">Fontes de renda familiares</p>
+                        </div>
+                        <button class="btn btn-success" id="btnNovoSaldo">
+                            + Nova Receita
+                        </button>
+                    </div>
+
+                    <div class="filters-bar">
+                        <label class="checkbox-inline">
+                            <input type="checkbox" id="chkApenasSaldosMes" checked>
+                            <span>Mostrar apenas receitas do mês selecionado</span>
+                        </label>
+                    </div>
+
+                    <div id="listaSaldos" class="income-list">
+                        <div class="empty-state">Carregando receitas...</div>
+                    </div>
                 </div>
-            </div>
-        </section>
-    </main>
+            </section>
+        </main>
+    </div>
 
     <!-- Modal: Despesa (Criar / Editar) -->
     <div class="modal-backdrop hidden" id="modalDespesa">

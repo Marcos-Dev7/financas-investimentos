@@ -5,6 +5,7 @@ import com.marcosdev7.financas.dto.DadosErroValidacaoDTO;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -18,6 +19,16 @@ public class TratamentoDeErros {
     @ExceptionHandler(NoSuchElementException.class)
     public ResponseEntity tratarErro404(NoSuchElementException ex){
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new DadosErroMensagemDTO("ID não encontrado"));
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity tratarRegraDeNegocio(IllegalArgumentException ex) {
+        return ResponseEntity.badRequest().body(new DadosErroMensagemDTO(ex.getMessage()));
+    }
+
+    @ExceptionHandler(BadCredentialsException.class)
+    public ResponseEntity tratarCredenciaisInvalidas(BadCredentialsException ex) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new DadosErroMensagemDTO(ex.getMessage()));
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
