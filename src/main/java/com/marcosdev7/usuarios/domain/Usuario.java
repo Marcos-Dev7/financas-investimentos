@@ -8,6 +8,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 
@@ -24,10 +25,50 @@ public class Usuario implements UserDetails {
     private String email;
     private String senha;
 
+    @Column(name = "email_verificado", nullable = false)
+    private Boolean emailVerificado = false;
+
+    @Column(name = "codigo_verificacao", length = 10)
+    private String codigoVerificacao;
+
+    @Column(name = "codigo_expiracao")
+    private LocalDateTime codigoExpiracao;
+
+    public Usuario(Long id, String nome, String email, String senha) {
+        this.id = id;
+        this.nome = nome;
+        this.email = email;
+        this.senha = senha;
+        this.emailVerificado = true;
+    }
+
     public Usuario(String nome, String email, String senha) {
         this.nome = nome;
         this.email = email;
         this.senha = senha;
+        this.emailVerificado = false;
+    }
+
+    public void definirCodigoVerificacao(String codigo, LocalDateTime expiracao) {
+        this.codigoVerificacao = codigo;
+        this.codigoExpiracao = expiracao;
+        this.emailVerificado = false;
+    }
+
+    public void confirmarEmail() {
+        this.emailVerificado = true;
+        this.codigoVerificacao = null;
+        this.codigoExpiracao = null;
+    }
+
+    public void atualizarNome(String novoNome) {
+        if (novoNome != null && !novoNome.isBlank()) {
+            this.nome = novoNome.trim();
+        }
+    }
+
+    public void atualizarSenha(String novaSenhaCriptografada) {
+        this.senha = novaSenhaCriptografada;
     }
 
     @Override

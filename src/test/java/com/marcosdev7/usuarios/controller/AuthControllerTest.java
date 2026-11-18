@@ -1,9 +1,7 @@
 package com.marcosdev7.usuarios.controller;
 
 import com.marcosdev7.financas.exceptions.TratamentoDeErros;
-import com.marcosdev7.usuarios.dto.AuthResponseDTO;
-import com.marcosdev7.usuarios.dto.CadastroUsuarioDTO;
-import com.marcosdev7.usuarios.dto.LoginRequestDTO;
+import com.marcosdev7.usuarios.dto.*;
 import com.marcosdev7.usuarios.service.AuthService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -41,16 +39,23 @@ class AuthControllerTest {
     }
 
     @Test
-    @DisplayName("POST /auth/registrar - Deve cadastrar usuário e retornar 201 com token")
+    @DisplayName("POST /auth/registrar - Deve cadastrar usuário e retornar 201 com status de verificação")
     void deveRegistrarUsuarioComStatus201() throws Exception {
-        AuthResponseDTO response = new AuthResponseDTO("jwt_123", 1L, "Marcos Paulo", "marcos@email.com");
+        CadastroResponseDTO response = new CadastroResponseDTO(
+                "Enviamos um código de 6 dígitos para o seu e-mail.",
+                "marcos@email.com",
+                true,
+                true,
+                null
+        );
         when(authService.registrar(any(CadastroUsuarioDTO.class))).thenReturn(response);
 
         String json = """
                 {
                     "nome": "Marcos Paulo",
                     "email": "marcos@email.com",
-                    "senha": "password123"
+                    "senha": "Password@123",
+                    "confirmacaoSenha": "Password@123"
                 }
                 """;
 
@@ -58,9 +63,28 @@ class AuthControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.token").value("jwt_123"))
-                .andExpect(jsonPath("$.nome").value("Marcos Paulo"))
-                .andExpect(jsonPath("$.email").value("marcos@email.com"));
+                .andExpect(jsonPath("$.email").value("marcos@email.com"))
+                .andExpect(jsonPath("$.requerVerificacao").value(true));
+    }
+
+    @Test
+    @DisplayName("POST /auth/verificar-email - Deve validar código e retornar 200 com token JWT")
+    void deveVerificarEmailComStatus200() throws Exception {
+        AuthResponseDTO response = new AuthResponseDTO("jwt_verificado", 1L, "Marcos Paulo", "marcos@email.com");
+        when(authService.verificarEmail(any(VerificarEmailDTO.class))).thenReturn(response);
+
+        String json = """
+                {
+                    "email": "marcos@email.com",
+                    "codigo": "123456"
+                }
+                """;
+
+        mockMvc.perform(post("/auth/verificar-email")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.token").value("jwt_verificado"));
     }
 
     @Test
@@ -72,7 +96,7 @@ class AuthControllerTest {
         String json = """
                 {
                     "email": "marcos@email.com",
-                    "senha": "password123"
+                    "senha": "Password@123"
                 }
                 """;
 

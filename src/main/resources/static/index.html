@@ -12,7 +12,7 @@
 <body>
 
     <!-- ==========================================
-         TELA DE AUTENTICAÇÃO (LOGIN & CADASTRO)
+         TELA DE AUTENTICAÇÃO (LOGIN, CADASTRO E VERIFICAÇÃO)
          ========================================== -->
     <div id="authScreen" class="auth-wrapper">
         <div class="auth-Split">
@@ -44,8 +44,8 @@
                         <div class="hero-feature-item">
                             <span class="feature-check">✓</span>
                             <div>
-                                <strong>Ambiente Isolado e Seguro</strong>
-                                <span>Autenticação criptografada com BCrypt e sessões via Token JWT.</span>
+                                <strong>Segurança Bancária (BCrypt + JWT + 2FA E-mail)</strong>
+                                <span>Senhas fortes com hash BCrypt, confirmação de código por e-mail e isolamento total de dados.</span>
                             </div>
                         </div>
                     </div>
@@ -55,15 +55,15 @@
                 </div>
             </div>
 
-            <!-- Lado Direito: Formulários de Login e Cadastro -->
+            <!-- Lado Direito: Card de Autenticação -->
             <div class="auth-card-container">
                 <div class="auth-card">
-                    <div class="auth-tabs" role="tablist">
+                    <div class="auth-tabs" id="authTabsWrap" role="tablist">
                         <button type="button" class="auth-tab active" id="tabLoginBtn">Entrar na Conta</button>
                         <button type="button" class="auth-tab" id="tabRegisterBtn">Criar Conta</button>
                     </div>
 
-                    <!-- Formulário de Login -->
+                    <!-- 1. Formulário de Login -->
                     <form id="formLogin" class="auth-form">
                         <div class="auth-form-header">
                             <h2>Bem-vindo de volta</h2>
@@ -85,31 +85,71 @@
                         </button>
                     </form>
 
-                    <!-- Formulário de Cadastro -->
+                    <!-- 2. Formulário de Cadastro com Regras de Senha e Confirmação -->
                     <form id="formRegister" class="auth-form hidden">
                         <div class="auth-form-header">
                             <h2>Crie sua conta gratuita</h2>
-                            <p>Comece a organizar suas receitas e despesas em segundos.</p>
+                            <p>Preencha seus dados e valide seu e-mail para começar.</p>
                         </div>
 
                         <div class="form-group">
-                            <label for="regNome">Seu Nome Completo</label>
+                            <label for="regNome">Nome Completo *</label>
                             <input type="text" id="regNome" required minlength="3" maxlength="100" placeholder="Ex.: Marcos Paulo" autocomplete="name">
                         </div>
 
                         <div class="form-group">
-                            <label for="regEmail">E-mail</label>
+                            <label for="regEmail">E-mail *</label>
                             <input type="email" id="regEmail" required placeholder="seu@email.com" autocomplete="email">
                         </div>
 
                         <div class="form-group">
-                            <label for="regSenha">Senha (mín. 6 caracteres)</label>
-                            <input type="password" id="regSenha" required minlength="6" maxlength="100" placeholder="Crie uma senha segura" autocomplete="new-password">
+                            <label for="regSenha">Senha *</label>
+                            <input type="password" id="regSenha" required minlength="8" maxlength="100" placeholder="Crie uma senha forte" autocomplete="new-password">
+                            <div class="pwd-rules" id="regPwdRules">
+                                <span class="pwd-rule" data-rule="len">• Mín. 8 caracteres</span>
+                                <span class="pwd-rule" data-rule="upper">• 1 letra maiúscula</span>
+                                <span class="pwd-rule" data-rule="lower">• 1 letra minúscula</span>
+                                <span class="pwd-rule" data-rule="num">• 1 número</span>
+                                <span class="pwd-rule" data-rule="spec">• 1 caractere especial (@#$!%)</span>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="regConfirmacaoSenha">Confirmar Senha *</label>
+                            <input type="password" id="regConfirmacaoSenha" required minlength="8" maxlength="100" placeholder="Repita a senha exatamente igual" autocomplete="new-password">
+                            <small id="regMatchHint" class="match-hint"></small>
                         </div>
 
                         <button type="submit" class="btn btn-success btn-block btn-lg" id="btnSubmitRegister">
-                            Criar Conta e Entrar
+                            Cadastrar e Enviar Código
                         </button>
+                    </form>
+
+                    <!-- 3. Formulário de Verificação de Código por E-mail -->
+                    <form id="formVerifyEmail" class="auth-form hidden">
+                        <div class="auth-form-header">
+                            <h2>Verifique seu E-mail ✉️</h2>
+                            <p>Digite o código de 6 dígitos enviado para <strong id="verifyEmailTarget">seu@email.com</strong></p>
+                        </div>
+
+                        <div id="demoCodeBanner" class="demo-code-banner hidden">
+                            <span>Modo Demonstração (SMTP não configurado):</span>
+                            <strong id="demoCodeValue">000000</strong>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="inputCodigoVerificacao">Código de 6 dígitos</label>
+                            <input type="text" id="inputCodigoVerificacao" class="input-code-6" required minlength="6" maxlength="6" pattern="[0-9]{6}" placeholder="000000" inputmode="numeric" autocomplete="one-time-code">
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-block btn-lg" id="btnSubmitVerify">
+                            Confirmar Código e Entrar
+                        </button>
+
+                        <div class="verify-actions">
+                            <button type="button" class="btn btn-outline btn-sm" id="btnResendCode">Reenviar código</button>
+                            <button type="button" class="btn btn-outline btn-sm" id="btnBackToLogin">Voltar ao Login</button>
+                        </div>
                     </form>
 
                     <div class="auth-card-footer">
@@ -165,12 +205,17 @@
                     </a>
 
                     <div class="user-profile-pill">
-                        <div class="user-avatar" id="userAvatar">MP</div>
-                        <div class="user-details">
-                            <span class="user-name" id="userNameDisplay">Usuário</span>
-                            <span class="user-email" id="userEmailDisplay">email@dominio.com</span>
-                        </div>
-                        <button id="btnLogout" class="btn btn-danger-ghost btn-sm" title="Sair da conta">
+                        <button type="button" class="user-profile-trigger" id="btnAbrirPerfil" title="Abrir Meu Perfil">
+                            <div class="user-avatar" id="userAvatar">MP</div>
+                            <div class="user-details">
+                                <span class="user-name" id="userNameDisplay">Usuário</span>
+                                <span class="user-email" id="userEmailDisplay">email@dominio.com</span>
+                            </div>
+                        </button>
+                        <button type="button" id="btnPerfilBtn" class="btn btn-outline btn-sm" title="Configurações de Perfil">
+                            Perfil
+                        </button>
+                        <button type="button" id="btnLogout" class="btn btn-danger-ghost btn-sm" title="Sair da conta">
                             Sair
                         </button>
                     </div>
@@ -336,6 +381,89 @@
                 </div>
             </section>
         </main>
+    </div>
+
+    <!-- ==========================================
+         MODAL: MEU PERFIL & SEGURANÇA
+         ========================================== -->
+    <div class="modal-backdrop hidden" id="modalPerfil">
+        <div class="modal modal-lg" role="dialog" aria-modal="true" aria-labelledby="modalPerfilTitulo">
+            <div class="modal-header">
+                <h3 id="modalPerfilTitulo">Meu Perfil &amp; Segurança</h3>
+                <button class="btn-close" id="btnFecharModalPerfil" aria-label="Fechar">&times;</button>
+            </div>
+
+            <div class="profile-summary-card">
+                <div class="user-avatar user-avatar-lg" id="perfilAvatarLg">MP</div>
+                <div class="profile-summary-info">
+                    <h4 id="perfilNomeHeader">Nome do Usuário</h4>
+                    <p id="perfilEmailHeader">email@dominio.com</p>
+                    <span class="badge badge-paga" id="perfilBadgeVerificado">✓ E-mail Verificado</span>
+                </div>
+            </div>
+
+            <div class="auth-tabs" style="margin-bottom: 1.2rem;">
+                <button type="button" class="auth-tab active" id="tabPerfilDadosBtn">Dados Pessoais</button>
+                <button type="button" class="auth-tab" id="tabPerfilSenhaBtn">Alterar Senha</button>
+                <button type="button" class="auth-tab" id="tabPerfilContaBtn">Privacidade</button>
+            </div>
+
+            <!-- Aba 1: Atualizar Nome -->
+            <form id="formAtualizarPerfil">
+                <div class="form-group">
+                    <label for="perfilInputEmail">E-mail de Acesso (não editável)</label>
+                    <input type="email" id="perfilInputEmail" disabled>
+                </div>
+                <div class="form-group">
+                    <label for="perfilInputNome">Nome de Exibição *</label>
+                    <input type="text" id="perfilInputNome" required minlength="3" maxlength="100">
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+                </div>
+            </form>
+
+            <!-- Aba 2: Alterar Senha -->
+            <form id="formAlterarSenha" class="hidden">
+                <div class="form-group">
+                    <label for="senhaAtualInput">Senha Atual *</label>
+                    <input type="password" id="senhaAtualInput" required placeholder="Digite sua senha atual">
+                </div>
+
+                <div class="form-group">
+                    <label for="novaSenhaInput">Nova Senha *</label>
+                    <input type="password" id="novaSenhaInput" required minlength="8" maxlength="100" placeholder="Nova senha seguindo as regras">
+                    <div class="pwd-rules" id="perfilPwdRules">
+                        <span class="pwd-rule" data-rule="len">• Mín. 8 caracteres</span>
+                        <span class="pwd-rule" data-rule="upper">• 1 letra maiúscula</span>
+                        <span class="pwd-rule" data-rule="lower">• 1 letra minúscula</span>
+                        <span class="pwd-rule" data-rule="num">• 1 número</span>
+                        <span class="pwd-rule" data-rule="spec">• 1 caractere especial (@#$!%)</span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="confirmacaoNovaSenhaInput">Confirmar Nova Senha *</label>
+                    <input type="password" id="confirmacaoNovaSenhaInput" required minlength="8" maxlength="100" placeholder="Repita a nova senha">
+                    <small id="perfilMatchHint" class="match-hint"></small>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-success">Atualizar Senha</button>
+                </div>
+            </form>
+
+            <!-- Aba 3: Zona de Perigo / Excluir Conta -->
+            <div id="painelExcluirConta" class="hidden">
+                <div class="danger-zone-box">
+                    <h4>Excluir Minha Conta</h4>
+                    <p>Ao excluir sua conta, todos os seus saldos e despesas cadastrados serão removidos permanentemente. Esta ação não pode ser desfeita.</p>
+                    <button type="button" class="btn btn-danger-ghost" id="btnExcluirMinhaConta">
+                        Excluir Minha Conta Permanentemente
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Modal: Despesa (Criar / Editar) -->

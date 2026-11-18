@@ -1,12 +1,11 @@
 package com.marcosdev7.usuarios.service;
 
 import com.marcosdev7.usuarios.domain.Usuario;
-import com.marcosdev7.usuarios.dto.AuthResponseDTO;
-import com.marcosdev7.usuarios.dto.CadastroUsuarioDTO;
-import com.marcosdev7.usuarios.dto.LoginRequestDTO;
-import com.marcosdev7.usuarios.dto.UsuarioResponseDTO;
+import com.marcosdev7.usuarios.dto.*;
 import com.marcosdev7.usuarios.repository.UsuarioRepository;
 import com.marcosdev7.usuarios.security.TokenService;
+import com.marcosdev7.usuarios.validation.ValidadorSenha;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
@@ -14,27 +13,84 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.security.SecureRandom;
+import java.time.LocalDateTime;
+
 @Service
 @RequiredArgsConstructor
 public class AuthService {
 
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+    private static final int MINUTOS_EXPIRACAO_CODIGO = 15;
+
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
     private final TokenService tokenService;
+    private final EmailService emailService;
 
-    public AuthResponseDTO registrar(CadastroUsuarioDTO dto) {
+    @Transactional
+    public CadastroResponseDTO registrar(CadastroUsuarioDTO dto) {
         String emailNormalizado = dto.email().trim().toLowerCase();
 
-        if (usuarioRepository.existsByEmail(emailNormalizado)) {
-            throw new IllegalArgumentException("Este e-mail já está cadastrado");
+        ValidadorSenha.validarForcaEConfirmacao(dto.senha(), dto.confirmacaoSenha());
+
+        Usuario usuarioExistente = usuarioRepository.findByEmail(emailNormalizado).orElse(null);
+        if (usuarioExistente != null) {
+            if (Boolean.TRUE.equals(usuarioExistente.getEmailVerificado())) {
+                throw new IllegalArgumentException("Este e-mail já está cadastrado");
+            }
+            // Se já existia mas ainda não tinha confirmado o e-mail, atualiza dados e reenvia código
+            usuarioExistente.atualizarNome(dto.nome().trim());
+            usuarioExistente.atualizarSenha(passwordEncoder.encode(dto.senha()));
+            return gerarEEnviarCodigo(usuarioExistente);
         }
 
         String senhaCriptografada = passwordEncoder.encode(dto.senha());
         Usuario novoUsuario = new Usuario(dto.nome().trim(), emailNormalizado, senhaCriptografada);
-        Usuario salvo = usuarioRepository.save(novoUsuario);
 
-        String token = tokenService.gerarToken(salvo);
-        return new AuthResponseDTO(token, salvo.getId(), salvo.getNome(), salvo.getEmail());
+        return gerarEEnviarCodigo(novoUsuario);
+    }
+
+    @Transactional
+    public AuthResponseDTO verificarEmail(VerificarEmailDTO dto) {
+        String emailNormalizado = dto.email().trim().toLowerCase();
+        String codigoLimpo = dto.codigo().trim();
+
+        Usuario usuario = usuarioRepository.findByEmail(emailNormalizado)
+                .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado para o e-mail informado"));
+
+        if (Boolean.TRUE.equals(usuario.getEmailVerificado())) {
+            String token = tokenService.gerarToken(usuario);
+            return new AuthResponseDTO(token, usuario.getId(), usuario.getNome(), usuario.getEmail());
+        }
+
+        if (usuario.getCodigoVerificacao() == null || !usuario.getCodigoVerificacao().equals(codigoLimpo)) {
+            throw new IllegalArgumentException("Código de verificação inválido");
+        }
+
+        if (usuario.getCodigoExpiracao() == null || LocalDateTime.now().isAfter(usuario.getCodigoExpiracao())) {
+            throw new IllegalArgumentException("O código de verificação expirou. Solicite um novo código.");
+        }
+
+        usuario.confirmarEmail();
+        usuarioRepository.save(usuario);
+
+        String token = tokenService.gerarToken(usuario);
+        return new AuthResponseDTO(token, usuario.getId(), usuario.getNome(), usuario.getEmail());
+    }
+
+    @Transactional
+    public CadastroResponseDTO reenviarCodigo(ReenviarCodigoDTO dto) {
+        String emailNormalizado = dto.email().trim().toLowerCase();
+
+        Usuario usuario = usuarioRepository.findByEmail(emailNormalizado)
+                .orElseThrow(() -> new IllegalArgumentException("Nenhuma conta encontrada com este e-mail"));
+
+        if (Boolean.TRUE.equals(usuario.getEmailVerificado())) {
+            throw new IllegalArgumentException("Este e-mail já foi verificado. Você já pode fazer login.");
+        }
+
+        return gerarEEnviarCodigo(usuario);
     }
 
     public AuthResponseDTO login(LoginRequestDTO dto) {
@@ -47,16 +103,95 @@ public class AuthService {
             throw new BadCredentialsException("E-mail ou senha inválidos");
         }
 
+        if (Boolean.FALSE.equals(usuario.getEmailVerificado())) {
+            throw new IllegalArgumentException("EMAIL_NAO_VERIFICADO:" + usuario.getEmail());
+        }
+
         String token = tokenService.gerarToken(usuario);
         return new AuthResponseDTO(token, usuario.getId(), usuario.getNome(), usuario.getEmail());
     }
 
     public UsuarioResponseDTO obterPerfilAtual() {
+        Usuario usuario = exigirUsuarioAutenticado();
+        return new UsuarioResponseDTO(
+                usuario.getId(),
+                usuario.getNome(),
+                usuario.getEmail(),
+                usuario.getEmailVerificado()
+        );
+    }
+
+    @Transactional
+    public UsuarioResponseDTO atualizarPerfil(AtualizarPerfilDTO dto) {
+        Usuario autenticado = exigirUsuarioAutenticado();
+        Usuario usuario = usuarioRepository.findById(autenticado.getId())
+                .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado"));
+
+        usuario.atualizarNome(dto.nome());
+        Usuario salvo = usuarioRepository.save(usuario);
+
+        return new UsuarioResponseDTO(
+                salvo.getId(),
+                salvo.getNome(),
+                salvo.getEmail(),
+                salvo.getEmailVerificado()
+        );
+    }
+
+    @Transactional
+    public void alterarSenha(AlterarSenhaDTO dto) {
+        Usuario autenticado = exigirUsuarioAutenticado();
+        Usuario usuario = usuarioRepository.findById(autenticado.getId())
+                .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado"));
+
+        if (!passwordEncoder.matches(dto.senhaAtual(), usuario.getSenha())) {
+            throw new BadCredentialsException("A senha atual informada está incorreta");
+        }
+
+        ValidadorSenha.validarForcaEConfirmacao(dto.novaSenha(), dto.confirmacaoNovaSenha());
+
+        usuario.atualizarSenha(passwordEncoder.encode(dto.novaSenha()));
+        usuarioRepository.save(usuario);
+    }
+
+    @Transactional
+    public void excluirMinhaConta() {
+        Usuario autenticado = exigirUsuarioAutenticado();
+        usuarioRepository.deleteById(autenticado.getId());
+    }
+
+    private CadastroResponseDTO gerarEEnviarCodigo(Usuario usuario) {
+        String codigo = String.format("%06d", SECURE_RANDOM.nextInt(1_000_000));
+        LocalDateTime expiracao = LocalDateTime.now().plusMinutes(MINUTOS_EXPIRACAO_CODIGO);
+
+        usuario.definirCodigoVerificacao(codigo, expiracao);
+        usuarioRepository.save(usuario);
+
+        boolean enviadoViaSmtp = emailService.enviarCodigoVerificacao(
+                usuario.getEmail(),
+                usuario.getNome(),
+                codigo
+        );
+
+        String mensagem = enviadoViaSmtp
+                ? "Enviamos um código de 6 dígitos para o seu e-mail."
+                : "Conta criada! Como o servidor SMTP ainda não foi configurado, utilize o código exibido na tela para validar.";
+
+        return new CadastroResponseDTO(
+                mensagem,
+                usuario.getEmail(),
+                true,
+                enviadoViaSmtp,
+                enviadoViaSmtp ? null : codigo
+        );
+    }
+
+    private Usuario exigirUsuarioAutenticado() {
         Usuario usuario = obterUsuarioAutenticado();
         if (usuario == null) {
             throw new BadCredentialsException("Usuário não autenticado");
         }
-        return new UsuarioResponseDTO(usuario.getId(), usuario.getNome(), usuario.getEmail());
+        return usuario;
     }
 
     public static Usuario obterUsuarioAutenticado() {

@@ -28,6 +28,7 @@ const MESES_LABEL = {
 const state = {
     token: localStorage.getItem(STORAGE_TOKEN_KEY) || null,
     user: JSON.parse(localStorage.getItem(STORAGE_USER_KEY) || 'null'),
+    pendingVerifyEmail: '',
     mesAtual: MESES[new Date().getMonth()],
     filtroDespesa: 'mes',
     buscaDespesa: '',
@@ -74,7 +75,7 @@ const showToast = (msg, type = 'success') => {
     toast.className = `toast ${type}`;
     toast.textContent = msg;
     container.appendChild(toast);
-    setTimeout(() => toast.remove(), 3800);
+    setTimeout(() => toast.remove(), 4200);
 };
 
 const setApiOnline = (online) => {
@@ -85,15 +86,75 @@ const setApiOnline = (online) => {
     text.textContent = online ? 'Online' : 'Offline';
 };
 
+// Validação de regras de senha forte
+function avaliarRegrasSenha(senha) {
+    const s = senha || '';
+    return {
+        len: s.length >= 8 && s.length <= 100,
+        upper: /[A-Z]/.test(s),
+        lower: /[a-z]/.test(s),
+        num: /[0-9]/.test(s),
+        spec: /[!@#$%^&*(),.?":{}|<>_\-+=/\\\[\];'~`]/.test(s)
+    };
+}
+
+function atualizarChecklistSenha(senha, containerId) {
+    const rules = avaliarRegrasSenha(senha);
+    const container = document.getElementById(containerId);
+    if (!container) return false;
+
+    Object.entries(rules).forEach(([key, ok]) => {
+        const el = container.querySelector(`[data-rule="${key}"]`);
+        if (el) {
+            el.classList.toggle('valid', ok);
+        }
+    });
+
+    return Object.values(rules).every(Boolean);
+}
+
+function atualizarDicaConfirmacao(senha, confirmacao, hintId) {
+    const hint = document.getElementById(hintId);
+    if (!hint) return;
+    if (!confirmacao) {
+        hint.textContent = '';
+        hint.className = 'match-hint';
+        return;
+    }
+    if (senha === confirmacao) {
+        hint.textContent = '✓ As senhas coincidem';
+        hint.className = 'match-hint ok';
+    } else {
+        hint.textContent = '✗ As senhas não coincidem';
+        hint.className = 'match-hint err';
+    }
+}
+
 function salvarSessao(authData) {
     state.token = authData.token;
     state.user = {
         id: authData.id,
         nome: authData.nome,
-        email: authData.email
+        email: authData.email,
+        emailVerificado: true
     };
     localStorage.setItem(STORAGE_TOKEN_KEY, state.token);
     localStorage.setItem(STORAGE_USER_KEY, JSON.stringify(state.user));
+}
+
+function atualizarDadosUsuarioNaTela() {
+    if (!state.user) return;
+    const iniciais = getInitials(state.user.nome);
+    document.getElementById('userNameDisplay').textContent = state.user.nome;
+    document.getElementById('userEmailDisplay').textContent = state.user.email;
+    document.getElementById('userAvatar').textContent = iniciais;
+
+    // Modal de perfil
+    document.getElementById('perfilAvatarLg').textContent = iniciais;
+    document.getElementById('perfilNomeHeader').textContent = state.user.nome;
+    document.getElementById('perfilEmailHeader').textContent = state.user.email;
+    document.getElementById('perfilInputEmail').value = state.user.email;
+    document.getElementById('perfilInputNome').value = state.user.nome;
 }
 
 function limparSessao() {
@@ -101,23 +162,55 @@ function limparSessao() {
     state.user = null;
     localStorage.removeItem(STORAGE_TOKEN_KEY);
     localStorage.removeItem(STORAGE_USER_KEY);
-    mostrarTelaAuth();
+    mostrarTelaAuth('login');
 }
 
-function mostrarTelaAuth() {
+function mostrarTelaAuth(modo = 'login', emailVerificacao = '', codigoDemo = null) {
     document.getElementById('authScreen').classList.remove('hidden');
     document.getElementById('appScreen').classList.add('hidden');
+
+    const tabsWrap = document.getElementById('authTabsWrap');
+    const tabLoginBtn = document.getElementById('tabLoginBtn');
+    const tabRegisterBtn = document.getElementById('tabRegisterBtn');
+    const formLogin = document.getElementById('formLogin');
+    const formRegister = document.getElementById('formRegister');
+    const formVerifyEmail = document.getElementById('formVerifyEmail');
+
+    formLogin.classList.add('hidden');
+    formRegister.classList.add('hidden');
+    formVerifyEmail.classList.add('hidden');
+
+    if (modo === 'verify') {
+        tabsWrap.classList.add('hidden');
+        formVerifyEmail.classList.remove('hidden');
+        state.pendingVerifyEmail = emailVerificacao;
+        document.getElementById('verifyEmailTarget').textContent = emailVerificacao;
+        document.getElementById('inputCodigoVerificacao').value = codigoDemo || '';
+
+        const banner = document.getElementById('demoCodeBanner');
+        if (codigoDemo) {
+            document.getElementById('demoCodeValue').textContent = codigoDemo;
+            banner.classList.remove('hidden');
+        } else {
+            banner.classList.add('hidden');
+        }
+    } else if (modo === 'register') {
+        tabsWrap.classList.remove('hidden');
+        tabRegisterBtn.classList.add('active');
+        tabLoginBtn.classList.remove('active');
+        formRegister.classList.remove('hidden');
+    } else {
+        tabsWrap.classList.remove('hidden');
+        tabLoginBtn.classList.add('active');
+        tabRegisterBtn.classList.remove('active');
+        formLogin.classList.remove('hidden');
+    }
 }
 
 function mostrarTelaApp() {
     document.getElementById('authScreen').classList.add('hidden');
     document.getElementById('appScreen').classList.remove('hidden');
-
-    if (state.user) {
-        document.getElementById('userNameDisplay').textContent = state.user.nome;
-        document.getElementById('userEmailDisplay').textContent = state.user.email;
-        document.getElementById('userAvatar').textContent = getInitials(state.user.nome);
-    }
+    atualizarDadosUsuarioNaTela();
 }
 
 async function apiFetch(path, options = {}) {
@@ -201,11 +294,9 @@ async function carregarResumoMes() {
         document.getElementById('progressPagas').style.width = `${pctQuitado}%`;
         document.getElementById('kpiProgressoTexto').textContent = `${pctQuitado}% das despesas do mês quitadas`;
 
-        // Comprometimento da Renda
         const pctComprometido = receita > 0 ? Math.min(100, Math.round((brutas / receita) * 100)) : (brutas > 0 ? 100 : 0);
         document.getElementById('lblComprometimento').textContent = `${pctComprometido}%`;
-        const barComp = document.getElementById('barComprometimento');
-        barComp.style.width = `${pctComprometido}%`;
+        document.getElementById('barComprometimento').style.width = `${pctComprometido}%`;
 
         const txtRec = document.getElementById('txtSaudeRecomendacao');
         if (receita === 0 && brutas === 0) {
@@ -434,7 +525,6 @@ window.abrirEditarDespesa = (id) => {
     document.getElementById('modalDespesa').classList.remove('hidden');
 };
 
-// Ações de Saldo
 window.abrirEditarSaldo = (id) => {
     const s = state.saldos.find(item => item.id === id);
     if (!s) return;
@@ -478,38 +568,48 @@ async function atualizarTudo() {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
-    // Alternância Login / Cadastro
-    const tabLoginBtn = document.getElementById('tabLoginBtn');
-    const tabRegisterBtn = document.getElementById('tabRegisterBtn');
-    const formLogin = document.getElementById('formLogin');
-    const formRegister = document.getElementById('formRegister');
+    // Abas Login / Cadastro
+    document.getElementById('tabLoginBtn').addEventListener('click', () => mostrarTelaAuth('login'));
+    document.getElementById('tabRegisterBtn').addEventListener('click', () => mostrarTelaAuth('register'));
+    document.getElementById('btnBackToLogin').addEventListener('click', () => mostrarTelaAuth('login'));
 
-    tabLoginBtn.addEventListener('click', () => {
-        tabLoginBtn.classList.add('active');
-        tabRegisterBtn.classList.remove('active');
-        formLogin.classList.remove('hidden');
-        formRegister.classList.add('hidden');
+    // Checklist em tempo real da senha no Cadastro
+    const regSenha = document.getElementById('regSenha');
+    const regConf = document.getElementById('regConfirmacaoSenha');
+    regSenha.addEventListener('input', () => {
+        atualizarChecklistSenha(regSenha.value, 'regPwdRules');
+        atualizarDicaConfirmacao(regSenha.value, regConf.value, 'regMatchHint');
+    });
+    regConf.addEventListener('input', () => {
+        atualizarDicaConfirmacao(regSenha.value, regConf.value, 'regMatchHint');
     });
 
-    tabRegisterBtn.addEventListener('click', () => {
-        tabRegisterBtn.classList.add('active');
-        tabLoginBtn.classList.remove('active');
-        formRegister.classList.remove('hidden');
-        formLogin.classList.add('hidden');
+    // Checklist em tempo real na alteração de senha (Perfil)
+    const novaSenhaInput = document.getElementById('novaSenhaInput');
+    const confNovaSenhaInput = document.getElementById('confirmacaoNovaSenhaInput');
+    novaSenhaInput.addEventListener('input', () => {
+        atualizarChecklistSenha(novaSenhaInput.value, 'perfilPwdRules');
+        atualizarDicaConfirmacao(novaSenhaInput.value, confNovaSenhaInput.value, 'perfilMatchHint');
+    });
+    confNovaSenhaInput.addEventListener('input', () => {
+        atualizarDicaConfirmacao(novaSenhaInput.value, confNovaSenhaInput.value, 'perfilMatchHint');
     });
 
     // Submit Login
+    const formLogin = document.getElementById('formLogin');
     formLogin.addEventListener('submit', async (e) => {
         e.preventDefault();
         const btn = document.getElementById('btnSubmitLogin');
         btn.disabled = true;
         btn.textContent = 'Autenticando...';
 
+        const emailDigitado = document.getElementById('loginEmail').value.trim();
+
         try {
             const data = await apiFetch('/auth/login', {
                 method: 'POST',
                 body: JSON.stringify({
-                    email: document.getElementById('loginEmail').value.trim(),
+                    email: emailDigitado,
                     senha: document.getElementById('loginSenha').value
                 })
             });
@@ -519,7 +619,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             showToast(`Bem-vindo(a), ${data.nome}!`);
             await atualizarTudo();
         } catch (err) {
-            showToast(err.message, 'error');
+            if (err.message && err.message.startsWith('EMAIL_NAO_VERIFICADO:')) {
+                const emailPendente = err.message.split(':')[1] || emailDigitado;
+                showToast('Confirme seu e-mail com o código de 6 dígitos para entrar.', 'error');
+                mostrarTelaAuth('verify', emailPendente);
+            } else {
+                showToast(err.message, 'error');
+            }
         } finally {
             btn.disabled = false;
             btn.textContent = 'Acessar Plataforma';
@@ -527,31 +633,192 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     // Submit Cadastro
+    const formRegister = document.getElementById('formRegister');
     formRegister.addEventListener('submit', async (e) => {
         e.preventDefault();
+        const senha = regSenha.value;
+        const confirmacao = regConf.value;
+
+        if (!atualizarChecklistSenha(senha, 'regPwdRules')) {
+            showToast('A senha precisa atender a todos os requisitos de segurança.', 'error');
+            return;
+        }
+        if (senha !== confirmacao) {
+            showToast('A confirmação de senha não coincide com a senha informada.', 'error');
+            return;
+        }
+
         const btn = document.getElementById('btnSubmitRegister');
         btn.disabled = true;
-        btn.textContent = 'Criando sua conta...';
+        btn.textContent = 'Enviando código...';
 
         try {
-            const data = await apiFetch('/auth/registrar', {
+            const resp = await apiFetch('/auth/registrar', {
                 method: 'POST',
                 body: JSON.stringify({
                     nome: document.getElementById('regNome').value.trim(),
                     email: document.getElementById('regEmail').value.trim(),
-                    senha: document.getElementById('regSenha').value
+                    senha,
+                    confirmacaoSenha: confirmacao
+                })
+            });
+            formRegister.reset();
+            atualizarChecklistSenha('', 'regPwdRules');
+            atualizarDicaConfirmacao('', '', 'regMatchHint');
+            showToast(resp.mensagem);
+            mostrarTelaAuth('verify', resp.email, resp.codigoDemonstracao);
+        } catch (err) {
+            showToast(err.message, 'error');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Cadastrar e Enviar Código';
+        }
+    });
+
+    // Submit Verificação de E-mail
+    const formVerifyEmail = document.getElementById('formVerifyEmail');
+    formVerifyEmail.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('btnSubmitVerify');
+        btn.disabled = true;
+        btn.textContent = 'Validando código...';
+
+        try {
+            const data = await apiFetch('/auth/verificar-email', {
+                method: 'POST',
+                body: JSON.stringify({
+                    email: state.pendingVerifyEmail,
+                    codigo: document.getElementById('inputCodigoVerificacao').value.trim()
                 })
             });
             salvarSessao(data);
-            formRegister.reset();
+            formVerifyEmail.reset();
             mostrarTelaApp();
-            showToast(`Conta criada com sucesso! Bem-vindo(a), ${data.nome}!`);
+            showToast(`E-mail confirmado! Bem-vindo(a), ${data.nome}!`);
             await atualizarTudo();
         } catch (err) {
             showToast(err.message, 'error');
         } finally {
             btn.disabled = false;
-            btn.textContent = 'Criar Conta e Entrar';
+            btn.textContent = 'Confirmar Código e Entrar';
+        }
+    });
+
+    // Reenviar Código
+    document.getElementById('btnResendCode').addEventListener('click', async () => {
+        if (!state.pendingVerifyEmail) return;
+        try {
+            const resp = await apiFetch('/auth/reenviar-codigo', {
+                method: 'POST',
+                body: JSON.stringify({ email: state.pendingVerifyEmail })
+            });
+            showToast(resp.mensagem);
+            mostrarTelaAuth('verify', resp.email, resp.codigoDemonstracao);
+        } catch (err) {
+            showToast(err.message, 'error');
+        }
+    });
+
+    // Modal de Meu Perfil
+    const modalPerfil = document.getElementById('modalPerfil');
+    const abrirModalPerfil = () => {
+        atualizarDadosUsuarioNaTela();
+        modalPerfil.classList.remove('hidden');
+    };
+    document.getElementById('btnAbrirPerfil').addEventListener('click', abrirModalPerfil);
+    document.getElementById('btnPerfilBtn').addEventListener('click', abrirModalPerfil);
+    document.getElementById('btnFecharModalPerfil').addEventListener('click', () => modalPerfil.classList.add('hidden'));
+
+    // Abas internas do Modal de Perfil
+    const tabPerfilDadosBtn = document.getElementById('tabPerfilDadosBtn');
+    const tabPerfilSenhaBtn = document.getElementById('tabPerfilSenhaBtn');
+    const tabPerfilContaBtn = document.getElementById('tabPerfilContaBtn');
+    const formAtualizarPerfil = document.getElementById('formAtualizarPerfil');
+    const formAlterarSenha = document.getElementById('formAlterarSenha');
+    const painelExcluirConta = document.getElementById('painelExcluirConta');
+
+    const alternarAbaPerfil = (aba) => {
+        [tabPerfilDadosBtn, tabPerfilSenhaBtn, tabPerfilContaBtn].forEach(b => b.classList.remove('active'));
+        [formAtualizarPerfil, formAlterarSenha, painelExcluirConta].forEach(p => p.classList.add('hidden'));
+
+        if (aba === 'dados') {
+            tabPerfilDadosBtn.classList.add('active');
+            formAtualizarPerfil.classList.remove('hidden');
+        } else if (aba === 'senha') {
+            tabPerfilSenhaBtn.classList.add('active');
+            formAlterarSenha.classList.remove('hidden');
+        } else {
+            tabPerfilContaBtn.classList.add('active');
+            painelExcluirConta.classList.remove('hidden');
+        }
+    };
+
+    tabPerfilDadosBtn.addEventListener('click', () => alternarAbaPerfil('dados'));
+    tabPerfilSenhaBtn.addEventListener('click', () => alternarAbaPerfil('senha'));
+    tabPerfilContaBtn.addEventListener('click', () => alternarAbaPerfil('conta'));
+
+    // Atualizar Nome no Perfil
+    formAtualizarPerfil.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        try {
+            const atualizado = await apiFetch('/auth/perfil', {
+                method: 'PUT',
+                body: JSON.stringify({
+                    nome: document.getElementById('perfilInputNome').value.trim()
+                })
+            });
+            state.user = atualizado;
+            localStorage.setItem(STORAGE_USER_KEY, JSON.stringify(atualizado));
+            atualizarDadosUsuarioNaTela();
+            showToast('Perfil atualizado com sucesso!');
+        } catch (err) {
+            showToast(err.message, 'error');
+        }
+    });
+
+    // Alterar Senha no Perfil
+    formAlterarSenha.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const novaSenha = novaSenhaInput.value;
+        const confirmacaoNovaSenha = confNovaSenhaInput.value;
+
+        if (!atualizarChecklistSenha(novaSenha, 'perfilPwdRules')) {
+            showToast('A nova senha precisa atender a todas as regras de segurança.', 'error');
+            return;
+        }
+        if (novaSenha !== confirmacaoNovaSenha) {
+            showToast('A confirmação da nova senha não coincide.', 'error');
+            return;
+        }
+
+        try {
+            await apiFetch('/auth/alterar-senha', {
+                method: 'PUT',
+                body: JSON.stringify({
+                    senhaAtual: document.getElementById('senhaAtualInput').value,
+                    novaSenha,
+                    confirmacaoNovaSenha
+                })
+            });
+            formAlterarSenha.reset();
+            atualizarChecklistSenha('', 'perfilPwdRules');
+            atualizarDicaConfirmacao('', '', 'perfilMatchHint');
+            showToast('Sua senha foi alterada com sucesso!');
+        } catch (err) {
+            showToast(err.message, 'error');
+        }
+    });
+
+    // Excluir Minha Conta
+    document.getElementById('btnExcluirMinhaConta').addEventListener('click', async () => {
+        if (!confirm('Tem certeza absoluta que deseja excluir sua conta e todos os seus dados financeiros?')) return;
+        try {
+            await apiFetch('/auth/conta', { method: 'DELETE' });
+            modalPerfil.classList.add('hidden');
+            limparSessao();
+            showToast('Sua conta foi excluída permanentemente.');
+        } catch (err) {
+            showToast(err.message, 'error');
         }
     });
 
@@ -713,7 +980,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    // Verificar sessão existente ao abrir a página
+    // Verificar sessão existente
     if (state.token) {
         try {
             const perfil = await apiFetch('/auth/me');
@@ -728,6 +995,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             limparSessao();
         }
     } else {
-        mostrarTelaAuth();
+        mostrarTelaAuth('login');
     }
 });
