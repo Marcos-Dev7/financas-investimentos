@@ -34,6 +34,9 @@ public class Usuario implements UserDetails {
     @Column(name = "codigo_expiracao")
     private LocalDateTime codigoExpiracao;
 
+    @Column(name = "foto_perfil", columnDefinition = "TEXT")
+    private String fotoPerfil;
+
     public Usuario(Long id, String nome, String email, String senha) {
         this.id = id;
         this.nome = nome;
@@ -71,6 +74,10 @@ public class Usuario implements UserDetails {
         if (novoEmail != null && !novoEmail.isBlank()) {
             this.email = novoEmail.trim().toLowerCase();
         }
+    }
+
+    public void atualizarFotoPerfil(String novaFoto) {
+        this.fotoPerfil = novaFoto;
     }
 
     public void atualizarSenha(String novaSenhaCriptografada) {

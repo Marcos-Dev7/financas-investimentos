@@ -4,5 +4,10 @@ public record AuthResponseDTO(
         String token,
         Long id,
         String nome,
-        String email
-) {}
+        String email,
+        String fotoPerfil
+) {
+    public AuthResponseDTO(String token, Long id, String nome, String email) {
+        this(token, id, nome, email, null);
+    }
+}

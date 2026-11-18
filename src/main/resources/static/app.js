@@ -130,21 +130,44 @@ function salvarSessao(authData) {
         id: authData.id,
         nome: authData.nome,
         email: authData.email,
-        emailVerificado: true
+        emailVerificado: true,
+        fotoPerfil: authData.fotoPerfil ?? state.user?.fotoPerfil ?? null
     };
     localStorage.setItem(STORAGE_TOKEN_KEY, state.token);
     localStorage.setItem(STORAGE_USER_KEY, JSON.stringify(state.user));
 }
 
+function renderizarAvatarElemento(initialsElId, imgElId, nome, fotoBase64) {
+    const initialsEl = document.getElementById(initialsElId);
+    const imgEl = document.getElementById(imgElId);
+    if (!initialsEl || !imgEl) return;
+
+    if (fotoBase64) {
+        imgEl.src = fotoBase64;
+        imgEl.classList.remove('hidden');
+        initialsEl.classList.add('hidden');
+    } else {
+        imgEl.src = '';
+        imgEl.classList.add('hidden');
+        initialsEl.textContent = getInitials(nome);
+        initialsEl.classList.remove('hidden');
+    }
+}
+
 function atualizarDadosUsuarioNaTela() {
     if (!state.user) return;
-    const iniciais = getInitials(state.user.nome);
     document.getElementById('userNameDisplay').textContent = state.user.nome;
     document.getElementById('userEmailDisplay').textContent = state.user.email;
-    document.getElementById('userAvatar').textContent = iniciais;
+
+    renderizarAvatarElemento('userAvatarInitials', 'userAvatarImg', state.user.nome, state.user.fotoPerfil);
+    renderizarAvatarElemento('perfilAvatarLg', 'perfilAvatarImgLg', state.user.nome, state.user.fotoPerfil);
+
+    const btnRemoverFoto = document.getElementById('btnRemoverFoto');
+    if (btnRemoverFoto) {
+        btnRemoverFoto.classList.toggle('hidden', !state.user.fotoPerfil);
+    }
 
     // Área Minha Conta
-    document.getElementById('perfilAvatarLg').textContent = iniciais;
     document.getElementById('perfilNomeHeader').textContent = state.user.nome;
     document.getElementById('perfilEmailHeader').textContent = state.user.email;
     document.getElementById('perfilIdTag').textContent = `ID da Conta: #${state.user.id || 1}`;
@@ -739,6 +762,76 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
             showToast(resp.mensagem);
             mostrarTelaAuth('verify', resp.email, resp.codigoDemonstracao);
+        } catch (err) {
+            showToast(err.message, 'error');
+        }
+    });
+
+    // Upload e Redimensionamento de Foto de Perfil via Canvas (256x256)
+    const inputFotoPerfil = document.getElementById('inputFotoPerfil');
+    document.getElementById('btnEscolherFoto').addEventListener('click', () => {
+        inputFotoPerfil.click();
+    });
+
+    inputFotoPerfil.addEventListener('change', (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            const img = new Image();
+            img.onload = async () => {
+                const canvas = document.createElement('canvas');
+                const size = 256;
+                canvas.width = size;
+                canvas.height = size;
+                const ctx = canvas.getContext('2d');
+
+                // Crop central quadrado
+                const minSide = Math.min(img.width, img.height);
+                const sx = (img.width - minSide) / 2;
+                const sy = (img.height - minSide) / 2;
+
+                ctx.drawImage(img, sx, sy, minSide, minSide, 0, 0, size, size);
+                const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+
+                try {
+                    const authAtualizado = await apiFetch('/auth/perfil', {
+                        method: 'PUT',
+                        body: JSON.stringify({
+                            nome: state.user.nome,
+                            email: state.user.email,
+                            fotoPerfil: dataUrl
+                        })
+                    });
+                    salvarSessao(authAtualizado);
+                    atualizarDadosUsuarioNaTela();
+                    showToast('Foto de perfil atualizada com sucesso!');
+                } catch (err) {
+                    showToast(err.message, 'error');
+                } finally {
+                    inputFotoPerfil.value = '';
+                }
+            };
+            img.src = ev.target.result;
+        };
+        reader.readAsDataURL(file);
+    });
+
+    document.getElementById('btnRemoverFoto').addEventListener('click', async () => {
+        try {
+            const authAtualizado = await apiFetch('/auth/perfil', {
+                method: 'PUT',
+                body: JSON.stringify({
+                    nome: state.user.nome,
+                    email: state.user.email,
+                    fotoPerfil: 'REMOVER'
+                })
+            });
+            state.user.fotoPerfil = null;
+            salvarSessao({ ...authAtualizado, fotoPerfil: null });
+            atualizarDadosUsuarioNaTela();
+            showToast('Foto de perfil removida.');
         } catch (err) {
             showToast(err.message, 'error');
         }

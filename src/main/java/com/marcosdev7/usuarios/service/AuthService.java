@@ -22,6 +22,7 @@ public class AuthService {
 
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
     private static final int MINUTOS_EXPIRACAO_CODIGO = 15;
+    private static final int MAX_FOTO_BASE64_LEN = 750_000;
 
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
@@ -39,7 +40,6 @@ public class AuthService {
             if (Boolean.TRUE.equals(usuarioExistente.getEmailVerificado())) {
                 throw new IllegalArgumentException("Este e-mail já está cadastrado");
             }
-            // Se já existia mas ainda não tinha confirmado o e-mail, atualiza dados e reenvia código
             usuarioExistente.atualizarNome(dto.nome().trim());
             usuarioExistente.atualizarSenha(passwordEncoder.encode(dto.senha()));
             return gerarEEnviarCodigo(usuarioExistente);
@@ -61,7 +61,7 @@ public class AuthService {
 
         if (Boolean.TRUE.equals(usuario.getEmailVerificado())) {
             String token = tokenService.gerarToken(usuario);
-            return new AuthResponseDTO(token, usuario.getId(), usuario.getNome(), usuario.getEmail());
+            return paraAuthResponse(token, usuario);
         }
 
         if (usuario.getCodigoVerificacao() == null || !usuario.getCodigoVerificacao().equals(codigoLimpo)) {
@@ -76,7 +76,7 @@ public class AuthService {
         usuarioRepository.save(usuario);
 
         String token = tokenService.gerarToken(usuario);
-        return new AuthResponseDTO(token, usuario.getId(), usuario.getNome(), usuario.getEmail());
+        return paraAuthResponse(token, usuario);
     }
 
     @Transactional
@@ -108,16 +108,18 @@ public class AuthService {
         }
 
         String token = tokenService.gerarToken(usuario);
-        return new AuthResponseDTO(token, usuario.getId(), usuario.getNome(), usuario.getEmail());
+        return paraAuthResponse(token, usuario);
     }
 
     public UsuarioResponseDTO obterPerfilAtual() {
-        Usuario usuario = exigirUsuarioAutenticado();
+        Usuario autenticado = exigirUsuarioAutenticado();
+        Usuario usuario = usuarioRepository.findById(autenticado.getId()).orElse(autenticado);
         return new UsuarioResponseDTO(
                 usuario.getId(),
                 usuario.getNome(),
                 usuario.getEmail(),
-                usuario.getEmailVerificado()
+                usuario.getEmailVerificado(),
+                usuario.getFotoPerfil()
         );
     }
 
@@ -139,15 +141,21 @@ public class AuthService {
             }
         }
 
+        if (dto.fotoPerfil() != null) {
+            if (dto.fotoPerfil().isBlank() || "REMOVER".equals(dto.fotoPerfil())) {
+                usuario.atualizarFotoPerfil(null);
+            } else {
+                if (dto.fotoPerfil().length() > MAX_FOTO_BASE64_LEN) {
+                    throw new IllegalArgumentException("A imagem selecionada é muito grande. Escolha uma foto menor.");
+                }
+                usuario.atualizarFotoPerfil(dto.fotoPerfil());
+            }
+        }
+
         Usuario salvo = usuarioRepository.save(usuario);
         String novoToken = tokenService.gerarToken(salvo);
 
-        return new AuthResponseDTO(
-                novoToken,
-                salvo.getId(),
-                salvo.getNome(),
-                salvo.getEmail()
-        );
+        return paraAuthResponse(novoToken, salvo);
     }
 
     @Transactional
@@ -172,6 +180,16 @@ public class AuthService {
         usuarioRepository.deleteById(autenticado.getId());
     }
 
+    private AuthResponseDTO paraAuthResponse(String token, Usuario usuario) {
+        return new AuthResponseDTO(
+                token,
+                usuario.getId(),
+                usuario.getNome(),
+                usuario.getEmail(),
+                usuario.getFotoPerfil()
+        );
+    }
+
     private CadastroResponseDTO gerarEEnviarCodigo(Usuario usuario) {
         String codigo = String.format("%06d", SECURE_RANDOM.nextInt(1_000_000));
         LocalDateTime expiracao = LocalDateTime.now().plusMinutes(MINUTOS_EXPIRACAO_CODIGO);
@@ -187,7 +205,7 @@ public class AuthService {
 
         String mensagem = enviadoViaSmtp
                 ? "Enviamos um código de 6 dígitos para o seu e-mail."
-                : "Conta criada! Como o servidor SMTP ainda não foi configurado, utilize o código exibido na tela para validar.";
+                : "Conta criada! Utilize o código de segurança gerado para confirmar seu e-mail.";
 
         return new CadastroResponseDTO(
                 mensagem,

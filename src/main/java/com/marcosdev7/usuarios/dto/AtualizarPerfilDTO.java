@@ -10,5 +10,11 @@ public record AtualizarPerfilDTO(
         String nome,
 
         @Email(message = "Formato de e-mail inválido")
-        String email
-) {}
+        String email,
+
+        String fotoPerfil
+) {
+    public AtualizarPerfilDTO(String nome, String email) {
+        this(nome, email, null);
+    }
+}
