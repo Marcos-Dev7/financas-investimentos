@@ -31,3 +31,9 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Environment & OS ###
+.env
+.env.*
+.DS_Store
+*.log

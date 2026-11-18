@@ -18,7 +18,7 @@ public class AgendadorService {
     @Scheduled(cron = "0 0 0 1 * *")
     public void projetarDespesasMesSeguinte() {
 
-        Mes mesAtual = Mes.valueOf(LocalDate.now().getMonth().name());
+        Mes mesAtual = Mes.values()[LocalDate.now().getMonthValue() - 1];
         Mes mesAnterior = mesAtual.anterior();
         var despesasFixas = despesaRepository.findByIsFixaTrueAndMes(mesAnterior);
         despesasFixas.stream()
