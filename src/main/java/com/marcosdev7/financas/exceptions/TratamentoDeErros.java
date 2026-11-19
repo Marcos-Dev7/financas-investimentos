@@ -5,6 +5,7 @@ import com.marcosdev7.financas.dto.DadosErroValidacaoDTO;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -29,6 +30,11 @@ public class TratamentoDeErros {
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity tratarCredenciaisInvalidas(BadCredentialsException ex) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new DadosErroMensagemDTO(ex.getMessage()));
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity tratarAcessoNegado(AccessDeniedException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new DadosErroMensagemDTO(ex.getMessage()));
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)

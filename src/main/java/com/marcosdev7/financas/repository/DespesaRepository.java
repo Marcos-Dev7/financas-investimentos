@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.math.BigDecimal;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -20,6 +21,10 @@ public interface DespesaRepository extends JpaRepository<Despesa, Long> {
     Optional<Despesa> findByIdAndUsuarioId(Long id, Long usuarioId);
 
     List<Despesa> findByMesAndUsuarioId(Mes mes, Long usuarioId);
+
+    List<Despesa> findByUsuarioIdInOrderByDataVencimentoAsc(Collection<Long> usuarioIds);
+
+    List<Despesa> findByMesAndUsuarioIdIn(Mes mes, Collection<Long> usuarioIds);
 
     @Query("SELECT SUM(d.valor) FROM Despesa d WHERE d.mes = :mes")
     BigDecimal somarTotalPorMes(@Param("mes") Mes mes);

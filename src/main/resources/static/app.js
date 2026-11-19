@@ -177,24 +177,35 @@ function atualizarDadosUsuarioNaTela() {
 function navegarPara(aba) {
     state.abaAtiva = aba;
     const dashboardView = document.getElementById('dashboardView');
+    const familiaView = document.getElementById('familiaView');
     const accountView = document.getElementById('accountView');
     const navDashboardBtn = document.getElementById('navDashboardBtn');
+    const navFamiliaBtn = document.getElementById('navFamiliaBtn');
     const navAccountBtn = document.getElementById('navAccountBtn');
     const monthSelectorBar = document.getElementById('monthSelectorBar');
 
+    dashboardView.classList.add('hidden');
+    if (familiaView) familiaView.classList.add('hidden');
+    accountView.classList.add('hidden');
+
+    navDashboardBtn.classList.remove('active');
+    if (navFamiliaBtn) navFamiliaBtn.classList.remove('active');
+    navAccountBtn.classList.remove('active');
+
     if (aba === 'account') {
-        dashboardView.classList.add('hidden');
         accountView.classList.remove('hidden');
-        navDashboardBtn.classList.remove('active');
         navAccountBtn.classList.add('active');
         monthSelectorBar.classList.add('hidden');
         atualizarDadosUsuarioNaTela();
         document.getElementById('statTotalDespesas').textContent = String(state.totalDespesasCount || state.despesas.length);
         document.getElementById('statTotalSaldos').textContent = String(state.saldos.length);
+    } else if (aba === 'familia') {
+        if (familiaView) familiaView.classList.remove('hidden');
+        if (navFamiliaBtn) navFamiliaBtn.classList.add('active');
+        monthSelectorBar.classList.remove('hidden');
+        carregarModuloFamilia();
     } else {
-        accountView.classList.add('hidden');
         dashboardView.classList.remove('hidden');
-        navAccountBtn.classList.remove('active');
         navDashboardBtn.classList.add('active');
         monthSelectorBar.classList.remove('hidden');
     }
@@ -598,8 +609,224 @@ async function atualizarTudo() {
     if (state.abaAtiva === 'account') {
         document.getElementById('statTotalDespesas').textContent = String(state.totalDespesasCount || state.despesas.length);
         document.getElementById('statTotalSaldos').textContent = String(state.saldos.length);
+    } else if (state.abaAtiva === 'familia') {
+        await carregarModuloFamilia();
     }
 }
+
+// ==========================================
+// 4. MÓDULO FAMÍLIA & MEMBROS (/familia)
+// ==========================================
+async function carregarModuloFamilia() {
+    if (!state.token) return;
+    try {
+        const painel = await apiFetch('/familia');
+        if (!painel) return;
+
+        // 1. Convites Recebidos Pendentes para o usuário logado
+        const boxConvites = document.getElementById('boxConvitesRecebidos');
+        const listaConvites = document.getElementById('listaConvitesRecebidos');
+        const pendentes = painel.convitesRecebidosPendentes || [];
+
+        if (pendentes.length > 0) {
+            boxConvites.classList.remove('hidden');
+            listaConvites.innerHTML = pendentes.map(c => `
+                <div class="income-item">
+                    <div class="income-top">
+                        <div class="income-info">
+                            <h4>Família de ${escapeHtml(c.nome)}</h4>
+                            <span class="income-meta">${escapeHtml(c.email)} &bull; Válido até ${escapeHtml(c.dataExpiracao || '')}</span>
+                        </div>
+                        <button class="btn btn-primary btn-sm" onclick="aceitarConviteDireto('${escapeHtml(c.tokenConvite)}')">
+                            Aceitar Convite
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        } else {
+            boxConvites.classList.add('hidden');
+        }
+
+        // 2. Toggle de compartilhamento da própria renda
+        const chkRenda = document.getElementById('chkCompartilharMinhaRenda');
+        chkRenda.checked = Boolean(painel.minhaRendaCompartilhada);
+        chkRenda.disabled = !painel.possuiFamiliaAtiva && (painel.membros || []).length === 0;
+
+        // 3. Bloco de convidar (apenas titular pode convidar novos membros)
+        const blocoConvidar = document.getElementById('blocoConvidarMembro');
+        blocoConvidar.classList.toggle('hidden', !painel.souTitular);
+
+        // 4. Lista de Membros
+        const containerMembros = document.getElementById('listaMembrosFamilia');
+        const membros = painel.membros || [];
+
+        if (membros.length === 0) {
+            containerMembros.innerHTML = `
+                <div class="empty-state">
+                    Nenhum membro na família ainda. Envie um convite ao lado para compartilhar a visão familiar.
+                </div>
+            `;
+        } else {
+            containerMembros.innerHTML = membros.map(m => {
+                const isAceito = m.status === 'ACEITO';
+                const linkConvite = m.tokenConvite
+                    ? `${window.location.origin}/?convite=${m.tokenConvite}`
+                    : null;
+
+                return `
+                    <div class="income-item">
+                        <div class="income-top">
+                            <div class="income-info">
+                                <h4>${escapeHtml(m.nome)}</h4>
+                                <span class="income-meta">${escapeHtml(m.email)}</span>
+                                ${m.tokenConvite ? `<div class="token-pill">Código: ${escapeHtml(m.tokenConvite)}</div>` : ''}
+                            </div>
+                            <span class="badge ${isAceito ? 'badge-paga' : 'badge-pendente'}">
+                                ${isAceito ? '✓ Membro Ativo' : 'Convite Pendente'}
+                            </span>
+                        </div>
+                        <div class="income-bottom" style="justify-content: space-between;">
+                            <span class="income-meta">
+                                ${isAceito
+                                    ? (m.compartilhaRenda ? '✓ Compartilhando renda' : 'Renda oculta na soma')
+                                    : `Expira em: ${escapeHtml(m.dataExpiracao || '48h')}`
+                                }
+                            </span>
+                            <div class="action-group">
+                                ${linkConvite ? `<button class="btn btn-outline btn-sm" onclick="copiarLinkConvite('${escapeHtml(linkConvite)}', '${escapeHtml(m.tokenConvite)}')">Copiar Link</button>` : ''}
+                                ${(painel.souTitular && !m.isTitular)
+                                    ? `<button class="btn btn-danger-ghost btn-sm" onclick="removerMembroFamilia(${m.vinculoId})">${isAceito ? 'Remover Membro' : 'Cancelar'}</button>`
+                                    : (!painel.souTitular && !m.isTitular && m.email.toLowerCase() === (state.user?.email || '').toLowerCase())
+                                        ? `<button class="btn btn-danger-ghost btn-sm" onclick="removerMembroFamilia(${m.vinculoId})">Sair da Família</button>`
+                                        : ''
+                                }
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // 5. Se possui família ativa, carrega Resumo Consolidado + Despesas Familiares
+        const painelConsolidado = document.getElementById('painelConsolidadoFamilia');
+        if (painel.possuiFamiliaAtiva) {
+            painelConsolidado.classList.remove('hidden');
+            await Promise.all([
+                carregarResumoFamiliaMes(),
+                carregarDespesasFamiliaMes()
+            ]);
+        } else {
+            painelConsolidado.classList.add('hidden');
+        }
+    } catch (err) {
+        showToast(err.message, 'error');
+    }
+}
+
+async function carregarResumoFamiliaMes() {
+    try {
+        const resumo = await apiFetch(`/familia/resumo/${state.mesAtual}`);
+        if (!resumo) return;
+
+        const receita = Number(resumo.receitaTotalFamiliar || 0);
+        const pagas = Number(resumo.despesasPagasFamiliares || 0);
+        const brutas = Number(resumo.despesasBrutasFamiliares || 0);
+        const falta = Math.max(0, brutas - pagas);
+
+        document.getElementById('kpiFamReceitaTotal').textContent = formatCurrency(receita);
+        document.getElementById('kpiFamDespesasPagas').textContent = formatCurrency(pagas);
+        document.getElementById('kpiFamFaltaPagar').textContent = `Falta pagar: ${formatCurrency(falta)}`;
+        document.getElementById('kpiFamDespesasBrutas').textContent = formatCurrency(brutas);
+        document.getElementById('kpiFamSaldoDisponivel').textContent = formatCurrency(resumo.saldoDisponivelFamiliar);
+
+        const badge = document.getElementById('badgeFamStatus');
+        badge.textContent = resumo.status;
+        badge.className = `status-pill status-${resumo.status}`;
+
+        const pct = brutas > 0 ? Math.min(100, Math.round((pagas / brutas) * 100)) : 0;
+        document.getElementById('progressFamPagas').style.width = `${pct}%`;
+        document.getElementById('kpiFamProgressoTexto').textContent = `${pct}% quitado pela família`;
+        document.getElementById('badgeTotalMembrosFamilia').textContent = `${resumo.totalMembrosAtivos} Membros Ativos`;
+    } catch (err) {
+        console.error('Erro ao carregar resumo familiar:', err);
+    }
+}
+
+async function carregarDespesasFamiliaMes() {
+    const tbody = document.getElementById('tbodyDespesasFamilia');
+    try {
+        const lista = await apiFetch(`/familia/despesas?mes=${state.mesAtual}`);
+        if (!Array.isArray(lista) || lista.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="7" class="empty-state">
+                        Nenhuma despesa familiar registrada em <strong>${MESES_LABEL[state.mesAtual]}</strong>.
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        tbody.innerHTML = lista.map(d => `
+            <tr>
+                <td data-label="Status">
+                    <span class="badge ${d.isPaga ? 'badge-paga' : 'badge-pendente'}">
+                        ${d.isPaga ? '✓ Paga' : 'Pendente'}
+                    </span>
+                </td>
+                <td data-label="Responsável">
+                    <span class="badge badge-fixa">${escapeHtml(d.responsavelNome)}</span>
+                </td>
+                <td data-label="Descrição">
+                    <strong>${escapeHtml(d.descricao)}</strong>
+                </td>
+                <td data-label="Categoria">
+                    <span class="badge badge-cat">${escapeHtml(d.categoria || 'Outros')}</span>
+                </td>
+                <td data-label="Vencimento">${escapeHtml(d.dataVencimento || '-')}</td>
+                <td data-label="Tipo">
+                    ${d.isFixa ? '<span class="badge badge-fixa">Fixa</span>' : '<span class="income-meta">Variável</span>'}
+                </td>
+                <td data-label="Valor" class="text-right"><strong>${formatCurrency(d.valor)}</strong></td>
+            </tr>
+        `).join('');
+    } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="7" class="empty-state">${escapeHtml(err.message)}</td></tr>`;
+    }
+}
+
+window.copiarLinkConvite = async (link, token) => {
+    try {
+        await navigator.clipboard.writeText(link);
+        showToast('Link de convite copiado! Envie para o seu familiar.');
+    } catch (_) {
+        prompt('Copie o código ou link do convite:', token);
+    }
+};
+
+window.aceitarConviteDireto = async (token) => {
+    try {
+        await apiFetch('/familia/convites/aceitar', {
+            method: 'POST',
+            body: JSON.stringify({ token })
+        });
+        showToast('Convite aceito! Você agora faz parte da família.');
+        await carregarModuloFamilia();
+    } catch (err) {
+        showToast(err.message, 'error');
+    }
+};
+
+window.removerMembroFamilia = async (vinculoId) => {
+    if (!confirm('Tem certeza que deseja encerrar este vínculo familiar? O acesso será cortado imediatamente.')) return;
+    try {
+        await apiFetch(`/familia/membros/${vinculoId}`, { method: 'DELETE' });
+        showToast('Vínculo familiar removido e acesso encerrado imediatamente.');
+        await carregarModuloFamilia();
+    } catch (err) {
+        showToast(err.message, 'error');
+    }
+};
 
 document.addEventListener('DOMContentLoaded', async () => {
     // Abas Login / Cadastro
@@ -607,12 +834,75 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('tabRegisterBtn').addEventListener('click', () => mostrarTelaAuth('register'));
     document.getElementById('btnBackToLogin').addEventListener('click', () => mostrarTelaAuth('login'));
 
-    // Navegação entre Visão Geral e Minha Conta
+    // Navegação entre Visão Geral, Família e Minha Conta
     document.getElementById('navDashboardBtn').addEventListener('click', () => navegarPara('dashboard'));
+    document.getElementById('navFamiliaBtn').addEventListener('click', () => navegarPara('familia'));
     document.getElementById('brandHomeLink').addEventListener('click', () => navegarPara('dashboard'));
     document.getElementById('btnVoltarPainel').addEventListener('click', () => navegarPara('dashboard'));
     document.getElementById('navAccountBtn').addEventListener('click', () => navegarPara('account'));
     document.getElementById('btnAbrirMinhaConta').addEventListener('click', () => navegarPara('account'));
+
+    // Eventos do Módulo Família
+    document.getElementById('formEnviarConviteFamilia').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('btnEnviarConviteFamilia');
+        btn.disabled = true;
+        try {
+            const input = document.getElementById('inputEmailConvidado');
+            await apiFetch('/familia/convites', {
+                method: 'POST',
+                body: JSON.stringify({ emailConvidado: input.value.trim() })
+            });
+            input.value = '';
+            showToast('Convite gerado com validade de 48h! Você também pode copiar o link na lista.');
+            await carregarModuloFamilia();
+        } catch (err) {
+            showToast(err.message, 'error');
+        } finally {
+            btn.disabled = false;
+        }
+    });
+
+    document.getElementById('formAceitarConviteToken').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('btnAceitarConviteToken');
+        btn.disabled = true;
+        try {
+            const input = document.getElementById('inputTokenConvite');
+            let token = input.value.trim();
+            if (token.includes('convite=')) {
+                token = new URL(token).searchParams.get('convite') || token;
+            }
+            await apiFetch('/familia/convites/aceitar', {
+                method: 'POST',
+                body: JSON.stringify({ token })
+            });
+            input.value = '';
+            showToast('Convite aceito com sucesso! Bem-vindo(a) à família.');
+            await carregarModuloFamilia();
+        } catch (err) {
+            showToast(err.message, 'error');
+        } finally {
+            btn.disabled = false;
+        }
+    });
+
+    document.getElementById('chkCompartilharMinhaRenda').addEventListener('change', async (e) => {
+        const compartilhar = e.target.checked;
+        try {
+            await apiFetch('/familia/compartilhar-renda', {
+                method: 'PATCH',
+                body: JSON.stringify({ compartilhar })
+            });
+            showToast(compartilhar
+                ? 'Sua renda agora está incluída na soma familiar.'
+                : 'Sua renda foi removida da soma familiar.');
+            await carregarModuloFamilia();
+        } catch (err) {
+            e.target.checked = !compartilhar;
+            showToast(err.message, 'error');
+        }
+    });
 
     // Checklist em tempo real da senha no Cadastro
     const regSenha = document.getElementById('regSenha');
@@ -1062,6 +1352,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     // Verificar sessão existente
+    const urlParams = new URLSearchParams(window.location.search);
+    const tokenConviteUrl = urlParams.get('convite');
+    if (tokenConviteUrl) {
+        document.getElementById('inputTokenConvite').value = tokenConviteUrl;
+    }
+
     if (state.token) {
         try {
             const perfil = await apiFetch('/auth/me');
@@ -1070,6 +1366,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 localStorage.setItem(STORAGE_USER_KEY, JSON.stringify(perfil));
                 mostrarTelaApp();
                 await atualizarTudo();
+                if (tokenConviteUrl) {
+                    navegarPara('familia');
+                }
                 return;
             }
         } catch (_) {

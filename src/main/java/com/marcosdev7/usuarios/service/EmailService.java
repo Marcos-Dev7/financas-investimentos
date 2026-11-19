@@ -86,6 +86,52 @@ public class EmailService {
         return false;
     }
 
+    public boolean enviarConviteFamilia(String emailDestino, String nomeTitular, String tokenConvite) {
+        String assunto = "FinancialFamily — " + nomeTitular + " convidou você para a Família";
+        String html = """
+                <div style="font-family: Inter, -apple-system, BlinkMacSystemFont, Arial, sans-serif; max-width: 520px; margin: 0 auto; background: #070b11; color: #f8fafc; padding: 36px 32px; border-radius: 16px; border: 1px solid #1e293b;">
+                    <div style="margin-bottom: 24px;">
+                        <span style="display: inline-block; background: linear-gradient(135deg, #10b981, #f59e0b); color: #070b11; font-weight: 800; font-size: 13px; padding: 6px 12px; border-radius: 8px; letter-spacing: 0.5px;">FINANCIAL FAMILY</span>
+                    </div>
+                    <h2 style="margin: 0 0 12px 0; font-size: 22px; color: #f8fafc;">Convite para Família</h2>
+                    <p style="color: #cbd5e1; font-size: 15px; line-height: 1.6;"><strong>%s</strong> convidou você para participar da gestão financeira familiar no FinancialFamily.</p>
+                    <p style="color: #94a3b8; font-size: 14px; line-height: 1.6;">Acesse sua conta na plataforma, vá na aba <strong>Família</strong> e cole o código de convite abaixo (válido por 48 horas):</p>
+                    <div style="background: #111927; border: 1px solid #10b981; border-radius: 12px; padding: 18px; text-align: center; margin: 24px 0;">
+                        <span style="font-size: 18px; font-weight: 800; letter-spacing: 2px; color: #34d399; word-break: break-all;">%s</span>
+                    </div>
+                </div>
+                """.formatted(nomeTitular, tokenConvite);
+
+        if (brevoApiKey != null && !brevoApiKey.isBlank()) {
+            String remetente = (mailFrom != null && !mailFrom.isBlank())
+                    ? mailFrom.trim()
+                    : (mailUsername != null && !mailUsername.isBlank() ? mailUsername.trim() : "noreply@financialfamily.app");
+            if (enviarViaBrevoApi(remetente, emailDestino, emailDestino, assunto, html)) {
+                return true;
+            }
+        }
+
+        if (mailSender != null && mailUsername != null && !mailUsername.isBlank()
+                && mailPassword != null && !mailPassword.isBlank()) {
+            try {
+                MimeMessage message = mailSender.createMimeMessage();
+                MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+                String remetente = (mailFrom != null && !mailFrom.isBlank()) ? mailFrom.trim() : mailUsername.trim();
+                helper.setFrom(remetente);
+                helper.setTo(emailDestino);
+                helper.setSubject(assunto);
+                helper.setText(html, true);
+                mailSender.send(message);
+                return true;
+            } catch (Exception e) {
+                log.warn("Falha no envio SMTP de convite familiar para {}: {}", emailDestino, e.getMessage());
+            }
+        }
+
+        log.info("Convite familiar gerado para {} com token: {}", emailDestino, tokenConvite);
+        return false;
+    }
+
     private boolean enviarViaBrevoApi(String remetenteEmail, String emailDestino, String nomeDestino, String assunto, String html) {
         try {
             Map<String, Object> payload = Map.of(
