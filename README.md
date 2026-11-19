@@ -3,13 +3,13 @@
 
   # FinancialFamily — Gestão Financeira & Patrimonial Familiar
 
-  **Versão 1.0.0** &bull; Plataforma Full-Stack de Governança Financeira Familiar e Cálculo de Sobra Livre
+  **Versão 1.1.0** &bull; Plataforma Full-Stack de Governança Financeira Familiar, Membros & Cálculo de Sobra Livre
 
-  [![Version](https://img.shields.io/badge/version-1.0.0-10b981?style=for-the-badge)](https://github.com/Marcos-Dev7/financas-investimentos)
+  [![Version](https://img.shields.io/badge/version-1.1.0-10b981?style=for-the-badge)](https://github.com/Marcos-Dev7/financas-investimentos)
   [![Java](https://img.shields.io/badge/Java-25-f59e0b?style=for-the-badge&logo=openjdk&logoColor=white)](https://openjdk.org/)
   [![Spring Boot](https://img.shields.io/badge/Spring_Boot-4.0.3-6db33f?style=for-the-badge&logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
   [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Neon_Cloud-336791?style=for-the-badge&logo=postgresql&logoColor=white)](https://neon.tech/)
-  [![Tests](https://img.shields.io/badge/Tests-76_Passing-10b981?style=for-the-badge&logo=junit5&logoColor=white)](#%EF%B8%8F-testes-automatizados)
+  [![Tests](https://img.shields.io/badge/Tests-87_Passing-10b981?style=for-the-badge&logo=junit5&logoColor=white)](#%EF%B8%8F-testes-automatizados)
 
   🌐 **Acesse a Plataforma Online:** [https://financial-family.onrender.com](https://financial-family.onrender.com)
 </div>
@@ -18,50 +18,56 @@
 
 ## 📌 Sobre o Projeto
 
-**FinancialFamily** é uma plataforma web completa (API REST + Interface Web Responsiva) desenvolvida para o controle financeiro familiar, focada na clareza de gastos, gestão de caixa e construção de patrimônio.
+**FinancialFamily** é uma plataforma web completa (API REST + Interface Web Responsiva Desktop & Mobile) desenvolvida para o controle financeiro familiar, focada na clareza de gastos, gestão compartilhada de caixa e construção de patrimônio.
 
-O sistema resolve um problema clássico do orçamento doméstico: separar o que é **conta prevista (Despesa Bruta)** do que já foi **efetivamente quitado (Despesa Paga)**, revelando em tempo real a verdadeira **Sobra Livre** mensal de cada usuário.
+O sistema resolve um problema clássico do orçamento doméstico: separar o que é **conta prevista (Despesa Bruta)** do que já foi **efetivamente quitado (Despesa Paga)**, revelando em tempo real a verdadeira **Sobra Livre** mensal — tanto no perfil individual quanto na **Visão Consolidada da Família**.
 
 ---
 
-## ✨ Funcionalidades da Versão `1.0.0`
+## ✨ Funcionalidades Principais (`v1.1.0`)
 
-### 🔐 1. Autenticação, Segurança e Isolamento por Usuário
+### 👨‍👩‍👧‍👦 1. Módulo Família & Membros (Novo na `v1.1.0`)
+- **Convites para Múltiplos Membros (E-mail ou Link com Token 48h):** O titular pode convidar seu cônjuge ou familiares por e-mail ou link (`?convite=TOKEN`) com prazo de expiração de 48 horas.
+- **Visão Consolidada de Despesas Familiares (Modo Somente Leitura):** Painel dedicado que reúne as despesas da família identificando o **Responsável** por cada lançamento. Membros apenas visualizam — **nunca podem editar ou apagar dados de outra pessoa** (garantido no backend).
+- **Compartilhamento Opcional de Renda (*Opt-in / Opt-out*):** A renda de cada membro só entra na soma da **Renda Familiar e Sobra Livre Consolidada** se a própria pessoa ativar o interruptor de compartilhamento, podendo desativar a qualquer momento.
+- **Revogação Imediata de Acesso:** O titular pode remover qualquer membro com 1 clique, cortando o acesso imediatamente no banco de dados. Usuários fora da família são bloqueados no backend com `403 Forbidden`.
+
+### 🔐 2. Autenticação, Segurança e Isolamento de Dados
 - **Cadastro com Política de Senha Forte:** Validação em tempo real (mínimo 8 caracteres, maiúscula, minúscula, número e caractere especial) + confirmação obrigatória de senha.
 - **Verificação de E-mail com Código de 6 Dígitos:** Envio de código numérico temporário (`SecureRandom`, válido por 15 minutos) para ativação da conta.
-- **Criptografia BCrypt & Sessão JWT:** Senhas armazenadas com hash adaptativo `BCryptPasswordEncoder` (Salt aleatório de 128 bits) e autenticação *stateless* via Token JWT (`Bearer`).
-- **Isolamento Multi-Usuário:** Cada conta possui ambiente totalmente isolado — um usuário visualiza e gerencia exclusivamente suas próprias receitas, despesas e cálculos.
+- **Sessão Stateless JWT & Isolamento Multi-Usuário:** Cada conta possui ambiente totalmente isolado — um usuário gerencia exclusivamente suas próprias receitas e despesas.
 
-### 👤 2. Área do Usuário ("Minha Conta")
+### 👤 3. Área do Usuário ("Minha Conta")
 - **Upload de Foto de Perfil:** Recorte quadrado e compressão automática (`256x256`) no navegador, com persistência direta no banco de dados na nuvem.
-- **Gestão de Dados Cadastrais:** Atualização de nome completo e endereço de e-mail com renovação automática do token de sessão.
-- **Segurança & Privacidade:** Alteração de senha (mediante confirmação da senha atual) e opção de exclusão permanente da conta e seus registros.
+- **Gestão de Dados Cadastrais & Segurança:** Atualização de nome completo e e-mail com renovação automática de sessão, alteração de senha e opção de exclusão permanente da conta.
 
-### 💰 3. Gestão de Despesas, Receitas e Motor de Sobra Livre
+### 💰 4. Gestão de Despesas, Receitas e Motor de Sobra Livre
 - **Despesas Mensais:** Cadastro, edição, exclusão, paginação, busca por descrição/categoria, baixa de pagamento com 1 clique (`Pagar`) e reversão (`Estornar`).
 - **Saldos e Receitas:** Registro de múltiplas fontes de renda por mês/ano (Salários, Freelances, Bônus).
-- **Motor de Cálculo de Sobra Livre:** Calcula automaticamente `Receita Total - Despesas Pagas`, classificando a saúde do mês em `POSITIVO`, `LIMITE` ou `DEFICIT`.
-- **Painel Analítico:** Gráfico de distribuição percentual de gastos por categoria e termômetro de comprometimento da renda mensal.
+- **Motor de Cálculo de Sobra Livre & Painel Analítico:** Calcula automaticamente `Receita Total - Despesas Pagas` (`POSITIVO`, `LIMITE` ou `DEFICIT`), distribuição percentual por categoria e termômetro de comprometimento da renda.
 - **Agendador Automático (`@Scheduled`):** Projeta automaticamente todas as despesas fixas para o mês seguinte na virada de cada dia 1º.
+
+### ⚡ 5. Controle de Carga, Rate Limiting & Mobile-First
+- **Rate Limiting por IP (`RateLimitFilter`):** Limite de 15 requisições/minuto por IP nas rotas de autenticação e 120 requisições/minuto na API (`HTTP 429 Too Many Requests`).
+- **Pool `HikariCP` Serverless & Controle de RAM da JVM:** Pool otimizado para *scale-to-zero* na Neon Cloud, índices compostos no PostgreSQL e teto de memória (`-XX:MaxRAMPercentage=75.0`) no container Docker.
+- **Layout Responsivo Mobile-First:** Em smartphones, as tabelas se transformam automaticamente em cards nativos centralizados sem rolagem horizontal.
 
 ---
 
 ## 📖 Como Utilizar o Sistema (Guia do Usuário)
 
-1. **Criar sua Conta:**
-   - Acesse a plataforma e clique na aba **"Criar Conta"**.
-   - Informe seu nome, e-mail e crie uma senha que atenda aos 5 critérios do indicador visual (com confirmação de senha).
-   - Digite o **código de 6 dígitos** enviado para o seu e-mail para ativar sua conta e entrar automaticamente.
-2. **Cadastrar suas Fontes de Renda (Saldos):**
-   - No painel principal, selecione o **Mês de Referência** no topo da tela.
-   - No card lateral **"Saldos & Receitas"**, clique em **`+ Nova Receita`** e adicione suas entradas do mês (ex.: *Salário Mensal*).
-3. **Registrar e Dar Baixa nas Despesas:**
-   - Clique em **`+ Nova Despesa`**, preencha descrição, valor, data de vencimento, categoria (ex.: *Moradia*, *Alimentação*) e marque **"Despesa Fixa Mensal"** caso ela se repita todo mês.
-   - Conforme for pagando suas contas no mês, clique no botão **`Pagar`** na linha da despesa (ou **`Estornar`** caso queira desfazer).
-4. **Acompanhar a Sobra Livre e Análises:**
-   - Os 4 indicadores no topo mostrarão em tempo real a **Receita Total**, **Despesas Pagas**, **Despesas Brutas (Previsto)** e a sua **Sobra Livre Disponível**, além da divisão por categoria logo abaixo.
-5. **Personalizar seu Perfil ("Minha Conta"):**
-   - Clique em **"Minha Conta"** no menu superior (ou sobre sua foto/nome) para enviar sua **foto de perfil**, atualizar seu nome/e-mail ou alterar sua senha.
+1. **Criar sua Conta e Validar E-mail:**
+   - Acesse a plataforma, clique em **"Criar Conta"**, preencha seus dados seguindo o indicador de senha forte e confirme sua conta com o **código de 6 dígitos** recebido por e-mail.
+2. **Cadastrar Receitas e Despesas Individuais:**
+   - No **Painel Financeiro**, selecione o mês no topo, adicione suas fontes de renda em **`+ Nova Receita`** e suas contas em **`+ Nova Despesa`**.
+   - Clique em **`Pagar`** conforme quitar cada conta no mês para atualizar sua **Sobra Livre Disponível**.
+3. **Convidar Familiares e Usar a Visão Consolidada ("Família"):**
+   - Acesse a aba **"Família"** no menu superior.
+   - Digite o e-mail do seu cônjuge/familiar em **"Convidar Membro para a Família"** (ou copie o link gerado para enviar por WhatsApp).
+   - Quando o familiar acessar a aba **"Família"** na conta dele, verá o convite pendente para aceitar com 1 clique (ou poderá colar o código).
+   - Cada membro pode marcar ou desmarcar a opção **"Incluir minha renda na soma familiar"** quando quiser, e acompanhar o **Resumo Consolidado** e a tabela de **Despesas Familiares do Mês**.
+4. **Personalizar seu Perfil ("Minha Conta"):**
+   - Na aba **"Minha Conta"**, envie sua **foto de perfil**, atualize seu nome/e-mail ou altere sua senha.
 
 ---
 
@@ -71,15 +77,26 @@ O sistema resolve um problema clássico do orçamento doméstico: separar o que 
 | :--- | :--- |
 | **Linguagem & Runtime** | Java 25 |
 | **Framework Backend** | Spring Boot 4.0.3 (WebMVC, Validation, Scheduling, Mail) |
-| **Segurança** | Spring Security 6 + Auth0 Java JWT (`HMAC256`) + BCrypt |
-| **Banco de Dados & Migrations** | PostgreSQL (Neon Serverless) + Spring Data JPA / Hibernate + Flyway (`V1` a `V8`) |
+| **Segurança & Carga** | Spring Security 6 + Token JWT + Rate Limiting Filter por IP |
+| **Banco de Dados & Migrations** | PostgreSQL (Neon Serverless) + Spring Data JPA / Hibernate + Flyway (`V1` a `V10`) |
 | **Frontend** | HTML5 Semântico, CSS3 Custom Design System (*Obsidian & Emerald-Gold*), Vanilla JS ES6+ & Canvas API |
-| **Testes** | JUnit 5, Mockito, AssertJ e Spring `MockMvc` (76 testes automatizados) |
+| **Testes** | JUnit 5, Mockito, AssertJ e Spring `MockMvc` (87 testes automatizados) |
 | **Infraestrutura & Deploy** | Docker (Multi-Stage Build), Docker Compose, Render & Neon Cloud |
 
 ---
 
 ## 🔌 Principais Endpoints da API REST
+
+### Família & Membros (`/familia`)
+| Método | Rota | Descrição | Autenticação |
+| :--- | :--- | :--- | :---: |
+| `GET` | `/familia` | Retorna membros ativos, convites e status de renda | `Bearer JWT` |
+| `POST` | `/familia/convites` | Gera convite familiar com token válido por 48h | `Bearer JWT` |
+| `POST` | `/familia/convites/aceitar` | Aceita convite validando token, prazo e e-mail | `Bearer JWT` |
+| `PATCH` | `/familia/compartilhar-renda` | Ativa ou desativa o compartilhamento da própria renda | `Bearer JWT` |
+| `DELETE` | `/familia/membros/{vinculoId}` | Remove membro da família (corta acesso imediato) | `Bearer JWT` |
+| `GET` | `/familia/despesas` | Lista despesas familiares consolidadas (somente leitura) | `Bearer JWT` |
+| `GET` | `/familia/resumo/{mes}` | Calcula receita somada, gastos e Sobra Livre Familiar | `Bearer JWT` |
 
 ### Autenticação & Conta (`/auth`)
 | Método | Rota | Descrição | Autenticação |
@@ -142,7 +159,7 @@ Acesse em seguida: **`http://localhost:8080`**
 
 ## 🧪 Testes Automatizados
 
-O projeto conta com **76 testes automatizados** cobrindo Entidades de Domínio, Enums, Conversores, Validador de Senha Forte, Services (Mockito) e Controllers (MockMvc). Para executá-los:
+O projeto conta com **87 testes automatizados** cobrindo Entidades de Domínio, Enums, Conversores, Validador de Senha Forte, Rate Limiting, Módulo Família, Services (Mockito) e Controllers (MockMvc). Para executá-los:
 
 ```bash
 ./mvnw test -Dtest="*Test"
