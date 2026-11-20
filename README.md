@@ -47,10 +47,11 @@ O sistema resolve um problema clássico do orçamento doméstico: separar o que 
 - **Motor de Cálculo de Sobra Livre & Painel Analítico:** Calcula automaticamente `Receita Total - Despesas Pagas` (`POSITIVO`, `LIMITE` ou `DEFICIT`), distribuição percentual por categoria e termômetro de comprometimento da renda.
 - **Agendador Automático (`@Scheduled`):** Projeta automaticamente todas as despesas fixas para o mês seguinte na virada de cada dia 1º.
 
-### ⚡ 5. Controle de Carga, Rate Limiting & Mobile-First
+### ⚡ 5. Controle de Carga, Rate Limiting, Acessibilidade & Mobile-First
 - **Rate Limiting por IP (`RateLimitFilter`):** Limite de 15 requisições/minuto por IP nas rotas de autenticação e 120 requisições/minuto na API (`HTTP 429 Too Many Requests`).
 - **Pool `HikariCP` Serverless & Controle de RAM da JVM:** Pool otimizado para *scale-to-zero* na Neon Cloud, índices compostos no PostgreSQL e teto de memória (`-XX:MaxRAMPercentage=75.0`) no container Docker.
-- **Layout Responsivo Mobile-First:** Em smartphones, as tabelas se transformam automaticamente em cards nativos centralizados sem rolagem horizontal.
+- **Design System Sobriedade Financeira & WCAG 2.2 AA:** Paleta escura de alto contraste (≥ 4.5:1 em textos e ≥ 3:1 em controles), numerais tabulares (`tabular-nums`), foco visível (`:focus-visible`), navegação por teclado com *focus trap* em modais, confirmações via diálogo acessível (`role="alertdialog"`) para ações destrutivas, *landmarks* semânticos e suporte a `prefers-reduced-motion`.
+- **Layout Responsivo Mobile-First:** Menu compacto no mobile, alvos de toque de no mínimo `44×44px` e tabelas convertidas em cards sem rolagem horizontal a partir de `320px`.
 
 ---
 
@@ -62,10 +63,8 @@ O sistema resolve um problema clássico do orçamento doméstico: separar o que 
    - No **Painel Financeiro**, selecione o mês no topo, adicione suas fontes de renda em **`+ Nova Receita`** e suas contas em **`+ Nova Despesa`**.
    - Clique em **`Pagar`** conforme quitar cada conta no mês para atualizar sua **Sobra Livre Disponível**.
 3. **Convidar Familiares e Usar a Visão Consolidada ("Família"):**
-   - Acesse a aba **"Família"** no menu superior.
-   - Digite o e-mail do seu cônjuge/familiar em **"Convidar Membro para a Família"** (ou copie o link gerado para enviar por WhatsApp).
-   - Quando o familiar acessar a aba **"Família"** na conta dele, verá o convite pendente para aceitar com 1 clique (ou poderá colar o código).
-   - Cada membro pode marcar ou desmarcar a opção **"Incluir minha renda na soma familiar"** quando quiser, e acompanhar o **Resumo Consolidado** e a tabela de **Despesas Familiares do Mês**.
+   - Acesse **"Minha Conta"** → **"Configurações da Família & Membros"** para enviar convites por e-mail (ou copiar o link/código de 48h), aceitar um convite via token e gerenciar os membros ativos ou o compartilhamento de renda (**"Incluir minha renda na soma familiar"**).
+   - Na aba **"Família"** do menu superior, você acessa diretamente no topo o **Resumo Consolidado da Família** e a tabela de **Despesas Familiares do Mês** (em modo somente leitura, além de alertas de convites pendentes recebidos quando houver).
 4. **Personalizar seu Perfil ("Minha Conta"):**
    - Na aba **"Minha Conta"**, envie sua **foto de perfil**, atualize seu nome/e-mail ou altere sua senha.
 
@@ -79,7 +78,7 @@ O sistema resolve um problema clássico do orçamento doméstico: separar o que 
 | **Framework Backend** | Spring Boot 4.0.3 (WebMVC, Validation, Scheduling, Mail) |
 | **Segurança & Carga** | Spring Security 6 + Token JWT + Rate Limiting Filter por IP |
 | **Banco de Dados & Migrations** | PostgreSQL (Neon Serverless) + Spring Data JPA / Hibernate + Flyway (`V1` a `V10`) |
-| **Frontend** | HTML5 Semântico, CSS3 Custom Design System (*Obsidian & Emerald-Gold*), Vanilla JS ES6+ & Canvas API |
+| **Frontend** | HTML5 Semântico, CSS3 Design System com Tokens (Sobriedade Financeira & WCAG 2.2 AA), Vanilla JS ES6+ & Canvas API |
 | **Testes** | JUnit 5, Mockito, AssertJ e Spring `MockMvc` (87 testes automatizados) |
 | **Infraestrutura & Deploy** | Docker (Multi-Stage Build), Docker Compose, Render & Neon Cloud |
 
