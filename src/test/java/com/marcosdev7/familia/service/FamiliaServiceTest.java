@@ -198,4 +198,81 @@ class FamiliaServiceTest {
         familiaService.removerMembroOuConvite(10L);
         verify(membroFamiliaRepository).delete(vinculo);
     }
+
+    @Test
+    @DisplayName("Deve impedir que usuário já pertencente a uma família ativa aceite um segundo convite")
+    void deveBloquearAceiteQuandoUsuarioJaParticipaDeOutraFamiliaAtiva() {
+        autenticarComo(conjuge);
+
+        MembroFamilia novoConvite = new MembroFamilia(
+                intruso, "ana@email.com", "token_segunda_familia",
+                LocalDateTime.now().plusHours(24), true
+        );
+        MembroFamilia vinculoExistente = new MembroFamilia(
+                10L, titular, conjuge, "ana@email.com", "tok_ativo",
+                LocalDateTime.now().plusHours(24), StatusFamilia.ACEITO,
+                true, true, LocalDateTime.now()
+        );
+
+        when(membroFamiliaRepository.findByTokenConvite("token_segunda_familia"))
+                .thenReturn(Optional.of(novoConvite));
+        when(membroFamiliaRepository.findByMembroIdAndStatus(2L, StatusFamilia.ACEITO))
+                .thenReturn(List.of(vinculoExistente));
+
+        assertThatThrownBy(() -> familiaService.aceitarConvite(new AceitarConviteDTO("token_segunda_familia")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("já participa de uma família ativa");
+    }
+
+    @Test
+    @DisplayName("Deve negar acesso ao consolidado quando houver apenas convite PENDENTE (nenhum membro ATIVO)")
+    void deveNegarAcessoAoConsolidadoComApenasConvitePendente() {
+        autenticarComo(titular);
+
+        MembroFamilia convitePendente = new MembroFamilia(
+                titular, "ana@email.com", "tok_pendente",
+                LocalDateTime.now().plusHours(24), true
+        );
+        when(membroFamiliaRepository.findByTitularIdOrderByDataCriacaoDesc(1L))
+                .thenReturn(List.of(convitePendente));
+        when(membroFamiliaRepository.findByMembroIdAndStatus(1L, StatusFamilia.ACEITO))
+                .thenReturn(List.of());
+
+        assertThatThrownBy(() -> familiaService.listarDespesasFamilia(Mes.DEZEMBRO))
+                .isInstanceOf(AccessDeniedException.class);
+        assertThatThrownBy(() -> familiaService.calcularResumoFamilia(Mes.DEZEMBRO))
+                .isInstanceOf(AccessDeniedException.class);
+    }
+
+    @Test
+    @DisplayName("Quando um membro desliga compartilhamento de despesas, suas despesas somem da lista e dos totais")
+    void deveOcultarDespesasDoConsolidadoETotalQuandoDesligado() {
+        autenticarComo(titular);
+        MembroFamilia vinculo = new MembroFamilia(
+                10L, titular, conjuge, "ana@email.com", "tok",
+                LocalDateTime.now().plusHours(24), StatusFamilia.ACEITO,
+                true, true, true, false, LocalDateTime.now()
+        );
+
+        when(membroFamiliaRepository.findByTitularIdOrderByDataCriacaoDesc(1L)).thenReturn(List.of(vinculo));
+
+        Saldo salarioTitular = new Saldo(1L, "Salário Marcos", new BigDecimal("5000.00"), Mes.DEZEMBRO, 2026);
+        when(saldoRepository.findByMesAndUsuarioIdIn(Mes.DEZEMBRO, Set.of(1L, 2L)))
+                .thenReturn(List.of(salarioTitular));
+
+        Despesa despesaTitular = new Despesa(1L, "Aluguel", Mes.DEZEMBRO, LocalDate.now(), false, true, new BigDecimal("2000.00"), "Moradia");
+        despesaTitular.setUsuario(titular);
+
+        // Apenas o titular (ID 1) está com despesas compartilhadas -> busca somente por Set.of(1L)
+        when(despesaRepository.findByMesAndUsuarioIdIn(Mes.DEZEMBRO, Set.of(1L)))
+                .thenReturn(List.of(despesaTitular));
+
+        List<DespesaFamiliaResponseDTO> despesas = familiaService.listarDespesasFamilia(Mes.DEZEMBRO);
+        ResumoFamiliaResponseDTO resumo = familiaService.calcularResumoFamilia(Mes.DEZEMBRO);
+
+        assertThat(despesas).hasSize(1);
+        assertThat(despesas.getFirst().responsavelNome()).isEqualTo("Marcos Paulo");
+        assertThat(resumo.despesasBrutasFamiliares()).isEqualByComparingTo("2000.00");
+        assertThat(resumo.saldoDisponivelFamiliar()).isEqualByComparingTo("3000.00");
+    }
 }

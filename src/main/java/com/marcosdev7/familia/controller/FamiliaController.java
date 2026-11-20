@@ -49,6 +49,13 @@ public class FamiliaController {
         return ResponseEntity.ok(familiaService.alterarCompartilhamentoRenda(dto));
     }
 
+    @Operation(summary = "Ativa ou desativa o compartilhamento das próprias despesas na visão familiar",
+            description = "Quando desligado, as despesas do usuário deixam de aparecer no consolidado e nos totais da família.")
+    @PatchMapping("/compartilhar-despesas")
+    public ResponseEntity<PainelFamiliaResponseDTO> alterarCompartilhamentoDespesas(@RequestBody @Valid CompartilharDespesasDTO dto) {
+        return ResponseEntity.ok(familiaService.alterarCompartilhamentoDespesas(dto));
+    }
+
     @Operation(summary = "Remove um membro da família ou cancela convite",
             description = "Corta imediatamente o acesso do membro aos dados familiares.")
     @DeleteMapping("/membros/{vinculoId}")

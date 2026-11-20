@@ -90,7 +90,9 @@ const state = {
     totalDespesasCount: 0,
     despesas: [],
     saldos: [],
-    resumo: null
+    resumo: null,
+    despesasFamilia: [],
+    filtroResponsavelFamilia: 'todos'
 };
 
 let ultimoElementoFocado = null;
@@ -373,15 +375,14 @@ function navegarPara(aba) {
         document.getElementById('statTotalDespesas').textContent = String(state.totalDespesasCount || state.despesas.length);
         document.getElementById('statTotalSaldos').textContent = String(state.saldos.length);
         carregarModuloFamilia();
-    } else if (aba === 'familia') {
+    } else if (aba === 'familia' && navFamiliaBtn && !navFamiliaBtn.classList.contains('hidden')) {
         if (familiaView) familiaView.classList.remove('hidden');
-        if (navFamiliaBtn) {
-            navFamiliaBtn.classList.add('active');
-            navFamiliaBtn.setAttribute('aria-current', 'page');
-        }
+        navFamiliaBtn.classList.add('active');
+        navFamiliaBtn.setAttribute('aria-current', 'page');
         monthSelectorBar.classList.remove('hidden');
         carregarModuloFamilia();
     } else {
+        state.abaAtiva = 'dashboard';
         dashboardView.classList.remove('hidden');
         navDashboardBtn.classList.add('active');
         navDashboardBtn.setAttribute('aria-current', 'page');
@@ -392,6 +393,10 @@ function navegarPara(aba) {
 function limparSessao() {
     state.token = null;
     state.user = null;
+    state.despesasFamilia = [];
+    state.filtroResponsavelFamilia = 'todos';
+    const navFamiliaBtn = document.getElementById('navFamiliaBtn');
+    if (navFamiliaBtn) navFamiliaBtn.classList.add('hidden');
     sessionStorage.removeItem(STORAGE_TOKEN_KEY);
     sessionStorage.removeItem(STORAGE_USER_KEY);
     localStorage.removeItem(STORAGE_TOKEN_KEY);
@@ -839,13 +844,12 @@ async function atualizarTudo() {
     await Promise.all([
         carregarResumoMes(),
         carregarDespesas(),
-        carregarSaldos()
+        carregarSaldos(),
+        carregarModuloFamilia()
     ]);
     if (state.abaAtiva === 'account') {
         document.getElementById('statTotalDespesas').textContent = String(state.totalDespesasCount || state.despesas.length);
         document.getElementById('statTotalSaldos').textContent = String(state.saldos.length);
-    } else if (state.abaAtiva === 'familia') {
-        await carregarModuloFamilia();
     }
 }
 
@@ -857,6 +861,14 @@ async function carregarModuloFamilia() {
     try {
         const painel = await apiFetch('/familia');
         if (!painel) return;
+
+        const navFamiliaBtn = document.getElementById('navFamiliaBtn');
+        if (navFamiliaBtn) {
+            navFamiliaBtn.classList.toggle('hidden', !painel.possuiFamiliaAtiva);
+        }
+        if (!painel.possuiFamiliaAtiva && state.abaAtiva === 'familia') {
+            navegarPara('dashboard');
+        }
 
         const boxConvites = document.getElementById('boxConvitesRecebidos');
         const listaConvites = document.getElementById('listaConvitesRecebidos');
@@ -884,6 +896,14 @@ async function carregarModuloFamilia() {
         const chkRenda = document.getElementById('chkCompartilharMinhaRenda');
         chkRenda.checked = Boolean(painel.minhaRendaCompartilhada);
         chkRenda.disabled = !painel.possuiFamiliaAtiva && (painel.membros || []).length === 0;
+
+        const chkDespesas = document.getElementById('chkCompartilharMinhasDespesas');
+        if (chkDespesas) {
+            chkDespesas.checked = painel.minhasDespesasCompartilhadas !== undefined
+                ? Boolean(painel.minhasDespesasCompartilhadas)
+                : true;
+            chkDespesas.disabled = !painel.possuiFamiliaAtiva && (painel.membros || []).length === 0;
+        }
 
         const blocoConvidar = document.getElementById('blocoConvidarMembro');
         blocoConvidar.classList.toggle('hidden', !painel.souTitular);
@@ -924,7 +944,7 @@ async function carregarModuloFamilia() {
                         <div class="income-bottom" style="justify-content: space-between;">
                             <span class="income-meta">
                                 ${isAceito
-                                    ? (m.compartilhaRenda ? '✓ Compartilhando renda' : 'Renda oculta na soma')
+                                    ? `${m.compartilhaRenda ? '✓ Renda visível' : 'Renda oculta'} &bull; ${m.compartilhaDespesas !== false ? '✓ Despesas visíveis' : 'Despesas ocultas'}`
                                     : `Expira em: ${escapeHtml(m.dataExpiracao || '48h')}`
                                 }
                             </span>
@@ -1007,41 +1027,192 @@ async function carregarDespesasFamiliaMes() {
     const tbody = document.getElementById('tbodyDespesasFamilia');
     try {
         const lista = await apiFetch(`/familia/despesas?mes=${state.mesAtual}`);
-        if (!Array.isArray(lista) || lista.length === 0) {
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="7" class="empty-state">
-                        Nenhuma despesa familiar registrada em <strong>${MESES_LABEL[state.mesAtual]}</strong>.
-                    </td>
-                </tr>
-            `;
-            return;
+        state.despesasFamilia = Array.isArray(lista) ? lista : [];
+
+        // Se o responsável filtrado não existir mais na lista atual, volta para "todos"
+        if (state.filtroResponsavelFamilia !== 'todos') {
+            const existe = state.despesasFamilia.some(d => d.responsavelNome === state.filtroResponsavelFamilia);
+            if (!existe) {
+                state.filtroResponsavelFamilia = 'todos';
+            }
         }
 
-        tbody.innerHTML = lista.map(d => `
-            <tr>
-                <td data-label="Status">
-                    ${renderizarBadgePagamento(d.isPaga)}
-                </td>
-                <td data-label="Responsável">
-                    <span class="badge badge-fixa">${escapeHtml(d.responsavelNome)}</span>
-                </td>
-                <td data-label="Descrição">
-                    <strong>${escapeHtml(d.descricao)}</strong>
-                </td>
-                <td data-label="Categoria">
-                    <span class="badge badge-cat">${escapeHtml(d.categoria || 'Outros')}</span>
-                </td>
-                <td data-label="Vencimento">${escapeHtml(d.dataVencimento || '-')}</td>
-                <td data-label="Tipo">
-                    ${d.isFixa ? '<span class="badge badge-fixa">Fixa</span>' : '<span class="income-meta">Variável</span>'}
-                </td>
-                <td data-label="Valor" class="text-right"><strong>${formatCurrency(d.valor)}</strong></td>
-            </tr>
-        `).join('');
+        renderizarTotaisEFiltroResponsavelFamilia();
+        renderizarTabelaDespesasFamilia();
+        renderizarDistribuicaoCategoriasFamilia();
     } catch (err) {
+        state.despesasFamilia = [];
         tbody.innerHTML = `<tr><td colspan="7" class="empty-state">${escapeHtml(err.message)}</td></tr>`;
+        renderizarTotaisEFiltroResponsavelFamilia();
+        renderizarDistribuicaoCategoriasFamilia();
     }
+}
+
+function selecionarFiltroResponsavelFamilia(responsavel) {
+    state.filtroResponsavelFamilia = responsavel;
+    renderizarTotaisEFiltroResponsavelFamilia();
+    renderizarTabelaDespesasFamilia();
+    renderizarDistribuicaoCategoriasFamilia();
+}
+
+function renderizarTotaisEFiltroResponsavelFamilia() {
+    const totaisEl = document.getElementById('totaisPorMembroFamilia');
+    const barraFiltro = document.getElementById('barraFiltroResponsavelFamilia');
+    const tabsEl = document.getElementById('filtroResponsavelFamilia');
+    const resumoFiltradoEl = document.getElementById('resumoTotalFiltradoFamilia');
+    if (!totaisEl || !barraFiltro || !tabsEl) return;
+
+    const lista = state.despesasFamilia || [];
+    if (lista.length === 0) {
+        totaisEl.classList.add('hidden');
+        totaisEl.innerHTML = '';
+        barraFiltro.classList.add('hidden');
+        tabsEl.innerHTML = '';
+        if (resumoFiltradoEl) resumoFiltradoEl.textContent = '';
+        return;
+    }
+
+    const porMembro = {};
+    let totalGeral = 0;
+
+    lista.forEach(d => {
+        const nome = d.responsavelNome || 'Família';
+        const valor = Number(d.valor || 0);
+        if (!porMembro[nome]) {
+            porMembro[nome] = { total: 0, pagas: 0, qtd: 0 };
+        }
+        porMembro[nome].total += valor;
+        if (d.isPaga) porMembro[nome].pagas += valor;
+        porMembro[nome].qtd += 1;
+        totalGeral += valor;
+    });
+
+    const membrosOrdenados = Object.entries(porMembro).sort((a, b) => b[1].total - a[1].total);
+
+    totaisEl.classList.remove('hidden');
+    totaisEl.innerHTML = membrosOrdenados.map(([nome, dados]) => {
+        const pct = totalGeral > 0 ? Math.round((dados.total / totalGeral) * 100) : 0;
+        const pendente = Math.max(0, dados.total - dados.pagas);
+        return `
+            <div class="family-member-total-card">
+                <div class="family-member-total-top">
+                    <span>${escapeHtml(nome)}</span>
+                    <span>${pct}%</span>
+                </div>
+                <div class="family-member-total-val">${formatCurrency(dados.total)}</div>
+                <div class="family-member-total-meta">
+                    ${dados.qtd} ${dados.qtd === 1 ? 'despesa' : 'despesas'} &bull; Pendente: ${formatCurrency(pendente)}
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    barraFiltro.classList.remove('hidden');
+    const botoes = [
+        `<button type="button" class="filter-btn ${state.filtroResponsavelFamilia === 'todos' ? 'active' : ''}" data-resp="todos">Todos (${lista.length})</button>`,
+        ...membrosOrdenados.map(([nome, dados]) =>
+            `<button type="button" class="filter-btn ${state.filtroResponsavelFamilia === nome ? 'active' : ''}" data-resp="${escapeHtml(nome)}">${escapeHtml(nome)} (${dados.qtd})</button>`
+        )
+    ];
+    tabsEl.innerHTML = botoes.join('');
+
+    tabsEl.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            selecionarFiltroResponsavelFamilia(btn.dataset.resp || 'todos');
+        });
+    });
+
+    const filtradas = state.filtroResponsavelFamilia === 'todos'
+        ? lista
+        : lista.filter(d => (d.responsavelNome || 'Família') === state.filtroResponsavelFamilia);
+    const somaFiltrada = filtradas.reduce((acc, d) => acc + Number(d.valor || 0), 0);
+
+    if (resumoFiltradoEl) {
+        resumoFiltradoEl.textContent = `Total exibido: ${formatCurrency(somaFiltrada)}`;
+    }
+}
+
+function renderizarTabelaDespesasFamilia() {
+    const tbody = document.getElementById('tbodyDespesasFamilia');
+    const lista = state.despesasFamilia || [];
+    const filtradas = state.filtroResponsavelFamilia === 'todos'
+        ? lista
+        : lista.filter(d => (d.responsavelNome || 'Família') === state.filtroResponsavelFamilia);
+
+    if (filtradas.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" class="empty-state">
+                    Nenhuma despesa familiar compartilhada em <strong>${MESES_LABEL[state.mesAtual]}</strong>.
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    tbody.innerHTML = filtradas.map(d => `
+        <tr>
+            <td data-label="Status">
+                ${renderizarBadgePagamento(d.isPaga)}
+            </td>
+            <td data-label="Responsável">
+                <span class="badge badge-fixa">${escapeHtml(d.responsavelNome)}</span>
+            </td>
+            <td data-label="Descrição">
+                <strong>${escapeHtml(d.descricao)}</strong>
+            </td>
+            <td data-label="Categoria">
+                <span class="badge badge-cat">${escapeHtml(d.categoria || 'Outros')}</span>
+            </td>
+            <td data-label="Vencimento">${escapeHtml(d.dataVencimento || '-')}</td>
+            <td data-label="Tipo">
+                ${d.isFixa ? '<span class="badge badge-fixa">Fixa</span>' : '<span class="income-meta">Variável</span>'}
+            </td>
+            <td data-label="Valor" class="text-right"><strong>${formatCurrency(d.valor)}</strong></td>
+        </tr>
+    `).join('');
+}
+
+function renderizarDistribuicaoCategoriasFamilia() {
+    const container = document.getElementById('famCategoryBreakdown');
+    if (!container) return;
+
+    const lista = state.despesasFamilia || [];
+    const filtradas = state.filtroResponsavelFamilia === 'todos'
+        ? lista
+        : lista.filter(d => (d.responsavelNome || 'Família') === state.filtroResponsavelFamilia);
+
+    if (filtradas.length === 0) {
+        container.innerHTML = `<div class="empty-state-sm">Nenhuma despesa familiar compartilhada em <strong>${MESES_LABEL[state.mesAtual]}</strong> para exibir por categoria.</div>`;
+        return;
+    }
+
+    const totaisPorCat = {};
+    let somaTotal = 0;
+
+    filtradas.forEach(d => {
+        const cat = d.categoria || 'Outros';
+        const val = Number(d.valor || 0);
+        totaisPorCat[cat] = (totaisPorCat[cat] || 0) + val;
+        somaTotal += val;
+    });
+
+    const categoriasOrdenadas = Object.entries(totaisPorCat).sort((a, b) => b[1] - a[1]);
+
+    container.innerHTML = categoriasOrdenadas.map(([cat, valor]) => {
+        const pct = somaTotal > 0 ? Math.round((valor / somaTotal) * 100) : 0;
+        return `
+            <div class="cat-bar-item">
+                <div class="cat-bar-top">
+                    <span>${escapeHtml(cat)}</span>
+                    <span>${formatCurrency(valor)} (${pct}%)</span>
+                </div>
+                <div class="progress-wrap">
+                    <div class="progress-bar" style="width: ${pct}%"></div>
+                </div>
+            </div>
+        `;
+    }).join('');
 }
 
 window.copiarLinkConvite = async (link, token) => {
@@ -1175,6 +1346,23 @@ document.addEventListener('DOMContentLoaded', async () => {
             showToast(compartilhar
                 ? 'Sua renda agora está incluída na soma familiar.'
                 : 'Sua renda foi removida da soma familiar.');
+            await carregarModuloFamilia();
+        } catch (err) {
+            e.target.checked = !compartilhar;
+            showToast(err.message, 'error');
+        }
+    });
+
+    document.getElementById('chkCompartilharMinhasDespesas')?.addEventListener('change', async (e) => {
+        const compartilhar = e.target.checked;
+        try {
+            await apiFetch('/familia/compartilhar-despesas', {
+                method: 'PATCH',
+                body: JSON.stringify({ compartilhar })
+            });
+            showToast(compartilhar
+                ? 'Suas despesas agora aparecem na visão consolidada da família.'
+                : 'Suas despesas foram ocultadas da visão consolidada e dos totais da família.');
             await carregarModuloFamilia();
         } catch (err) {
             e.target.checked = !compartilhar;

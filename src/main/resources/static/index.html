@@ -284,7 +284,7 @@
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
                             <span>Painel Financeiro</span>
                         </button>
-                        <button type="button" class="nav-link" id="navFamiliaBtn">
+                        <button type="button" class="nav-link hidden" id="navFamiliaBtn">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                             <span>Família</span>
                         </button>
@@ -504,15 +504,6 @@
              TELA 3: MÓDULO FAMÍLIA (VISÃO CONSOLIDADA)
              ========================================== -->
         <section id="familiaView" class="container main-content hidden" aria-label="Visão Consolidada da Família">
-            <!-- Notificação de Convites Recebidos Pendentes -->
-            <div id="boxConvitesRecebidos" class="panel invite-alert-panel hidden" role="region" aria-label="Convites familiares pendentes">
-                <div class="invite-alert-header">
-                    <h3>Convite Familiar Recebido</h3>
-                    <p class="panel-subtitle">Você foi convidado para integrar uma família no FinancialFamily</p>
-                </div>
-                <div id="listaConvitesRecebidos" class="income-list"></div>
-            </div>
-
             <!-- Estado Vazio -->
             <div id="estadoSemFamiliaAtiva" class="panel empty-family-panel hidden">
                 <div class="empty-family-content">
@@ -586,6 +577,17 @@
                     </article>
                 </section>
 
+                <!-- Distribuição de Gastos por Categoria (Família) -->
+                <section class="panel analytics-panel family-analytics-panel" aria-label="Distribuição de gastos familiares por categoria">
+                    <div class="panel-header-compact">
+                        <h3>Distribuição de Gastos por Categoria</h3>
+                        <p class="panel-subtitle">Participação de cada categoria nas despesas familiares compartilhadas do mês</p>
+                    </div>
+                    <div id="famCategoryBreakdown" class="category-bars">
+                        <div class="empty-state-sm">Nenhuma despesa familiar compartilhada neste mês para exibir por categoria.</div>
+                    </div>
+                </section>
+
                 <!-- Tabela de Despesas Familiares (Somente Leitura) -->
                 <div class="panel">
                     <div class="panel-header">
@@ -594,6 +596,14 @@
                             <p class="panel-subtitle">Visão consolidada em modo <strong>Somente Leitura</strong> — membros nunca alteram ou apagam dados de outros</p>
                         </div>
                         <span class="badge badge-cat">Somente Leitura</span>
+                    </div>
+
+                    <!-- Totais por Membro e Filtro por Responsável -->
+                    <div id="totaisPorMembroFamilia" class="family-member-totals hidden" aria-label="Total de despesas por membro"></div>
+
+                    <div class="filters-bar family-filters-bar hidden" id="barraFiltroResponsavelFamilia">
+                        <div class="filter-tabs" id="filtroResponsavelFamilia" role="group" aria-label="Filtrar despesas familiares por responsável"></div>
+                        <span class="income-meta" id="resumoTotalFiltradoFamilia"></span>
                     </div>
 
                     <div class="table-responsive">
@@ -774,16 +784,38 @@
                     </div>
                 </div>
 
-                <!-- Switch Acessível de Compartilhamento de Renda -->
-                <div class="family-switch-bar">
-                    <div class="family-switch-info">
-                        <strong id="lblSwitchRenda">Compartilhar minha renda na soma familiar</strong>
-                        <span>Quando ativado, suas receitas cadastradas entram no cálculo da Sobra Livre da Família.</span>
+                <!-- Notificação de Convites Recebidos Pendentes -->
+                <div id="boxConvitesRecebidos" class="invite-alert-panel hidden" style="margin-bottom: var(--space-4);" role="region" aria-label="Convites familiares pendentes">
+                    <div class="invite-alert-header">
+                        <h3>Convite Familiar Recebido</h3>
+                        <p class="panel-subtitle">Você foi convidado para integrar uma família no FinancialFamily</p>
                     </div>
-                    <label class="switch-toggle">
-                        <input type="checkbox" id="chkCompartilharMinhaRenda" aria-labelledby="lblSwitchRenda">
-                        <span class="switch-slider"></span>
-                    </label>
+                    <div id="listaConvitesRecebidos" class="income-list"></div>
+                </div>
+
+                <!-- Switches Acessíveis de Compartilhamento (Renda e Despesas) -->
+                <div class="family-switches-grid">
+                    <div class="family-switch-bar">
+                        <div class="family-switch-info">
+                            <strong id="lblSwitchRenda">Compartilhar minha renda na soma familiar</strong>
+                            <span>Quando ativado, suas receitas cadastradas entram no cálculo da Sobra Livre da Família.</span>
+                        </div>
+                        <label class="switch-toggle">
+                            <input type="checkbox" id="chkCompartilharMinhaRenda" aria-labelledby="lblSwitchRenda">
+                            <span class="switch-slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="family-switch-bar">
+                        <div class="family-switch-info">
+                            <strong id="lblSwitchDespesas">Compartilhar minhas despesas na visão familiar</strong>
+                            <span>Quando desligado, suas despesas somem do consolidado dos outros membros e dos totais.</span>
+                        </div>
+                        <label class="switch-toggle">
+                            <input type="checkbox" id="chkCompartilharMinhasDespesas" aria-labelledby="lblSwitchDespesas">
+                            <span class="switch-slider"></span>
+                        </label>
+                    </div>
                 </div>
 
                 <div class="family-settings-grid">

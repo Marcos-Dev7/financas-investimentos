@@ -117,4 +117,19 @@ class FamiliaControllerTest {
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.mensagem").value("Apenas o titular da família pode remover membros"));
     }
+
+    @Test
+    @DisplayName("PATCH /familia/compartilhar-despesas - Deve atualizar compartilhamento de despesas com status 200")
+    void deveAtualizarCompartilhamentoDespesasComStatus200() throws Exception {
+        PainelFamiliaResponseDTO painel = new PainelFamiliaResponseDTO(
+                true, true, "Marcos Paulo", "marcos@email.com", true, false, List.of(), List.of()
+        );
+        when(familiaService.alterarCompartilhamentoDespesas(any(CompartilharDespesasDTO.class))).thenReturn(painel);
+
+        mockMvc.perform(patch("/familia/compartilhar-despesas")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"compartilhar\":false}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.minhasDespesasCompartilhadas").value(false));
+    }
 }

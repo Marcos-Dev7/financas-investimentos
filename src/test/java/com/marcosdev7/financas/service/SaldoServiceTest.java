@@ -5,12 +5,15 @@ import com.marcosdev7.financas.domain.Saldo;
 import com.marcosdev7.financas.dto.SaldoRequestDTO;
 import com.marcosdev7.financas.dto.SaldoResponseDTO;
 import com.marcosdev7.financas.repository.SaldoRepository;
+import com.marcosdev7.usuarios.domain.Usuario;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -131,5 +134,27 @@ class SaldoServiceTest {
 
         assertThatThrownBy(() -> saldoService.atualizarSaldos(99L, dto))
                 .isInstanceOf(NoSuchElementException.class);
+    }
+
+    @Test
+    @DisplayName("Não deve permitir que um membro autenticado edite ou exclua receita de outro usuário")
+    void naoDevePermitirMutacaoDeSaldoDeOutroUsuario() {
+        Usuario membroB = new Usuario(2L, "Ana", "ana@email.com", "hash");
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(membroB, null, membroB.getAuthorities())
+        );
+
+        try {
+            when(saldoRepository.findByIdAndUsuarioId(200L, 2L)).thenReturn(Optional.empty());
+            SaldoRequestDTO dto = new SaldoRequestDTO("Alterado", new BigDecimal("1.00"), Mes.DEZEMBRO, 2026);
+
+            assertThatThrownBy(() -> saldoService.atualizarSaldos(200L, dto)).isInstanceOf(NoSuchElementException.class);
+            assertThatThrownBy(() -> saldoService.deletarSaldos(200L)).isInstanceOf(NoSuchElementException.class);
+
+            verify(saldoRepository, never()).save(any());
+            verify(saldoRepository, never()).delete(any());
+        } finally {
+            SecurityContextHolder.clearContext();
+        }
     }
 }

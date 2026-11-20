@@ -5,6 +5,7 @@ import com.marcosdev7.financas.domain.Mes;
 import com.marcosdev7.financas.dto.DespesaRequestDTO;
 import com.marcosdev7.financas.dto.DespesaResponseDTO;
 import com.marcosdev7.financas.repository.DespesaRepository;
+import com.marcosdev7.usuarios.domain.Usuario;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -16,6 +17,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -258,5 +261,29 @@ class DespesaServiceTest {
         BigDecimal totalBruto = despesaService.somarTotalBruto(Mes.MAIO);
 
         assertThat(totalBruto).isEqualByComparingTo(BigDecimal.ZERO);
+    }
+
+    @Test
+    @DisplayName("Não deve permitir que um membro autenticado edite, pague, estorne ou exclua despesa de outro usuário")
+    void naoDevePermitirMutacaoDeDespesaDeOutroUsuario() {
+        Usuario membroB = new Usuario(2L, "Ana", "ana@email.com", "hash");
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(membroB, null, membroB.getAuthorities())
+        );
+
+        try {
+            when(despesaRepository.findByIdAndUsuarioId(100L, 2L)).thenReturn(Optional.empty());
+            DespesaRequestDTO req = new DespesaRequestDTO("Alterada", new BigDecimal("10.00"), Mes.DEZEMBRO, LocalDate.now(), false, "Outros");
+
+            assertThatThrownBy(() -> despesaService.atualizarDespesas(100L, req)).isInstanceOf(NoSuchElementException.class);
+            assertThatThrownBy(() -> despesaService.pagarDespesa(100L)).isInstanceOf(NoSuchElementException.class);
+            assertThatThrownBy(() -> despesaService.estornarDespesa(100L)).isInstanceOf(NoSuchElementException.class);
+            assertThatThrownBy(() -> despesaService.deletarDespesas(100L)).isInstanceOf(NoSuchElementException.class);
+
+            verify(despesaRepository, never()).save(any());
+            verify(despesaRepository, never()).delete(any());
+        } finally {
+            SecurityContextHolder.clearContext();
+        }
     }
 }

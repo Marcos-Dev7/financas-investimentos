@@ -71,13 +71,16 @@ public class FamiliaService {
 
         boolean titularCompartilha = existentesDoTitular.isEmpty()
                 || Boolean.TRUE.equals(existentesDoTitular.getFirst().getTitularCompartilhaRenda());
+        boolean titularCompartilhaDespesas = existentesDoTitular.isEmpty()
+                || Boolean.TRUE.equals(existentesDoTitular.getFirst().getTitularCompartilhaDespesas());
 
         MembroFamilia novoConvite = new MembroFamilia(
                 titular,
                 emailConvidado,
                 novoToken,
                 novaExpiracao,
-                titularCompartilha
+                titularCompartilha,
+                titularCompartilhaDespesas
         );
 
         MembroFamilia salvo = membroFamiliaRepository.save(novoConvite);
@@ -110,6 +113,18 @@ public class FamiliaService {
             throw new IllegalArgumentException("O próprio titular não pode aceitar o convite");
         }
 
+        boolean jaEMembroAtivo = !membroFamiliaRepository
+                .findByMembroIdAndStatus(usuarioLogado.getId(), StatusFamilia.ACEITO)
+                .isEmpty();
+        boolean jaETitularAtivo = membroFamiliaRepository
+                .findByTitularIdOrderByDataCriacaoDesc(usuarioLogado.getId())
+                .stream()
+                .anyMatch(v -> v.getStatus() == StatusFamilia.ACEITO);
+
+        if (jaEMembroAtivo || jaETitularAtivo) {
+            throw new IllegalArgumentException("Você já participa de uma família ativa. Encerre seu vínculo atual antes de aceitar outro convite.");
+        }
+
         convite.aceitar(usuarioLogado);
         membroFamiliaRepository.save(convite);
 
@@ -131,6 +146,28 @@ public class FamiliaService {
         List<MembroFamilia> comoMembro = membroFamiliaRepository.findByMembroIdAndStatus(usuario.getId(), StatusFamilia.ACEITO);
         if (!comoMembro.isEmpty()) {
             comoMembro.forEach(v -> v.alterarCompartilhamentoMembro(compartilhar));
+            membroFamiliaRepository.saveAll(comoMembro);
+            return obterPainelFamilia();
+        }
+
+        throw new AccessDeniedException("Você ainda não participa de uma família ativa");
+    }
+
+    @Transactional
+    public PainelFamiliaResponseDTO alterarCompartilhamentoDespesas(CompartilharDespesasDTO dto) {
+        Usuario usuario = exigirUsuarioAutenticado();
+        boolean compartilhar = Boolean.TRUE.equals(dto.compartilhar());
+
+        List<MembroFamilia> comoTitular = membroFamiliaRepository.findByTitularIdOrderByDataCriacaoDesc(usuario.getId());
+        if (!comoTitular.isEmpty()) {
+            comoTitular.forEach(v -> v.alterarCompartilhamentoDespesasTitular(compartilhar));
+            membroFamiliaRepository.saveAll(comoTitular);
+            return obterPainelFamilia();
+        }
+
+        List<MembroFamilia> comoMembro = membroFamiliaRepository.findByMembroIdAndStatus(usuario.getId(), StatusFamilia.ACEITO);
+        if (!comoMembro.isEmpty()) {
+            comoMembro.forEach(v -> v.alterarCompartilhamentoDespesasMembro(compartilhar));
             membroFamiliaRepository.saveAll(comoMembro);
             return obterPainelFamilia();
         }
@@ -193,6 +230,7 @@ public class FamiliaService {
                     titular.getEmail(),
                     StatusFamilia.ACEITO,
                     meuVinculo.getTitularCompartilhaRenda(),
+                    meuVinculo.getTitularCompartilhaDespesas(),
                     null,
                     null,
                     true
@@ -206,6 +244,7 @@ public class FamiliaService {
                     titular.getNome(),
                     titular.getEmail(),
                     meuVinculo.getMembroCompartilhaRenda(),
+                    meuVinculo.getMembroCompartilhaDespesas(),
                     itens,
                     convitesPendentesParaMim
             );
@@ -221,6 +260,9 @@ public class FamiliaService {
         boolean minhaRendaCompartilhada = vinculosDoTitular.isEmpty()
                 || Boolean.TRUE.equals(vinculosDoTitular.getFirst().getTitularCompartilhaRenda());
 
+        boolean minhasDespesasCompartilhadas = vinculosDoTitular.isEmpty()
+                || Boolean.TRUE.equals(vinculosDoTitular.getFirst().getTitularCompartilhaDespesas());
+
         List<MembroFamiliaItemDTO> listaMembros = vinculosDoTitular.stream()
                 .map(v -> paraItemDTO(v, true))
                 .toList();
@@ -231,6 +273,7 @@ public class FamiliaService {
                 usuario.getNome(),
                 usuario.getEmail(),
                 minhaRendaCompartilhada,
+                minhasDespesasCompartilhadas,
                 listaMembros,
                 convitesPendentesParaMim
         );
@@ -240,9 +283,13 @@ public class FamiliaService {
         Usuario usuario = exigirUsuarioAutenticado();
         ContextoFamiliaAtiva contexto = exigirContextoFamiliaAtiva(usuario);
 
+        if (contexto.usuariosComDespesasCompartilhadasIds().isEmpty()) {
+            return List.of();
+        }
+
         List<Despesa> despesas = (mes != null)
-                ? despesaRepository.findByMesAndUsuarioIdIn(mes, contexto.todosUsuariosIds())
-                : despesaRepository.findByUsuarioIdInOrderByDataVencimentoAsc(contexto.todosUsuariosIds());
+                ? despesaRepository.findByMesAndUsuarioIdIn(mes, contexto.usuariosComDespesasCompartilhadasIds())
+                : despesaRepository.findByUsuarioIdInOrderByDataVencimentoAsc(contexto.usuariosComDespesasCompartilhadasIds());
 
         return despesas.stream()
                 .sorted(Comparator.comparing(
@@ -276,7 +323,9 @@ public class FamiliaService {
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
         }
 
-        List<Despesa> despesasMes = despesaRepository.findByMesAndUsuarioIdIn(mes, contexto.todosUsuariosIds());
+        List<Despesa> despesasMes = contexto.usuariosComDespesasCompartilhadasIds().isEmpty()
+                ? List.of()
+                : despesaRepository.findByMesAndUsuarioIdIn(mes, contexto.usuariosComDespesasCompartilhadasIds());
 
         BigDecimal despesasBrutas = despesasMes.stream()
                 .map(Despesa::getValor)
@@ -339,10 +388,14 @@ public class FamiliaService {
     private ContextoFamiliaAtiva montarContexto(Usuario titular, List<MembroFamilia> vinculosAceitos) {
         Set<Long> todosIds = new LinkedHashSet<>();
         Set<Long> rendaIds = new LinkedHashSet<>();
+        Set<Long> despesasIds = new LinkedHashSet<>();
 
         todosIds.add(titular.getId());
         if (Boolean.TRUE.equals(vinculosAceitos.getFirst().getTitularCompartilhaRenda())) {
             rendaIds.add(titular.getId());
+        }
+        if (Boolean.TRUE.equals(vinculosAceitos.getFirst().getTitularCompartilhaDespesas())) {
+            despesasIds.add(titular.getId());
         }
 
         for (MembroFamilia v : vinculosAceitos) {
@@ -351,10 +404,13 @@ public class FamiliaService {
                 if (Boolean.TRUE.equals(v.getMembroCompartilhaRenda())) {
                     rendaIds.add(v.getMembro().getId());
                 }
+                if (Boolean.TRUE.equals(v.getMembroCompartilhaDespesas())) {
+                    despesasIds.add(v.getMembro().getId());
+                }
             }
         }
 
-        return new ContextoFamiliaAtiva(todosIds, rendaIds);
+        return new ContextoFamiliaAtiva(todosIds, rendaIds, despesasIds);
     }
 
     private MembroFamiliaItemDTO paraItemDTO(MembroFamilia v, boolean exibirToken) {
@@ -368,6 +424,7 @@ public class FamiliaService {
                 v.getEmailConvidado(),
                 v.getStatus(),
                 v.getMembroCompartilhaRenda(),
+                v.getMembroCompartilhaDespesas(),
                 (exibirToken && v.getStatus() == StatusFamilia.PENDENTE) ? v.getTokenConvite() : null,
                 v.getDataExpiracao(),
                 false
@@ -382,5 +439,9 @@ public class FamiliaService {
         return usuario;
     }
 
-    private record ContextoFamiliaAtiva(Set<Long> todosUsuariosIds, Set<Long> usuariosComRendaCompartilhadaIds) {}
+    private record ContextoFamiliaAtiva(
+            Set<Long> todosUsuariosIds,
+            Set<Long> usuariosComRendaCompartilhadaIds,
+            Set<Long> usuariosComDespesasCompartilhadasIds
+    ) {}
 }
