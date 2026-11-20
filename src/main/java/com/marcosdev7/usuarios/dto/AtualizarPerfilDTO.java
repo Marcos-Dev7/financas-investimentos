@@ -12,9 +12,19 @@ public record AtualizarPerfilDTO(
         @Email(message = "Formato de e-mail inválido")
         String email,
 
-        String fotoPerfil
+        String fotoPerfil,
+
+        @Size(max = 20, message = "Telefone inválido")
+        String telefone,
+
+        @Email(message = "Formato de e-mail de recuperação inválido")
+        String emailRecuperacao
 ) {
     public AtualizarPerfilDTO(String nome, String email) {
-        this(nome, email, null);
+        this(nome, email, null, null, null);
+    }
+
+    public AtualizarPerfilDTO(String nome, String email, String fotoPerfil) {
+        this(nome, email, fotoPerfil, null, null);
     }
 }

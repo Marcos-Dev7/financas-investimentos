@@ -5,6 +5,7 @@ import com.marcosdev7.usuarios.dto.*;
 import com.marcosdev7.usuarios.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -45,6 +46,32 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<AuthResponseDTO> login(@RequestBody @Valid LoginRequestDTO dto) {
         return ResponseEntity.ok(authService.login(dto));
+    }
+
+    @Operation(summary = "Solicita link de recuperação de senha",
+            description = "Localiza a conta por e-mail principal, e-mail de recuperação ou telefone e envia link de redefinição.")
+    @PostMapping("/esqueci-senha")
+    public ResponseEntity<EsqueciSenhaResponseDTO> esqueciSenha(
+            @RequestBody @Valid EsqueciSenhaRequestDTO dto,
+            HttpServletRequest request) {
+        String origin = request.getHeader("Origin");
+        if (origin == null || origin.isBlank()) {
+            String proto = request.getHeader("X-Forwarded-Proto");
+            String scheme = (proto != null && !proto.isBlank()) ? proto : request.getScheme();
+            String host = request.getHeader("Host");
+            origin = (host != null && !host.isBlank())
+                    ? scheme + "://" + host
+                    : scheme + "://" + request.getServerName() + ":" + request.getServerPort();
+        }
+        return ResponseEntity.ok(authService.solicitarRecuperacaoSenha(dto, origin));
+    }
+
+    @Operation(summary = "Redefine a senha com token de recuperação",
+            description = "Valida o token enviado no link de recuperação e atualiza a senha do usuário.")
+    @PostMapping("/redefinir-senha")
+    public ResponseEntity<DadosErroMensagemDTO> redefinirSenha(@RequestBody @Valid RedefinirSenhaRequestDTO dto) {
+        authService.redefinirSenha(dto);
+        return ResponseEntity.ok(new DadosErroMensagemDTO("Senha redefinida com sucesso. Já pode fazer login."));
     }
 
     @Operation(summary = "Dados do perfil autenticado",

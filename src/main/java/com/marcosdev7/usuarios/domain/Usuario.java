@@ -37,6 +37,18 @@ public class Usuario implements UserDetails {
     @Column(name = "foto_perfil", columnDefinition = "TEXT")
     private String fotoPerfil;
 
+    @Column(name = "telefone", length = 20)
+    private String telefone;
+
+    @Column(name = "email_recuperacao")
+    private String emailRecuperacao;
+
+    @Column(name = "token_recuperacao", length = 100)
+    private String tokenRecuperacao;
+
+    @Column(name = "token_recuperacao_expiracao")
+    private LocalDateTime tokenRecuperacaoExpiracao;
+
     public Usuario(Long id, String nome, String email, String senha) {
         this.id = id;
         this.nome = nome;
@@ -82,6 +94,32 @@ public class Usuario implements UserDetails {
 
     public void atualizarSenha(String novaSenhaCriptografada) {
         this.senha = novaSenhaCriptografada;
+    }
+
+    public void atualizarTelefone(String novoTelefone) {
+        if (novoTelefone == null || novoTelefone.isBlank()) {
+            this.telefone = null;
+        } else {
+            this.telefone = novoTelefone.replaceAll("\\D", "");
+        }
+    }
+
+    public void atualizarEmailRecuperacao(String novoEmailRecuperacao) {
+        if (novoEmailRecuperacao == null || novoEmailRecuperacao.isBlank()) {
+            this.emailRecuperacao = null;
+        } else {
+            this.emailRecuperacao = novoEmailRecuperacao.trim().toLowerCase();
+        }
+    }
+
+    public void definirTokenRecuperacao(String token, LocalDateTime expiracao) {
+        this.tokenRecuperacao = token;
+        this.tokenRecuperacaoExpiracao = expiracao;
+    }
+
+    public void limparTokenRecuperacao() {
+        this.tokenRecuperacao = null;
+        this.tokenRecuperacaoExpiracao = null;
     }
 
     @Override

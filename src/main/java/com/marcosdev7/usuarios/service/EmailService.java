@@ -132,6 +132,64 @@ public class EmailService {
         return false;
     }
 
+    public boolean enviarLinkRecuperacaoSenha(String emailDestino, String nomeUsuario, String linkRecuperacao, String token) {
+        String assunto = "FinancialFamily — Recuperação de Senha";
+        String html = """
+                <div style="font-family: Inter, -apple-system, BlinkMacSystemFont, Arial, sans-serif; max-width: 520px; margin: 0 auto; background: #0A0D12; color: #F0F4F8; padding: 36px 32px; border-radius: 12px; border: 1px solid #1F2937;">
+                    <div style="margin-bottom: 24px;">
+                        <span style="display: inline-block; background: #059669; color: #FFFFFF; font-weight: 700; font-size: 13px; padding: 6px 12px; border-radius: 6px; letter-spacing: 0.5px;">FINANCIAL FAMILY</span>
+                    </div>
+                    <h2 style="margin: 0 0 12px 0; font-size: 20px; color: #F0F4F8;">Recuperação de senha</h2>
+                    <p style="color: #B4C0D0; font-size: 14px; line-height: 1.6;">Olá, <strong>%s</strong>! Recebemos uma solicitação para redefinir a senha da sua conta.</p>
+                    <p style="color: #8B9BB0; font-size: 14px; line-height: 1.6;">Clique no botão abaixo para criar uma nova senha (válido por 30 minutos):</p>
+                    <div style="text-align: center; margin: 24px 0;">
+                        <a href="%s" style="display: inline-block; background: #059669; color: #FFFFFF; text-decoration: none; font-weight: 600; font-size: 14px; padding: 12px 24px; border-radius: 8px;">Redefinir Minha Senha</a>
+                    </div>
+                    <p style="color: #8B9BB0; font-size: 13px; line-height: 1.6;">Se preferir, copie o código de recuperação abaixo na tela de login:</p>
+                    <div style="background: #11151C; border: 1px solid #2D3B4E; border-radius: 8px; padding: 14px; text-align: center; margin: 14px 0;">
+                        <span style="font-size: 14px; font-weight: 700; letter-spacing: 1px; color: #34D399; word-break: break-all;">%s</span>
+                    </div>
+                    <p style="color: #8B9BB0; font-size: 12px; line-height: 1.5; margin-bottom: 0;">Se você não solicitou esta alteração, ignore este e-mail. Sua senha permanecerá a mesma.</p>
+                </div>
+                """.formatted(nomeUsuario, linkRecuperacao, token);
+
+        if (enviarEmailHtml(emailDestino, nomeUsuario, assunto, html)) {
+            return true;
+        }
+
+        log.info("Link de recuperação de senha para {}: {} (token: {})", emailDestino, linkRecuperacao, token);
+        return false;
+    }
+
+    private boolean enviarEmailHtml(String emailDestino, String nomeDestino, String assunto, String html) {
+        if (brevoApiKey != null && !brevoApiKey.isBlank()) {
+            String remetente = (mailFrom != null && !mailFrom.isBlank())
+                    ? mailFrom.trim()
+                    : (mailUsername != null && !mailUsername.isBlank() ? mailUsername.trim() : "noreply@financialfamily.app");
+            if (enviarViaBrevoApi(remetente, emailDestino, nomeDestino, assunto, html)) {
+                return true;
+            }
+        }
+
+        if (mailSender != null && mailUsername != null && !mailUsername.isBlank()
+                && mailPassword != null && !mailPassword.isBlank()) {
+            try {
+                MimeMessage message = mailSender.createMimeMessage();
+                MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+                String remetente = (mailFrom != null && !mailFrom.isBlank()) ? mailFrom.trim() : mailUsername.trim();
+                helper.setFrom(remetente);
+                helper.setTo(emailDestino);
+                helper.setSubject(assunto);
+                helper.setText(html, true);
+                mailSender.send(message);
+                return true;
+            } catch (Exception e) {
+                log.warn("Falha no envio SMTP para {}: {}", emailDestino, e.getMessage());
+            }
+        }
+        return false;
+    }
+
     private boolean enviarViaBrevoApi(String remetenteEmail, String emailDestino, String nomeDestino, String assunto, String html) {
         try {
             Map<String, Object> payload = Map.of(

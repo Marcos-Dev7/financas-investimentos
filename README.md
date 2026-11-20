@@ -3,13 +3,13 @@
 
   # FinancialFamily — Gestão Financeira & Patrimonial Familiar
 
-  **Versão 1.1.0** &bull; Plataforma Full-Stack de Governança Financeira Familiar, Membros & Cálculo de Sobra Livre
+  **Versão 1.2.0** &bull; Plataforma Full-Stack de Governança Financeira Familiar, Membros & Cálculo de Sobra Livre
 
-  [![Version](https://img.shields.io/badge/version-1.1.0-10b981?style=for-the-badge)](https://github.com/Marcos-Dev7/financas-investimentos)
+  [![Version](https://img.shields.io/badge/version-1.2.0-10b981?style=for-the-badge)](https://github.com/Marcos-Dev7/financas-investimentos)
   [![Java](https://img.shields.io/badge/Java-25-f59e0b?style=for-the-badge&logo=openjdk&logoColor=white)](https://openjdk.org/)
   [![Spring Boot](https://img.shields.io/badge/Spring_Boot-4.0.3-6db33f?style=for-the-badge&logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
   [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Neon_Cloud-336791?style=for-the-badge&logo=postgresql&logoColor=white)](https://neon.tech/)
-  [![Tests](https://img.shields.io/badge/Tests-87_Passing-10b981?style=for-the-badge&logo=junit5&logoColor=white)](#%EF%B8%8F-testes-automatizados)
+  [![Tests](https://img.shields.io/badge/Tests-91_Passing-10b981?style=for-the-badge&logo=junit5&logoColor=white)](#%EF%B8%8F-testes-automatizados)
 
   🌐 **Acesse a Plataforma Online:** [https://financial-family.onrender.com](https://financial-family.onrender.com)
 </div>
@@ -24,7 +24,7 @@ O sistema resolve um problema clássico do orçamento doméstico: separar o que 
 
 ---
 
-## ✨ Funcionalidades Principais (`v1.1.0`)
+## ✨ Funcionalidades Principais (`v1.2.0`)
 
 ### 👨‍👩‍👧‍👦 1. Módulo Família & Membros (Novo na `v1.1.0`)
 - **Convites para Múltiplos Membros (E-mail ou Link com Token 48h):** O titular pode convidar seu cônjuge ou familiares por e-mail ou link (`?convite=TOKEN`) com prazo de expiração de 48 horas.
@@ -32,14 +32,16 @@ O sistema resolve um problema clássico do orçamento doméstico: separar o que 
 - **Compartilhamento Opcional de Renda (*Opt-in / Opt-out*):** A renda de cada membro só entra na soma da **Renda Familiar e Sobra Livre Consolidada** se a própria pessoa ativar o interruptor de compartilhamento, podendo desativar a qualquer momento.
 - **Revogação Imediata de Acesso:** O titular pode remover qualquer membro com 1 clique, cortando o acesso imediatamente no banco de dados. Usuários fora da família são bloqueados no backend com `403 Forbidden`.
 
-### 🔐 2. Autenticação, Segurança e Isolamento de Dados
+### 🔐 2. Autenticação, Recuperação de Senha, Cookies & Isolamento de Dados
 - **Cadastro com Política de Senha Forte:** Validação em tempo real (mínimo 8 caracteres, maiúscula, minúscula, número e caractere especial) + confirmação obrigatória de senha.
 - **Verificação de E-mail com Código de 6 Dígitos:** Envio de código numérico temporário (`SecureRandom`, válido por 15 minutos) para ativação da conta.
+- **Recuperação de Senha ("Esqueci minha senha"):** Fluxo completo com envio de link (`?resetToken=...`, válido por 30 minutos) localizando a conta por **E-mail Principal**, **E-mail de Recuperação** ou **Telefone cadastrado** (configuráveis em *"Minha Conta"*).
+- **Sessão por Aba & Gestão de Cookies:** Por padrão a sessão é isolada por aba (`sessionStorage`), impedindo login automático ao abrir novas páginas. Inclui banner e modal de **Preferências de Cookies** (`Apenas Essenciais` ou `Aceitar Todos`) e opção explícita *"Manter conectado"* no login.
 - **Sessão Stateless JWT & Isolamento Multi-Usuário:** Cada conta possui ambiente totalmente isolado — um usuário gerencia exclusivamente suas próprias receitas e despesas.
 
 ### 👤 3. Área do Usuário ("Minha Conta")
 - **Upload de Foto de Perfil:** Recorte quadrado e compressão automática (`256x256`) no navegador, com persistência direta no banco de dados na nuvem.
-- **Gestão de Dados Cadastrais & Segurança:** Atualização de nome completo e e-mail com renovação automática de sessão, alteração de senha e opção de exclusão permanente da conta.
+- **Gestão de Dados Cadastrais, Recuperação & Segurança:** Atualização de nome completo, e-mail principal, **telefone** e **e-mail de recuperação**, alteração de senha, preferências de cookies e opção de exclusão permanente da conta.
 
 ### 💰 4. Gestão de Despesas, Receitas e Motor de Sobra Livre
 - **Despesas Mensais:** Cadastro, edição, exclusão, paginação, busca por descrição/categoria, baixa de pagamento com 1 clique (`Pagar`) e reversão (`Estornar`).
@@ -104,8 +106,10 @@ O sistema resolve um problema clássico do orçamento doméstico: separar o que 
 | `POST` | `/auth/verificar-email` | Valida o código de 6 dígitos e retorna Token JWT | Pública |
 | `POST` | `/auth/reenviar-codigo` | Reenvia novo código de verificação | Pública |
 | `POST` | `/auth/login` | Autentica e-mail/senha e retorna Token JWT | Pública |
-| `GET` | `/auth/me` | Retorna dados e foto do usuário autenticado | `Bearer JWT` |
-| `PUT` | `/auth/perfil` | Atualiza nome, e-mail e foto de perfil | `Bearer JWT` |
+| `POST` | `/auth/esqueci-senha` | Envia link de recuperação via e-mail, e-mail de recuperação ou telefone | Pública |
+| `POST` | `/auth/redefinir-senha` | Redefine a senha validando o token de recuperação (30 min) | Pública |
+| `GET` | `/auth/me` | Retorna dados, contatos de recuperação e foto do usuário autenticado | `Bearer JWT` |
+| `PUT` | `/auth/perfil` | Atualiza nome, e-mail, telefone, e-mail de recuperação e foto | `Bearer JWT` |
 | `PUT` | `/auth/alterar-senha` | Altera a senha validando a senha atual e força | `Bearer JWT` |
 | `DELETE` | `/auth/conta` | Exclui permanentemente a conta e seus dados | `Bearer JWT` |
 

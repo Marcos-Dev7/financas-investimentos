@@ -4,6 +4,50 @@ const API_BASE = window.location.origin.includes('localhost:8080') || window.loc
 
 const STORAGE_TOKEN_KEY = 'ff_auth_token';
 const STORAGE_USER_KEY = 'ff_auth_user';
+const COOKIE_CONSENT_NAME = 'ff_cookie_consent';
+const STORAGE_KEEP_LOGGED_KEY = 'ff_keep_logged';
+
+function getCookie(name) {
+    const match = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
+    return match ? decodeURIComponent(match[1]) : null;
+}
+
+function setCookie(name, value, days = 180) {
+    const expires = new Date(Date.now() + days * 864e5).toUTCString();
+    const secure = window.location.protocol === 'https:' ? '; Secure' : '';
+    document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/; SameSite=Lax${secure}`;
+}
+
+function obterConsentimentoCookies() {
+    return getCookie(COOKIE_CONSENT_NAME);
+}
+
+function carregarSessaoInicial() {
+    const sessionToken = sessionStorage.getItem(STORAGE_TOKEN_KEY);
+    const sessionUser = sessionStorage.getItem(STORAGE_USER_KEY);
+    if (sessionToken) {
+        return {
+            token: sessionToken,
+            user: JSON.parse(sessionUser || 'null')
+        };
+    }
+
+    const consent = obterConsentimentoCookies();
+    const manterConectado = localStorage.getItem(STORAGE_KEEP_LOGGED_KEY) === 'true';
+    if (consent === 'all' && manterConectado) {
+        return {
+            token: localStorage.getItem(STORAGE_TOKEN_KEY) || null,
+            user: JSON.parse(localStorage.getItem(STORAGE_USER_KEY) || 'null')
+        };
+    }
+
+    // Remove resquícios antigos de localStorage para impedir login automático indesejado em novas abas
+    localStorage.removeItem(STORAGE_TOKEN_KEY);
+    localStorage.removeItem(STORAGE_USER_KEY);
+    return { token: null, user: null };
+}
+
+const sessaoInicial = carregarSessaoInicial();
 
 const MESES = [
     'janeiro', 'fevereiro', 'marco', 'abril', 'maio', 'junho',
@@ -32,8 +76,8 @@ const ICON_SVG = {
 };
 
 const state = {
-    token: localStorage.getItem(STORAGE_TOKEN_KEY) || null,
-    user: JSON.parse(localStorage.getItem(STORAGE_USER_KEY) || 'null'),
+    token: sessaoInicial.token,
+    user: sessaoInicial.user,
     abaAtiva: 'dashboard',
     pendingVerifyEmail: '',
     mesAtual: MESES[new Date().getMonth()],
@@ -230,17 +274,34 @@ function atualizarDicaConfirmacao(senha, confirmacao, hintId) {
     }
 }
 
-function salvarSessao(authData) {
+function salvarSessao(authData, manterConectado = null) {
     state.token = authData.token;
     state.user = {
         id: authData.id,
         nome: authData.nome,
         email: authData.email,
         emailVerificado: true,
-        fotoPerfil: authData.fotoPerfil !== undefined ? authData.fotoPerfil : null
+        fotoPerfil: authData.fotoPerfil !== undefined ? authData.fotoPerfil : null,
+        telefone: authData.telefone !== undefined ? authData.telefone : (state.user?.telefone || ''),
+        emailRecuperacao: authData.emailRecuperacao !== undefined ? authData.emailRecuperacao : (state.user?.emailRecuperacao || '')
     };
-    localStorage.setItem(STORAGE_TOKEN_KEY, state.token);
-    localStorage.setItem(STORAGE_USER_KEY, JSON.stringify(state.user));
+
+    sessionStorage.setItem(STORAGE_TOKEN_KEY, state.token);
+    sessionStorage.setItem(STORAGE_USER_KEY, JSON.stringify(state.user));
+
+    const persistir = manterConectado !== null
+        ? manterConectado
+        : (localStorage.getItem(STORAGE_KEEP_LOGGED_KEY) === 'true' && obterConsentimentoCookies() === 'all');
+
+    if (persistir && obterConsentimentoCookies() === 'all') {
+        localStorage.setItem(STORAGE_KEEP_LOGGED_KEY, 'true');
+        localStorage.setItem(STORAGE_TOKEN_KEY, state.token);
+        localStorage.setItem(STORAGE_USER_KEY, JSON.stringify(state.user));
+    } else {
+        localStorage.removeItem(STORAGE_KEEP_LOGGED_KEY);
+        localStorage.removeItem(STORAGE_TOKEN_KEY);
+        localStorage.removeItem(STORAGE_USER_KEY);
+    }
 }
 
 function renderizarAvatarElemento(initialsElId, imgElId, nome, fotoBase64) {
@@ -277,6 +338,10 @@ function atualizarDadosUsuarioNaTela() {
     document.getElementById('perfilEmailHeader').textContent = state.user.email;
     document.getElementById('perfilInputEmail').value = state.user.email;
     document.getElementById('perfilInputNome').value = state.user.nome;
+    const telInput = document.getElementById('perfilInputTelefone');
+    if (telInput) telInput.value = state.user.telefone || '';
+    const emailRecInput = document.getElementById('perfilInputEmailRecuperacao');
+    if (emailRecInput) emailRecInput.value = state.user.emailRecuperacao || '';
 }
 
 function navegarPara(aba) {
@@ -327,8 +392,11 @@ function navegarPara(aba) {
 function limparSessao() {
     state.token = null;
     state.user = null;
+    sessionStorage.removeItem(STORAGE_TOKEN_KEY);
+    sessionStorage.removeItem(STORAGE_USER_KEY);
     localStorage.removeItem(STORAGE_TOKEN_KEY);
     localStorage.removeItem(STORAGE_USER_KEY);
+    localStorage.removeItem(STORAGE_KEEP_LOGGED_KEY);
     mostrarTelaAuth('login');
 }
 
@@ -342,10 +410,14 @@ function mostrarTelaAuth(modo = 'login', emailVerificacao = '') {
     const formLogin = document.getElementById('formLogin');
     const formRegister = document.getElementById('formRegister');
     const formVerifyEmail = document.getElementById('formVerifyEmail');
+    const formEsqueciSenha = document.getElementById('formEsqueciSenha');
+    const formRedefinirSenha = document.getElementById('formRedefinirSenha');
 
     formLogin.classList.add('hidden');
     formRegister.classList.add('hidden');
     formVerifyEmail.classList.add('hidden');
+    if (formEsqueciSenha) formEsqueciSenha.classList.add('hidden');
+    if (formRedefinirSenha) formRedefinirSenha.classList.add('hidden');
 
     if (modo === 'verify') {
         tabsWrap.classList.add('hidden');
@@ -353,6 +425,12 @@ function mostrarTelaAuth(modo = 'login', emailVerificacao = '') {
         state.pendingVerifyEmail = emailVerificacao;
         document.getElementById('verifyEmailTarget').textContent = emailVerificacao;
         document.getElementById('inputCodigoVerificacao').value = '';
+    } else if (modo === 'forgot') {
+        tabsWrap.classList.add('hidden');
+        if (formEsqueciSenha) formEsqueciSenha.classList.remove('hidden');
+    } else if (modo === 'reset') {
+        tabsWrap.classList.add('hidden');
+        if (formRedefinirSenha) formRedefinirSenha.classList.remove('hidden');
     } else if (modo === 'register') {
         tabsWrap.classList.remove('hidden');
         tabRegisterBtn.classList.add('active');
@@ -448,18 +526,31 @@ async function carregarResumoMes() {
         document.getElementById('kpiProgressoTexto').textContent = `${pctQuitado}% das despesas do mês quitadas`;
 
         const pctComprometido = receita > 0 ? Math.min(100, Math.round((brutas / receita) * 100)) : (brutas > 0 ? 100 : 0);
-        document.getElementById('lblComprometimento').textContent = `${pctComprometido}%`;
-        document.getElementById('barComprometimento').style.width = `${pctComprometido}%`;
-
+        const lblComp = document.getElementById('lblComprometimento');
+        const barComp = document.getElementById('barComprometimento');
         const txtRec = document.getElementById('txtSaudeRecomendacao');
+
+        lblComp.textContent = `${pctComprometido}%`;
+        barComp.style.width = `${pctComprometido}%`;
+        barComp.classList.remove('progress-bar--warning', 'progress-bar--danger');
+        lblComp.classList.remove('text-healthy', 'text-warning', 'text-danger');
+        txtRec.classList.remove('text-healthy', 'text-warning', 'text-danger');
+
         if (receita === 0 && brutas === 0) {
             txtRec.textContent = 'Cadastre suas receitas e despesas do mês para acompanhar a saúde do orçamento.';
         } else if (pctComprometido <= 70) {
+            lblComp.classList.add('text-healthy');
             txtRec.textContent = 'Mais de 30% da sua renda está livre para reserva ou investimentos.';
-        } else if (pctComprometido <= 95) {
+        } else if (pctComprometido <= 90) {
+            barComp.classList.add('progress-bar--warning');
+            lblComp.classList.add('text-warning');
+            txtRec.classList.add('text-warning');
             txtRec.textContent = 'Atenção: Suas despesas previstas consomem boa parte da renda mensal.';
         } else {
-            txtRec.textContent = 'Alerta: As despesas previstas atingiram ou superaram a receita cadastrada no mês.';
+            barComp.classList.add('progress-bar--danger');
+            lblComp.classList.add('text-danger');
+            txtRec.classList.add('text-danger');
+            txtRec.textContent = 'Alerta crítico: As despesas previstas atingiram ou superaram a receita cadastrada no mês.';
         }
     } catch (err) {
         console.error('Erro ao carregar resumo:', err);
@@ -1092,6 +1183,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         btn.textContent = 'Autenticando...';
 
         const emailDigitado = document.getElementById('loginEmail').value.trim();
+        const manterConectado = Boolean(document.getElementById('loginManterConectado')?.checked);
 
         try {
             const data = await apiFetch('/auth/login', {
@@ -1101,7 +1193,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                     senha: document.getElementById('loginSenha').value
                 })
             });
-            salvarSessao(data);
+            if (manterConectado && obterConsentimentoCookies() !== 'all') {
+                setCookie(COOKIE_CONSENT_NAME, 'all');
+                const banner = document.getElementById('cookieBanner');
+                if (banner) banner.classList.add('hidden');
+            }
+            salvarSessao(data, manterConectado);
             formLogin.reset();
             mostrarTelaApp();
             showToast(`Bem-vindo(a), ${data.nome}!`);
@@ -1293,10 +1390,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                 method: 'PUT',
                 body: JSON.stringify({
                     nome: document.getElementById('perfilInputNome').value.trim(),
-                    email: document.getElementById('perfilInputEmail').value.trim()
+                    email: document.getElementById('perfilInputEmail').value.trim(),
+                    telefone: document.getElementById('perfilInputTelefone')?.value.trim() || '',
+                    emailRecuperacao: document.getElementById('perfilInputEmailRecuperacao')?.value.trim() || ''
                 })
             });
-            salvarSessao(authAtualizado);
+            const perfilAtualizado = await apiFetch('/auth/me');
+            salvarSessao({ ...authAtualizado, ...perfilAtualizado });
             atualizarDadosUsuarioNaTela();
             showToast('Dados da conta atualizados.');
         } catch (err) {
@@ -1524,11 +1624,170 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
+    // ==========================================
+    // RECUPERAÇÃO DE SENHA (ESQUECI MINHA SENHA)
+    // ==========================================
+    const recCanal = document.getElementById('recCanal');
+    const recIdentificador = document.getElementById('recIdentificador');
+    const recIdentificadorLabel = document.getElementById('recIdentificadorLabel');
+
+    if (recCanal) {
+        recCanal.addEventListener('change', () => {
+            const val = recCanal.value;
+            if (val === 'TELEFONE') {
+                recIdentificadorLabel.textContent = 'Telefone cadastrado';
+                recIdentificador.type = 'tel';
+                recIdentificador.placeholder = '(11) 99999-9999';
+            } else if (val === 'EMAIL_RECUPERACAO') {
+                recIdentificadorLabel.textContent = 'E-mail de recuperação';
+                recIdentificador.type = 'email';
+                recIdentificador.placeholder = 'secundario@dominio.com';
+            } else {
+                recIdentificadorLabel.textContent = 'E-mail principal';
+                recIdentificador.type = 'email';
+                recIdentificador.placeholder = 'nome@dominio.com';
+            }
+            recIdentificador.value = '';
+        });
+    }
+
+    document.getElementById('btnEsqueciSenha')?.addEventListener('click', () => {
+        const emailLogin = document.getElementById('loginEmail')?.value.trim();
+        if (emailLogin && recCanal && recCanal.value === 'EMAIL') {
+            recIdentificador.value = emailLogin;
+        }
+        mostrarTelaAuth('forgot');
+    });
+    document.getElementById('btnVoltarLoginEsqueci')?.addEventListener('click', () => mostrarTelaAuth('login'));
+    document.getElementById('btnTenhoTokenReset')?.addEventListener('click', () => mostrarTelaAuth('reset'));
+    document.getElementById('btnVoltarLoginReset')?.addEventListener('click', () => mostrarTelaAuth('login'));
+
+    document.getElementById('formEsqueciSenha')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('btnEnviarRecuperacao');
+        btn.disabled = true;
+        btn.textContent = 'Enviando...';
+        try {
+            const resp = await apiFetch('/auth/esqueci-senha', {
+                method: 'POST',
+                body: JSON.stringify({
+                    canal: recCanal.value,
+                    identificador: recIdentificador.value.trim()
+                })
+            });
+            showToast(resp.mensagem);
+            mostrarTelaAuth('reset');
+        } catch (err) {
+            showToast(err.message, 'error');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Enviar Link de Recuperação';
+        }
+    });
+
+    const resetNovaSenha = document.getElementById('resetNovaSenha');
+    const resetConfSenha = document.getElementById('resetConfirmacaoSenha');
+    if (resetNovaSenha && resetConfSenha) {
+        resetNovaSenha.addEventListener('input', () => {
+            atualizarChecklistSenha(resetNovaSenha.value, 'resetPwdRules');
+            atualizarDicaConfirmacao(resetNovaSenha.value, resetConfSenha.value, 'resetMatchHint');
+        });
+        resetConfSenha.addEventListener('input', () => {
+            atualizarDicaConfirmacao(resetNovaSenha.value, resetConfSenha.value, 'resetMatchHint');
+        });
+    }
+
+    document.getElementById('formRedefinirSenha')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const novaSenha = resetNovaSenha.value;
+        const confirmacaoNovaSenha = resetConfSenha.value;
+        if (!atualizarChecklistSenha(novaSenha, 'resetPwdRules')) {
+            showToast('A nova senha precisa atender a todas as regras de segurança.', 'error');
+            return;
+        }
+        if (novaSenha !== confirmacaoNovaSenha) {
+            showToast('A confirmação da nova senha não coincide.', 'error');
+            return;
+        }
+        const btn = document.getElementById('btnConfirmarResetSenha');
+        btn.disabled = true;
+        btn.textContent = 'Redefinindo...';
+        try {
+            const resp = await apiFetch('/auth/redefinir-senha', {
+                method: 'POST',
+                body: JSON.stringify({
+                    token: document.getElementById('resetTokenInput').value.trim(),
+                    novaSenha,
+                    confirmacaoNovaSenha
+                })
+            });
+            document.getElementById('formRedefinirSenha').reset();
+            showToast(resp.mensagem || 'Senha redefinida com sucesso!');
+            mostrarTelaAuth('login');
+        } catch (err) {
+            showToast(err.message, 'error');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Redefinir Senha';
+        }
+    });
+
+    // ==========================================
+    // CONSENTIMENTO & PREFERÊNCIAS DE COOKIES
+    // ==========================================
+    const cookieBanner = document.getElementById('cookieBanner');
+    const modalCookies = document.getElementById('modalCookies');
+    const chkCookiePreferencia = document.getElementById('chkCookiePreferencia');
+
+    const aplicarPreferenciaCookies = (tipo) => {
+        setCookie(COOKIE_CONSENT_NAME, tipo);
+        if (tipo !== 'all') {
+            localStorage.removeItem(STORAGE_KEEP_LOGGED_KEY);
+            localStorage.removeItem(STORAGE_TOKEN_KEY);
+            localStorage.removeItem(STORAGE_USER_KEY);
+        }
+        if (cookieBanner) cookieBanner.classList.add('hidden');
+        fecharModalAcessivel(modalCookies);
+        showToast(tipo === 'all'
+            ? 'Preferências salvas: todos os cookies habilitados.'
+            : 'Preferências salvas: apenas cookies essenciais ativos.');
+    };
+
+    if (!obterConsentimentoCookies() && cookieBanner) {
+        cookieBanner.classList.remove('hidden');
+    }
+
+    const abrirModalCookies = () => {
+        if (chkCookiePreferencia) {
+            chkCookiePreferencia.checked = obterConsentimentoCookies() === 'all';
+        }
+        abrirModalAcessivel(modalCookies, chkCookiePreferencia);
+    };
+
+    document.getElementById('btnAbrirCookiesAuth')?.addEventListener('click', abrirModalCookies);
+    document.getElementById('btnAbrirCookiesConta')?.addEventListener('click', abrirModalCookies);
+    document.getElementById('btnCookiePersonalizar')?.addEventListener('click', abrirModalCookies);
+    document.getElementById('btnFecharCookies')?.addEventListener('click', () => fecharModalAcessivel(modalCookies));
+    document.getElementById('btnCookieEssenciais')?.addEventListener('click', () => aplicarPreferenciaCookies('essential'));
+    document.getElementById('btnCookieAceitarTodos')?.addEventListener('click', () => aplicarPreferenciaCookies('all'));
+    document.getElementById('btnSalvarCookiesEssenciais')?.addEventListener('click', () => aplicarPreferenciaCookies('essential'));
+    document.getElementById('btnSalvarCookiesTodos')?.addEventListener('click', () => {
+        aplicarPreferenciaCookies(chkCookiePreferencia?.checked ? 'all' : 'essential');
+    });
+
     // Verificar sessão existente
     const urlParams = new URLSearchParams(window.location.search);
     const tokenConviteUrl = urlParams.get('convite');
+    const resetTokenUrl = urlParams.get('resetToken');
     if (tokenConviteUrl) {
         document.getElementById('inputTokenConvite').value = tokenConviteUrl;
+    }
+
+    if (resetTokenUrl) {
+        document.getElementById('resetTokenInput').value = resetTokenUrl;
+        window.history.replaceState({}, document.title, window.location.pathname);
+        mostrarTelaAuth('reset');
+        return;
     }
 
     if (state.token) {
@@ -1536,7 +1795,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             const perfil = await apiFetch('/auth/me');
             if (perfil) {
                 state.user = perfil;
-                localStorage.setItem(STORAGE_USER_KEY, JSON.stringify(perfil));
+                sessionStorage.setItem(STORAGE_USER_KEY, JSON.stringify(perfil));
+                if (localStorage.getItem(STORAGE_KEEP_LOGGED_KEY) === 'true' && obterConsentimentoCookies() === 'all') {
+                    localStorage.setItem(STORAGE_USER_KEY, JSON.stringify(perfil));
+                }
                 mostrarTelaApp();
                 await atualizarTudo();
                 if (tokenConviteUrl) {

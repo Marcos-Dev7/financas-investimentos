@@ -55,7 +55,9 @@ public class SecurityConfig {
                                 "/auth/login",
                                 "/auth/registrar",
                                 "/auth/verificar-email",
-                                "/auth/reenviar-codigo"
+                                "/auth/reenviar-codigo",
+                                "/auth/esqueci-senha",
+                                "/auth/redefinir-senha"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )

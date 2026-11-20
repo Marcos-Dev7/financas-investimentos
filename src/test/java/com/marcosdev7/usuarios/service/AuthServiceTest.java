@@ -136,4 +136,77 @@ class AuthServiceTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("EMAIL_NAO_VERIFICADO:marcos@email.com");
     }
+
+    @Test
+    @DisplayName("Deve gerar token e enviar link de recuperação de senha via e-mail de recuperação")
+    void deveEnviarLinkRecuperacaoPorEmailRecuperacao() {
+        Usuario usuario = new Usuario(1L, "Marcos Paulo", "marcos@email.com", "hash");
+        usuario.atualizarEmailRecuperacao("backup@email.com");
+
+        when(usuarioRepository.findByEmailRecuperacaoIgnoreCase("backup@email.com"))
+                .thenReturn(Optional.of(usuario));
+        when(emailService.enviarLinkRecuperacaoSenha(eq("backup@email.com"), eq("Marcos Paulo"), anyString(), anyString()))
+                .thenReturn(true);
+
+        EsqueciSenhaResponseDTO response = authService.solicitarRecuperacaoSenha(
+                new EsqueciSenhaRequestDTO("EMAIL_RECUPERACAO", "backup@email.com"),
+                "https://financial-family.onrender.com"
+        );
+
+        assertThat(response.emailEnviado()).isTrue();
+        assertThat(usuario.getTokenRecuperacao()).isNotBlank();
+        assertThat(usuario.getTokenRecuperacaoExpiracao()).isAfter(LocalDateTime.now());
+        verify(usuarioRepository).save(usuario);
+    }
+
+    @Test
+    @DisplayName("Deve localizar conta pelo telefone normalizado e enviar link para e-mail vinculado")
+    void deveEnviarLinkRecuperacaoPorTelefone() {
+        Usuario usuario = new Usuario(1L, "Marcos Paulo", "marcos@email.com", "hash");
+        usuario.atualizarTelefone("(11) 99999-8888");
+        usuario.atualizarEmailRecuperacao("rec@email.com");
+
+        when(usuarioRepository.findByTelefone("11999998888")).thenReturn(Optional.of(usuario));
+        when(emailService.enviarLinkRecuperacaoSenha(eq("rec@email.com"), eq("Marcos Paulo"), anyString(), anyString()))
+                .thenReturn(true);
+
+        EsqueciSenhaResponseDTO response = authService.solicitarRecuperacaoSenha(
+                new EsqueciSenhaRequestDTO("TELEFONE", "(11) 99999-8888"),
+                "https://financial-family.onrender.com"
+        );
+
+        assertThat(response.emailEnviado()).isTrue();
+        verify(emailService).enviarLinkRecuperacaoSenha(eq("rec@email.com"), eq("Marcos Paulo"), contains("?resetToken="), anyString());
+    }
+
+    @Test
+    @DisplayName("Deve redefinir a senha com token válido e limpar o token após o uso")
+    void deveRedefinirSenhaComTokenValido() {
+        Usuario usuario = new Usuario(1L, "Marcos Paulo", "marcos@email.com", "hash_antigo");
+        usuario.definirTokenRecuperacao("token-valido-123", LocalDateTime.now().plusMinutes(20));
+
+        when(usuarioRepository.findByTokenRecuperacao("token-valido-123")).thenReturn(Optional.of(usuario));
+        when(passwordEncoder.encode("NovaSenha@2026")).thenReturn("hash_novo");
+
+        authService.redefinirSenha(new RedefinirSenhaRequestDTO("token-valido-123", "NovaSenha@2026", "NovaSenha@2026"));
+
+        assertThat(usuario.getSenha()).isEqualTo("hash_novo");
+        assertThat(usuario.getTokenRecuperacao()).isNull();
+        assertThat(usuario.getTokenRecuperacaoExpiracao()).isNull();
+        verify(usuarioRepository).save(usuario);
+    }
+
+    @Test
+    @DisplayName("Deve recusar redefinição de senha quando o token estiver expirado")
+    void deveRecusarRedefinicaoQuandoTokenExpirado() {
+        Usuario usuario = new Usuario(1L, "Marcos Paulo", "marcos@email.com", "hash_antigo");
+        usuario.definirTokenRecuperacao("token-expirado", LocalDateTime.now().minusMinutes(5));
+
+        when(usuarioRepository.findByTokenRecuperacao("token-expirado")).thenReturn(Optional.of(usuario));
+
+        assertThatThrownBy(() -> authService.redefinirSenha(
+                new RedefinirSenhaRequestDTO("token-expirado", "NovaSenha@2026", "NovaSenha@2026")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("expirou");
+    }
 }

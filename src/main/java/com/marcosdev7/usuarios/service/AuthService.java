@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -22,6 +23,7 @@ public class AuthService {
 
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
     private static final int MINUTOS_EXPIRACAO_CODIGO = 15;
+    private static final int MINUTOS_EXPIRACAO_RECUPERACAO = 30;
     private static final int MAX_FOTO_BASE64_LEN = 750_000;
 
     private final UsuarioRepository usuarioRepository;
@@ -119,7 +121,9 @@ public class AuthService {
                 usuario.getNome(),
                 usuario.getEmail(),
                 usuario.getEmailVerificado(),
-                usuario.getFotoPerfil()
+                usuario.getFotoPerfil(),
+                usuario.getTelefone(),
+                usuario.getEmailRecuperacao()
         );
     }
 
@@ -152,6 +156,18 @@ public class AuthService {
             }
         }
 
+        if (dto.telefone() != null) {
+            usuario.atualizarTelefone(dto.telefone());
+        }
+
+        if (dto.emailRecuperacao() != null) {
+            String recLimpo = dto.emailRecuperacao().trim().toLowerCase();
+            if (!recLimpo.isBlank() && recLimpo.equals(usuario.getEmail())) {
+                throw new IllegalArgumentException("O e-mail de recuperação deve ser diferente do e-mail principal");
+            }
+            usuario.atualizarEmailRecuperacao(recLimpo);
+        }
+
         Usuario salvo = usuarioRepository.save(usuario);
         String novoToken = tokenService.gerarToken(salvo);
 
@@ -178,6 +194,60 @@ public class AuthService {
     public void excluirMinhaConta() {
         Usuario autenticado = exigirUsuarioAutenticado();
         usuarioRepository.deleteById(autenticado.getId());
+    }
+
+    @Transactional
+    public EsqueciSenhaResponseDTO solicitarRecuperacaoSenha(EsqueciSenhaRequestDTO dto, String baseUrl) {
+        String canal = dto.canal().trim().toUpperCase();
+        String identificador = dto.identificador().trim();
+
+        Usuario usuario = switch (canal) {
+            case "EMAIL" -> usuarioRepository.findByEmailIgnoreCase(identificador).orElse(null);
+            case "EMAIL_RECUPERACAO" -> usuarioRepository.findByEmailRecuperacaoIgnoreCase(identificador).orElse(null);
+            case "TELEFONE" -> {
+                String digitos = identificador.replaceAll("\\D", "");
+                if (digitos.isBlank()) {
+                    yield null;
+                }
+                yield usuarioRepository.findByTelefone(digitos).orElse(null);
+            }
+            default -> throw new IllegalArgumentException("Canal de recuperação inválido. Use EMAIL, EMAIL_RECUPERACAO ou TELEFONE.");
+        };
+
+        String mensagemGenerica = "Se os dados informados estiverem cadastrados, enviaremos o link de recuperação para o e-mail vinculado à conta.";
+        if (usuario == null) {
+            return new EsqueciSenhaResponseDTO(mensagemGenerica, false);
+        }
+
+        String token = UUID.randomUUID().toString();
+        usuario.definirTokenRecuperacao(token, LocalDateTime.now().plusMinutes(MINUTOS_EXPIRACAO_RECUPERACAO));
+        usuarioRepository.save(usuario);
+
+        String emailDestino = ("EMAIL_RECUPERACAO".equals(canal) || ("TELEFONE".equals(canal) && usuario.getEmailRecuperacao() != null && !usuario.getEmailRecuperacao().isBlank()))
+                ? usuario.getEmailRecuperacao()
+                : usuario.getEmail();
+
+        String baseLimpa = (baseUrl != null && !baseUrl.isBlank()) ? baseUrl.replaceAll("/+$", "") : "";
+        String linkRecuperacao = baseLimpa + "/?resetToken=" + token;
+
+        boolean enviado = emailService.enviarLinkRecuperacaoSenha(emailDestino, usuario.getNome(), linkRecuperacao, token);
+        return new EsqueciSenhaResponseDTO(mensagemGenerica, enviado);
+    }
+
+    @Transactional
+    public void redefinirSenha(RedefinirSenhaRequestDTO dto) {
+        String tokenLimpo = dto.token().trim();
+        Usuario usuario = usuarioRepository.findByTokenRecuperacao(tokenLimpo)
+                .orElseThrow(() -> new IllegalArgumentException("Token de recuperação inválido ou já utilizado."));
+
+        if (usuario.getTokenRecuperacaoExpiracao() == null || LocalDateTime.now().isAfter(usuario.getTokenRecuperacaoExpiracao())) {
+            throw new IllegalArgumentException("O link de recuperação expirou. Solicite uma nova recuperação de senha.");
+        }
+
+        ValidadorSenha.validarForcaEConfirmacao(dto.novaSenha(), dto.confirmacaoNovaSenha());
+        usuario.atualizarSenha(passwordEncoder.encode(dto.novaSenha()));
+        usuario.limparTokenRecuperacao();
+        usuarioRepository.save(usuario);
     }
 
     private AuthResponseDTO paraAuthResponse(String token, Usuario usuario) {
