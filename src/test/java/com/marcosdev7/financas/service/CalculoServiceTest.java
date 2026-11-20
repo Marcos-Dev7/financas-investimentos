@@ -28,7 +28,7 @@ class CalculoServiceTest {
     private CalculoService calculoService;
 
     @Test
-    @DisplayName("Deve retornar Status POSITIVO quando a receita superar as despesas pagas")
+    @DisplayName("Deve retornar Status POSITIVO quando a receita superar as despesas brutas previstas")
     void deveRetornarStatusPositivoQuandoSobraPositiva() {
         when(saldoService.somarTotalEntradas(Mes.MAIO)).thenReturn(new BigDecimal("6000.00"));
         when(despesaService.somarSaidaMes(Mes.MAIO)).thenReturn(new BigDecimal("3500.00"));
@@ -39,34 +39,37 @@ class CalculoServiceTest {
         assertThat(resultado.mes()).isEqualTo(Mes.MAIO);
         assertThat(resultado.receitaTotal()).isEqualByComparingTo("6000.00");
         assertThat(resultado.despesasPagas()).isEqualByComparingTo("3500.00");
-        assertThat(resultado.saldoDisponivel()).isEqualByComparingTo("2500.00");
+        assertThat(resultado.saldoDisponivel()).isEqualByComparingTo("1800.00");
+        assertThat(resultado.saldoCaixaAtual()).isEqualByComparingTo("2500.00");
         assertThat(resultado.status()).isEqualTo(Status.POSITIVO);
         assertThat(resultado.despesasBrutas()).isEqualByComparingTo("4200.00");
     }
 
     @Test
-    @DisplayName("Deve retornar Status LIMITE quando o saldo disponível for exatamente zero")
+    @DisplayName("Deve retornar Status LIMITE quando o saldo previsto for exatamente zero")
     void deveRetornarStatusLimiteQuandoSaldoZero() {
-        when(saldoService.somarTotalEntradas(Mes.JUNHO)).thenReturn(new BigDecimal("4000.00"));
+        when(saldoService.somarTotalEntradas(Mes.JUNHO)).thenReturn(new BigDecimal("4500.00"));
         when(despesaService.somarSaidaMes(Mes.JUNHO)).thenReturn(new BigDecimal("4000.00"));
         when(despesaService.somarTotalBruto(Mes.JUNHO)).thenReturn(new BigDecimal("4500.00"));
 
         SobraMesResponseDTO resultado = calculoService.calculaSobraLivreMes(Mes.JUNHO);
 
         assertThat(resultado.saldoDisponivel()).isEqualByComparingTo(BigDecimal.ZERO);
+        assertThat(resultado.saldoCaixaAtual()).isEqualByComparingTo("500.00");
         assertThat(resultado.status()).isEqualTo(Status.LIMITE);
     }
 
     @Test
-    @DisplayName("Deve retornar Status DEFICIT quando as despesas pagas superarem a receita")
-    void deveRetornarStatusDeficitQuandoSaldoNegativo() {
-        when(saldoService.somarTotalEntradas(Mes.JULHO)).thenReturn(new BigDecimal("3000.00"));
-        when(despesaService.somarSaidaMes(Mes.JULHO)).thenReturn(new BigDecimal("3800.00"));
-        when(despesaService.somarTotalBruto(Mes.JULHO)).thenReturn(new BigDecimal("3800.00"));
+    @DisplayName("Deve retornar Status DEFICIT imediatamente quando as despesas previstas superarem a receita mesmo antes de pagar")
+    void deveRetornarStatusDeficitQuandoDespesasPrevistasSuperaremReceita() {
+        when(saldoService.somarTotalEntradas(Mes.DEZEMBRO)).thenReturn(new BigDecimal("4699.00"));
+        when(despesaService.somarSaidaMes(Mes.DEZEMBRO)).thenReturn(BigDecimal.ZERO);
+        when(despesaService.somarTotalBruto(Mes.DEZEMBRO)).thenReturn(new BigDecimal("5444.86"));
 
-        SobraMesResponseDTO resultado = calculoService.calculaSobraLivreMes(Mes.JULHO);
+        SobraMesResponseDTO resultado = calculoService.calculaSobraLivreMes(Mes.DEZEMBRO);
 
-        assertThat(resultado.saldoDisponivel()).isEqualByComparingTo("-800.00");
+        assertThat(resultado.saldoDisponivel()).isEqualByComparingTo("-745.86");
+        assertThat(resultado.saldoCaixaAtual()).isEqualByComparingTo("4699.00");
         assertThat(resultado.status()).isEqualTo(Status.DEFICIT);
     }
 }

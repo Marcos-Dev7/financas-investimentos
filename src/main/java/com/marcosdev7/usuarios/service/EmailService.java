@@ -161,6 +161,56 @@ public class EmailService {
         return false;
     }
 
+    public boolean enviarSmsCodigoRecuperacao(String telefone, String codigo) {
+        if (telefone == null || telefone.isBlank()) {
+            return false;
+        }
+
+        String numeroE164 = formatarTelefoneE164(telefone);
+        String mensagem = "FinancialFamily: Seu codigo de recuperacao de senha e " + codigo + ". Valido por 15 minutos.";
+
+        if (brevoApiKey != null && !brevoApiKey.isBlank()) {
+            try {
+                Map<String, Object> payload = Map.of(
+                        "sender", "FinFamily",
+                        "recipient", numeroE164,
+                        "content", mensagem,
+                        "type", "transactional"
+                );
+                String jsonBody = objectMapper.writeValueAsString(payload);
+
+                HttpRequest request = HttpRequest.newBuilder()
+                        .uri(URI.create("https://api.brevo.com/v3/transactionalSMS/sms"))
+                        .timeout(Duration.ofSeconds(10))
+                        .header("accept", "application/json")
+                        .header("content-type", "application/json")
+                        .header("api-key", brevoApiKey.trim())
+                        .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+                        .build();
+
+                HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+                if (response.statusCode() >= 200 && response.statusCode() < 300) {
+                    log.info("SMS de recuperação enviado via Brevo para {}", numeroE164);
+                    return true;
+                }
+                log.warn("Brevo SMS API retornou status {}: {}", response.statusCode(), response.body());
+            } catch (Exception e) {
+                log.warn("Erro ao chamar Brevo SMS API para {}: {}", numeroE164, e.getMessage());
+            }
+        }
+
+        log.info("Código SMS de recuperação gerado para {}: {}", numeroE164, codigo);
+        return false;
+    }
+
+    private String formatarTelefoneE164(String telefone) {
+        String digitos = telefone.replaceAll("\\D", "");
+        if (digitos.length() == 10 || digitos.length() == 11) {
+            return "+55" + digitos;
+        }
+        return "+" + digitos;
+    }
+
     private boolean enviarEmailHtml(String emailDestino, String nomeDestino, String assunto, String html) {
         if (brevoApiKey != null && !brevoApiKey.isBlank()) {
             String remetente = (mailFrom != null && !mailFrom.isBlank())

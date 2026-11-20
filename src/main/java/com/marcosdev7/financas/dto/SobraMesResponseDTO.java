@@ -10,5 +10,15 @@ public record SobraMesResponseDTO(Mes mes,
                                   BigDecimal despesasPagas,
                                   BigDecimal saldoDisponivel,
                                   Status status,
-                                  BigDecimal despesasBrutas) {
+                                  BigDecimal despesasBrutas,
+                                  BigDecimal saldoCaixaAtual) {
+
+    public SobraMesResponseDTO(Mes mes,
+                               BigDecimal receitaTotal,
+                               BigDecimal despesasPagas,
+                               BigDecimal saldoDisponivel,
+                               Status status,
+                               BigDecimal despesasBrutas) {
+        this(mes, receitaTotal, despesasPagas, saldoDisponivel, status, despesasBrutas, saldoDisponivel);
+    }
 }

@@ -136,7 +136,7 @@ class FamiliaServiceTest {
 
         Despesa despesaTitular = new Despesa(1L, "Aluguel", Mes.DEZEMBRO, LocalDate.now(), true, true, new BigDecimal("2000.00"), "Moradia");
         despesaTitular.setUsuario(titular);
-        Despesa despesaConjuge = new Despesa(2L, "Mercado", Mes.DEZEMBRO, LocalDate.now(), true, false, new BigDecimal("800.00"), "Alimentação");
+        Despesa despesaConjuge = new Despesa(2L, "Mercado", Mes.DEZEMBRO, LocalDate.now(), false, false, new BigDecimal("800.00"), "Alimentação");
         despesaConjuge.setUsuario(conjuge);
 
         when(despesaRepository.findByMesAndUsuarioIdIn(Mes.DEZEMBRO, Set.of(1L, 2L)))
@@ -145,8 +145,10 @@ class FamiliaServiceTest {
         ResumoFamiliaResponseDTO resumoSemRendaConjuge = familiaService.calcularResumoFamilia(Mes.DEZEMBRO);
 
         assertThat(resumoSemRendaConjuge.receitaTotalFamiliar()).isEqualByComparingTo("5000.00");
-        assertThat(resumoSemRendaConjuge.despesasPagasFamiliares()).isEqualByComparingTo("2800.00");
+        assertThat(resumoSemRendaConjuge.despesasPagasFamiliares()).isEqualByComparingTo("2000.00");
+        assertThat(resumoSemRendaConjuge.despesasBrutasFamiliares()).isEqualByComparingTo("2800.00");
         assertThat(resumoSemRendaConjuge.saldoDisponivelFamiliar()).isEqualByComparingTo("2200.00");
+        assertThat(resumoSemRendaConjuge.saldoCaixaAtualFamiliar()).isEqualByComparingTo("3000.00");
         assertThat(resumoSemRendaConjuge.status()).isEqualTo(Status.POSITIVO);
 
         // Cenário 2: Cônjuge ativa o compartilhamento de renda (membroCompartilhaRenda = true)

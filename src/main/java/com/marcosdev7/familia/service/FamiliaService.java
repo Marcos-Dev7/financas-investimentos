@@ -287,12 +287,13 @@ public class FamiliaService {
                 .map(Despesa::getValor)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        BigDecimal saldoDisponivel = receitaTotal.subtract(despesasPagas);
+        BigDecimal saldoCaixaAtual = receitaTotal.subtract(despesasPagas);
+        BigDecimal saldoPrevisto = receitaTotal.subtract(despesasBrutas);
 
         Status status;
-        if (saldoDisponivel.compareTo(BigDecimal.ZERO) < 0) {
+        if (saldoPrevisto.compareTo(BigDecimal.ZERO) < 0) {
             status = Status.DEFICIT;
-        } else if (saldoDisponivel.compareTo(BigDecimal.ZERO) == 0) {
+        } else if (saldoPrevisto.compareTo(BigDecimal.ZERO) == 0) {
             status = Status.LIMITE;
         } else {
             status = Status.POSITIVO;
@@ -302,10 +303,11 @@ public class FamiliaService {
                 mes,
                 receitaTotal,
                 despesasPagas,
-                saldoDisponivel,
+                saldoPrevisto,
                 status,
                 despesasBrutas,
-                contexto.todosUsuariosIds().size()
+                contexto.todosUsuariosIds().size(),
+                saldoCaixaAtual
         );
     }
 

@@ -214,24 +214,50 @@ public class AuthService {
             default -> throw new IllegalArgumentException("Canal de recuperação inválido. Use EMAIL, EMAIL_RECUPERACAO ou TELEFONE.");
         };
 
-        String mensagemGenerica = "Se os dados informados estiverem cadastrados, enviaremos o link de recuperação para o e-mail vinculado à conta.";
+        String mensagemGenerica = "Se os dados informados estiverem cadastrados, enviaremos o código ou link de recuperação para o canal vinculado à conta.";
         if (usuario == null) {
-            return new EsqueciSenhaResponseDTO(mensagemGenerica, false);
+            return new EsqueciSenhaResponseDTO(mensagemGenerica, false, false);
+        }
+
+        String baseLimpa = (baseUrl != null && !baseUrl.isBlank()) ? baseUrl.replaceAll("/+$", "") : "";
+
+        if ("TELEFONE".equals(canal)) {
+            String codigoSms = String.format("%06d", SECURE_RANDOM.nextInt(1_000_000));
+            usuario.definirTokenRecuperacao(codigoSms, LocalDateTime.now().plusMinutes(MINUTOS_EXPIRACAO_CODIGO));
+            usuarioRepository.save(usuario);
+
+            boolean smsEnviado = emailService.enviarSmsCodigoRecuperacao(usuario.getTelefone(), codigoSms);
+            if (smsEnviado) {
+                return new EsqueciSenhaResponseDTO(
+                        "Enviamos um código de 6 dígitos via SMS para o telefone cadastrado.",
+                        false,
+                        true
+                );
+            }
+
+            String emailFallback = (usuario.getEmailRecuperacao() != null && !usuario.getEmailRecuperacao().isBlank())
+                    ? usuario.getEmailRecuperacao()
+                    : usuario.getEmail();
+            String linkFallback = baseLimpa + "/?resetToken=" + codigoSms;
+            boolean emailEnviado = emailService.enviarLinkRecuperacaoSenha(emailFallback, usuario.getNome(), linkFallback, codigoSms);
+            return new EsqueciSenhaResponseDTO(
+                    "SMS indisponível no provedor no momento; enviamos o código de 6 dígitos para o seu e-mail vinculado.",
+                    emailEnviado,
+                    false
+            );
         }
 
         String token = UUID.randomUUID().toString();
         usuario.definirTokenRecuperacao(token, LocalDateTime.now().plusMinutes(MINUTOS_EXPIRACAO_RECUPERACAO));
         usuarioRepository.save(usuario);
 
-        String emailDestino = ("EMAIL_RECUPERACAO".equals(canal) || ("TELEFONE".equals(canal) && usuario.getEmailRecuperacao() != null && !usuario.getEmailRecuperacao().isBlank()))
+        String emailDestino = "EMAIL_RECUPERACAO".equals(canal)
                 ? usuario.getEmailRecuperacao()
                 : usuario.getEmail();
 
-        String baseLimpa = (baseUrl != null && !baseUrl.isBlank()) ? baseUrl.replaceAll("/+$", "") : "";
         String linkRecuperacao = baseLimpa + "/?resetToken=" + token;
-
         boolean enviado = emailService.enviarLinkRecuperacaoSenha(emailDestino, usuario.getNome(), linkRecuperacao, token);
-        return new EsqueciSenhaResponseDTO(mensagemGenerica, enviado);
+        return new EsqueciSenhaResponseDTO(mensagemGenerica, enviado, false);
     }
 
     @Transactional

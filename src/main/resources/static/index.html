@@ -193,15 +193,15 @@
                     <form id="formEsqueciSenha" class="auth-form hidden" aria-label="Recuperar senha">
                         <div class="auth-form-header">
                             <h2>Recuperar Senha</h2>
-                            <p>Escolha um meio cadastrado para receber o link de redefinição de senha.</p>
+                            <p>Receba um link por e-mail ou um código de 6 dígitos por SMS no telefone cadastrado.</p>
                         </div>
 
                         <div class="form-group">
                             <label for="recCanal">Meio de Recuperação</label>
                             <select id="recCanal" required>
-                                <option value="EMAIL">E-mail principal cadastrado</option>
-                                <option value="EMAIL_RECUPERACAO">E-mail de recuperação</option>
-                                <option value="TELEFONE">Telefone cadastrado (envia link ao e-mail vinculado)</option>
+                                <option value="EMAIL">E-mail principal cadastrado (Link)</option>
+                                <option value="EMAIL_RECUPERACAO">E-mail de recuperação (Link)</option>
+                                <option value="TELEFONE">Telefone cadastrado (SMS código 6 dígitos)</option>
                             </select>
                         </div>
 
@@ -211,11 +211,11 @@
                         </div>
 
                         <button type="submit" class="btn btn-primary btn-block btn-lg" id="btnEnviarRecuperacao">
-                            Enviar Link de Recuperação
+                            Enviar Código / Link
                         </button>
 
                         <div class="verify-actions">
-                            <button type="button" class="btn btn-outline btn-sm" id="btnTenhoTokenReset">Já tenho o token</button>
+                            <button type="button" class="btn btn-outline btn-sm" id="btnTenhoTokenReset">Já tenho código/token</button>
                             <button type="button" class="btn btn-outline btn-sm" id="btnVoltarLoginEsqueci">Voltar ao Login</button>
                         </div>
                     </form>
@@ -224,12 +224,12 @@
                     <form id="formRedefinirSenha" class="auth-form hidden" aria-label="Redefinir senha">
                         <div class="auth-form-header">
                             <h2>Nova Senha</h2>
-                            <p>Informe o token recebido e defina sua nova senha de acesso.</p>
+                            <p>Informe o código de 6 dígitos (SMS) ou token do e-mail e defina sua nova senha.</p>
                         </div>
 
                         <div class="form-group">
-                            <label for="resetTokenInput">Token de Recuperação *</label>
-                            <input type="text" id="resetTokenInput" required placeholder="Cole o token ou acesse pelo link do e-mail">
+                            <label for="resetTokenInput">Código SMS (6 dígitos) ou Token *</label>
+                            <input type="text" id="resetTokenInput" required placeholder="Ex.: 123456 ou token do link">
                         </div>
 
                         <div class="form-group">
@@ -379,11 +379,11 @@
 
                 <article class="kpi-card kpi-balance" id="cardSobraLivre">
                     <div class="kpi-header">
-                        <span class="kpi-label">Sobra Livre Disponível</span>
+                        <span class="kpi-label">Sobra Livre (Prevista)</span>
                         <span class="status-pill status-LIMITE" id="badgeStatusFinanceiro">LIMITE</span>
                     </div>
                     <div class="kpi-value" id="kpiSaldoDisponivel">R$ 0,00</div>
-                    <div class="kpi-sub">Receita Total − Despesas Pagas</div>
+                    <div class="kpi-sub" id="kpiSaldoSubtexto">Receita Total − Despesas Previstas</div>
                 </article>
             </section>
 
@@ -578,11 +578,11 @@
 
                     <article class="kpi-card kpi-balance">
                         <div class="kpi-header">
-                            <span class="kpi-label">Sobra Livre Familiar</span>
+                            <span class="kpi-label">Sobra Livre Familiar (Prevista)</span>
                             <span class="status-pill status-LIMITE" id="badgeFamStatus">LIMITE</span>
                         </div>
                         <div class="kpi-value" id="kpiFamSaldoDisponivel">R$ 0,00</div>
-                        <div class="kpi-sub">Renda Compartilhada − Despesas Pagas</div>
+                        <div class="kpi-sub" id="kpiFamSaldoSubtexto">Renda Compartilhada − Despesas Previstas</div>
                     </article>
                 </section>
 

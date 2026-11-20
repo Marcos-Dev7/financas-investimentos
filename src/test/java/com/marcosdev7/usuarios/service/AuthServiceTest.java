@@ -160,14 +160,14 @@ class AuthServiceTest {
     }
 
     @Test
-    @DisplayName("Deve localizar conta pelo telefone normalizado e enviar link para e-mail vinculado")
-    void deveEnviarLinkRecuperacaoPorTelefone() {
+    @DisplayName("Deve localizar conta pelo telefone, gerar código de 6 dígitos e enviar via SMS quando disponível")
+    void deveEnviarCodigo6DigitosViaSmsPorTelefone() {
         Usuario usuario = new Usuario(1L, "Marcos Paulo", "marcos@email.com", "hash");
         usuario.atualizarTelefone("(11) 99999-8888");
         usuario.atualizarEmailRecuperacao("rec@email.com");
 
         when(usuarioRepository.findByTelefone("11999998888")).thenReturn(Optional.of(usuario));
-        when(emailService.enviarLinkRecuperacaoSenha(eq("rec@email.com"), eq("Marcos Paulo"), anyString(), anyString()))
+        when(emailService.enviarSmsCodigoRecuperacao(eq("11999998888"), matches("\\d{6}")))
                 .thenReturn(true);
 
         EsqueciSenhaResponseDTO response = authService.solicitarRecuperacaoSenha(
@@ -175,8 +175,32 @@ class AuthServiceTest {
                 "https://financial-family.onrender.com"
         );
 
+        assertThat(response.smsEnviado()).isTrue();
+        assertThat(usuario.getTokenRecuperacao()).matches("\\d{6}");
+        verify(emailService, never()).enviarLinkRecuperacaoSenha(anyString(), anyString(), anyString(), anyString());
+    }
+
+    @Test
+    @DisplayName("Deve fazer fallback para o e-mail vinculado com o código de 6 dígitos se o SMS não estiver disponível")
+    void deveFazerFallbackParaEmailQuandoSmsIndisponivel() {
+        Usuario usuario = new Usuario(1L, "Marcos Paulo", "marcos@email.com", "hash");
+        usuario.atualizarTelefone("(11) 99999-8888");
+        usuario.atualizarEmailRecuperacao("rec@email.com");
+
+        when(usuarioRepository.findByTelefone("11999998888")).thenReturn(Optional.of(usuario));
+        when(emailService.enviarSmsCodigoRecuperacao(eq("11999998888"), matches("\\d{6}")))
+                .thenReturn(false);
+        when(emailService.enviarLinkRecuperacaoSenha(eq("rec@email.com"), eq("Marcos Paulo"), contains("?resetToken="), matches("\\d{6}")))
+                .thenReturn(true);
+
+        EsqueciSenhaResponseDTO response = authService.solicitarRecuperacaoSenha(
+                new EsqueciSenhaRequestDTO("TELEFONE", "(11) 99999-8888"),
+                "https://financial-family.onrender.com"
+        );
+
+        assertThat(response.smsEnviado()).isFalse();
         assertThat(response.emailEnviado()).isTrue();
-        verify(emailService).enviarLinkRecuperacaoSenha(eq("rec@email.com"), eq("Marcos Paulo"), contains("?resetToken="), anyString());
+        assertThat(usuario.getTokenRecuperacao()).matches("\\d{6}");
     }
 
     @Test

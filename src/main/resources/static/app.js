@@ -513,11 +513,26 @@ async function carregarResumoMes() {
         const brutas = Number(resumo.despesasBrutas || 0);
         const faltaPagar = Math.max(0, brutas - pagas);
 
+        const saldoPrevisto = Number(resumo.saldoDisponivel || 0);
+        const caixaAtual = resumo.saldoCaixaAtual !== undefined
+            ? Number(resumo.saldoCaixaAtual)
+            : (receita - pagas);
+
         document.getElementById('kpiReceitaTotal').textContent = formatCurrency(receita);
         document.getElementById('kpiDespesasPagas').textContent = formatCurrency(pagas);
         document.getElementById('kpiFaltaPagar').textContent = `Pendente no mês: ${formatCurrency(faltaPagar)}`;
         document.getElementById('kpiDespesasBrutas').textContent = formatCurrency(brutas);
-        document.getElementById('kpiSaldoDisponivel').textContent = formatCurrency(resumo.saldoDisponivel);
+
+        const elSaldo = document.getElementById('kpiSaldoDisponivel');
+        elSaldo.textContent = formatCurrency(saldoPrevisto);
+        elSaldo.classList.remove('text-danger', 'text-healthy');
+        if (saldoPrevisto < 0) elSaldo.classList.add('text-danger');
+        else if (saldoPrevisto > 0) elSaldo.classList.add('text-healthy');
+
+        const elSaldoSub = document.getElementById('kpiSaldoSubtexto');
+        if (elSaldoSub) {
+            elSaldoSub.textContent = `Em caixa hoje (sem baixas): ${formatCurrency(caixaAtual)}`;
+        }
 
         renderizarStatusPill(document.getElementById('badgeStatusFinanceiro'), resumo.status);
 
@@ -956,11 +971,26 @@ async function carregarResumoFamiliaMes() {
         const brutas = Number(resumo.despesasBrutasFamiliares || 0);
         const falta = Math.max(0, brutas - pagas);
 
+        const saldoFamPrevisto = Number(resumo.saldoDisponivelFamiliar || 0);
+        const caixaFamAtual = resumo.saldoCaixaAtualFamiliar !== undefined
+            ? Number(resumo.saldoCaixaAtualFamiliar)
+            : (receita - pagas);
+
         document.getElementById('kpiFamReceitaTotal').textContent = formatCurrency(receita);
         document.getElementById('kpiFamDespesasPagas').textContent = formatCurrency(pagas);
         document.getElementById('kpiFamFaltaPagar').textContent = `Pendente no mês: ${formatCurrency(falta)}`;
         document.getElementById('kpiFamDespesasBrutas').textContent = formatCurrency(brutas);
-        document.getElementById('kpiFamSaldoDisponivel').textContent = formatCurrency(resumo.saldoDisponivelFamiliar);
+
+        const elFamSaldo = document.getElementById('kpiFamSaldoDisponivel');
+        elFamSaldo.textContent = formatCurrency(saldoFamPrevisto);
+        elFamSaldo.classList.remove('text-danger', 'text-healthy');
+        if (saldoFamPrevisto < 0) elFamSaldo.classList.add('text-danger');
+        else if (saldoFamPrevisto > 0) elFamSaldo.classList.add('text-healthy');
+
+        const elFamSub = document.getElementById('kpiFamSaldoSubtexto');
+        if (elFamSub) {
+            elFamSub.textContent = `Em caixa hoje (sem baixas): ${formatCurrency(caixaFamAtual)}`;
+        }
 
         renderizarStatusPill(document.getElementById('badgeFamStatus'), resumo.status);
 
@@ -1681,7 +1711,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             showToast(err.message, 'error');
         } finally {
             btn.disabled = false;
-            btn.textContent = 'Enviar Link de Recuperação';
+            btn.textContent = 'Enviar Código / Link';
         }
     });
 

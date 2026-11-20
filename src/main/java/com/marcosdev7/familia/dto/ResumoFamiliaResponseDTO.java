@@ -12,5 +12,17 @@ public record ResumoFamiliaResponseDTO(
         BigDecimal saldoDisponivelFamiliar,
         Status status,
         BigDecimal despesasBrutasFamiliares,
-        int totalMembrosAtivos
-) {}
+        int totalMembrosAtivos,
+        BigDecimal saldoCaixaAtualFamiliar
+) {
+    public ResumoFamiliaResponseDTO(
+            Mes mes,
+            BigDecimal receitaTotalFamiliar,
+            BigDecimal despesasPagasFamiliares,
+            BigDecimal saldoDisponivelFamiliar,
+            Status status,
+            BigDecimal despesasBrutasFamiliares,
+            int totalMembrosAtivos) {
+        this(mes, receitaTotalFamiliar, despesasPagasFamiliares, saldoDisponivelFamiliar, status, despesasBrutasFamiliares, totalMembrosAtivos, saldoDisponivelFamiliar);
+    }
+}

@@ -9,7 +9,7 @@
   [![Java](https://img.shields.io/badge/Java-25-f59e0b?style=for-the-badge&logo=openjdk&logoColor=white)](https://openjdk.org/)
   [![Spring Boot](https://img.shields.io/badge/Spring_Boot-4.0.3-6db33f?style=for-the-badge&logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
   [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Neon_Cloud-336791?style=for-the-badge&logo=postgresql&logoColor=white)](https://neon.tech/)
-  [![Tests](https://img.shields.io/badge/Tests-91_Passing-10b981?style=for-the-badge&logo=junit5&logoColor=white)](#%EF%B8%8F-testes-automatizados)
+  [![Tests](https://img.shields.io/badge/Tests-92_Passing-10b981?style=for-the-badge&logo=junit5&logoColor=white)](#%EF%B8%8F-testes-automatizados)
 
   🌐 **Acesse a Plataforma Online:** [https://financial-family.onrender.com](https://financial-family.onrender.com)
 </div>
@@ -35,7 +35,7 @@ O sistema resolve um problema clássico do orçamento doméstico: separar o que 
 ### 🔐 2. Autenticação, Recuperação de Senha, Cookies & Isolamento de Dados
 - **Cadastro com Política de Senha Forte:** Validação em tempo real (mínimo 8 caracteres, maiúscula, minúscula, número e caractere especial) + confirmação obrigatória de senha.
 - **Verificação de E-mail com Código de 6 Dígitos:** Envio de código numérico temporário (`SecureRandom`, válido por 15 minutos) para ativação da conta.
-- **Recuperação de Senha ("Esqueci minha senha"):** Fluxo completo com envio de link (`?resetToken=...`, válido por 30 minutos) localizando a conta por **E-mail Principal**, **E-mail de Recuperação** ou **Telefone cadastrado** (configuráveis em *"Minha Conta"*).
+- **Recuperação de Senha ("Esqueci minha senha"):** Fluxo completo com envio de link (`?resetToken=...`, válido por 30 min) por **E-mail Principal** ou **E-mail de Recuperação**, ou **código numérico de 6 dígitos via SMS** (Brevo Transactional SMS API, válido por 15 min, com fallback automático para o e-mail vinculado se não houver créditos SMS ativos).
 - **Sessão por Aba & Gestão de Cookies:** Por padrão a sessão é isolada por aba (`sessionStorage`), impedindo login automático ao abrir novas páginas. Inclui banner e modal de **Preferências de Cookies** (`Apenas Essenciais` ou `Aceitar Todos`) e opção explícita *"Manter conectado"* no login.
 - **Sessão Stateless JWT & Isolamento Multi-Usuário:** Cada conta possui ambiente totalmente isolado — um usuário gerencia exclusivamente suas próprias receitas e despesas.
 
@@ -46,7 +46,7 @@ O sistema resolve um problema clássico do orçamento doméstico: separar o que 
 ### 💰 4. Gestão de Despesas, Receitas e Motor de Sobra Livre
 - **Despesas Mensais:** Cadastro, edição, exclusão, paginação, busca por descrição/categoria, baixa de pagamento com 1 clique (`Pagar`) e reversão (`Estornar`).
 - **Saldos e Receitas:** Registro de múltiplas fontes de renda por mês/ano (Salários, Freelances, Bônus).
-- **Motor de Cálculo de Sobra Livre & Painel Analítico:** Calcula automaticamente `Receita Total - Despesas Pagas` (`POSITIVO`, `LIMITE` ou `DEFICIT`), distribuição percentual por categoria e termômetro de comprometimento da renda.
+- **Motor de Cálculo de Sobra Livre & Painel Analítico:** Calcula automaticamente a **Sobra Livre (Prevista)** (`Receita Total - Despesas Brutas`) para sinalizar imediatamente `POSITIVO`, `LIMITE` ou `DEFICIT` antes mesmo do vencimento das contas, mantendo visível o caixa atual (`Receita - Despesas Pagas`), a distribuição por categoria e o termômetro de comprometimento com alerta visual crítico.
 - **Agendador Automático (`@Scheduled`):** Projeta automaticamente todas as despesas fixas para o mês seguinte na virada de cada dia 1º.
 
 ### ⚡ 5. Controle de Carga, Rate Limiting, Acessibilidade & Mobile-First
