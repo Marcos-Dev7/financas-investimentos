@@ -64,12 +64,26 @@ public class FamiliaController {
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Lista as despesas consolidadas da família (Somente Leitura)",
-            description = "Retorna as despesas de todos os membros ativos da família, identificando o responsável.")
+    @Operation(summary = "Lista as despesas consolidadas da família (Somente Leitura para membros)",
+            description = "Retorna as despesas compartilhadas de membros ativos da família, identificando o responsável.")
     @GetMapping("/despesas")
     public ResponseEntity<List<DespesaFamiliaResponseDTO>> listarDespesasFamilia(
             @RequestParam(required = false) Mes mes) {
         return ResponseEntity.ok(familiaService.listarDespesasFamilia(mes));
+    }
+
+    @Operation(summary = "Gestor dá baixa (paga) em uma despesa compartilhada da família",
+            description = "Permitido exclusivamente para o gestor (criador) da família em despesas compartilhadas por membros ativos.")
+    @PatchMapping("/despesas/{despesaId}/pagar")
+    public ResponseEntity<DespesaFamiliaResponseDTO> pagarDespesaFamilia(@PathVariable Long despesaId) {
+        return ResponseEntity.ok(familiaService.pagarDespesaFamilia(despesaId));
+    }
+
+    @Operation(summary = "Gestor estorna pagamento de uma despesa compartilhada da família",
+            description = "Permitido exclusivamente para o gestor (criador) da família em despesas compartilhadas por membros ativos.")
+    @PatchMapping("/despesas/{despesaId}/estornar")
+    public ResponseEntity<DespesaFamiliaResponseDTO> estornarDespesaFamilia(@PathVariable Long despesaId) {
+        return ResponseEntity.ok(familiaService.estornarDespesaFamilia(despesaId));
     }
 
     @Operation(summary = "Calcula o resumo financeiro consolidado da família no mês",

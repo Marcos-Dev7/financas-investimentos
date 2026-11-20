@@ -226,7 +226,7 @@ public class FamiliaService {
             List<MembroFamiliaItemDTO> itens = new ArrayList<>();
             itens.add(new MembroFamiliaItemDTO(
                     meuVinculo.getId(),
-                    titular.getNome() + " (Titular)",
+                    titular.getNome() + " (Gestor)",
                     titular.getEmail(),
                     StatusFamilia.ACEITO,
                     meuVinculo.getTitularCompartilhaRenda(),
@@ -296,19 +296,65 @@ public class FamiliaService {
                         Despesa::getDataVencimento,
                         Comparator.nullsLast(Comparator.naturalOrder())
                 ))
-                .map(d -> new DespesaFamiliaResponseDTO(
-                        d.getId(),
-                        d.getDescricao(),
-                        d.getValor(),
-                        d.getMes(),
-                        d.getDataVencimento(),
-                        d.getIsFixa(),
-                        d.getCategoria(),
-                        d.getIsPaga(),
-                        d.getUsuario() != null ? d.getUsuario().getNome() : "Família",
-                        d.getUsuario() != null && d.getUsuario().getId().equals(usuario.getId())
-                ))
+                .map(d -> paraDespesaFamiliaDTO(d, usuario))
                 .toList();
+    }
+
+    @Transactional
+    public DespesaFamiliaResponseDTO pagarDespesaFamilia(Long despesaId) {
+        Usuario gestor = exigirUsuarioAutenticado();
+        Despesa despesa = exigirDespesaGerenciavelPeloGestor(despesaId, gestor);
+        despesa.pagar();
+        Despesa salva = despesaRepository.save(despesa);
+        return paraDespesaFamiliaDTO(salva, gestor);
+    }
+
+    @Transactional
+    public DespesaFamiliaResponseDTO estornarDespesaFamilia(Long despesaId) {
+        Usuario gestor = exigirUsuarioAutenticado();
+        Despesa despesa = exigirDespesaGerenciavelPeloGestor(despesaId, gestor);
+        despesa.estornar();
+        Despesa salva = despesaRepository.save(despesa);
+        return paraDespesaFamiliaDTO(salva, gestor);
+    }
+
+    private Despesa exigirDespesaGerenciavelPeloGestor(Long despesaId, Usuario gestor) {
+        List<MembroFamilia> vinculosAceitos = membroFamiliaRepository
+                .findByTitularIdOrderByDataCriacaoDesc(gestor.getId())
+                .stream()
+                .filter(v -> v.getStatus() == StatusFamilia.ACEITO && v.getMembro() != null)
+                .toList();
+
+        if (vinculosAceitos.isEmpty()) {
+            throw new AccessDeniedException("Apenas o gestor da família pode gerenciar pagamentos no painel familiar");
+        }
+
+        ContextoFamiliaAtiva contexto = montarContexto(gestor, vinculosAceitos);
+
+        Despesa despesa = despesaRepository.findById(despesaId)
+                .orElseThrow(() -> new NoSuchElementException("Despesa não encontrada"));
+
+        Long donoId = despesa.getUsuario() != null ? despesa.getUsuario().getId() : null;
+        if (donoId == null || !contexto.usuariosComDespesasCompartilhadasIds().contains(donoId)) {
+            throw new AccessDeniedException("Esta despesa não pertence a um membro ativo com despesas compartilhadas na sua família");
+        }
+
+        return despesa;
+    }
+
+    private DespesaFamiliaResponseDTO paraDespesaFamiliaDTO(Despesa d, Usuario usuarioLogado) {
+        return new DespesaFamiliaResponseDTO(
+                d.getId(),
+                d.getDescricao(),
+                d.getValor(),
+                d.getMes(),
+                d.getDataVencimento(),
+                d.getIsFixa(),
+                d.getCategoria(),
+                d.getIsPaga(),
+                d.getUsuario() != null ? d.getUsuario().getNome() : "Família",
+                d.getUsuario() != null && d.getUsuario().getId().equals(usuarioLogado.getId())
+        );
     }
 
     public ResumoFamiliaResponseDTO calcularResumoFamilia(Mes mes) {

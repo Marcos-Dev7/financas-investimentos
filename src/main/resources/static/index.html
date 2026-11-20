@@ -588,14 +588,14 @@
                     </div>
                 </section>
 
-                <!-- Tabela de Despesas Familiares (Somente Leitura) -->
+                <!-- Tabela de Despesas Familiares -->
                 <div class="panel">
                     <div class="panel-header">
                         <div>
                             <h2>Despesas Familiares do Mês</h2>
-                            <p class="panel-subtitle">Visão consolidada em modo <strong>Somente Leitura</strong> — membros nunca alteram ou apagam dados de outros</p>
+                            <p class="panel-subtitle" id="subtituloDespesasFamilia">Visão consolidada em modo <strong>Somente Leitura</strong> — membros nunca alteram ou apagam dados de outros</p>
                         </div>
-                        <span class="badge badge-cat">Somente Leitura</span>
+                        <span class="badge badge-cat" id="badgeModoFamilia">Somente Leitura</span>
                     </div>
 
                     <!-- Totais por Membro e Filtro por Responsável -->
@@ -617,6 +617,7 @@
                                     <th scope="col">Vencimento</th>
                                     <th scope="col">Tipo</th>
                                     <th scope="col" class="text-right">Valor</th>
+                                    <th scope="col" class="text-right hidden" id="thFamAcoes">Ações</th>
                                 </tr>
                             </thead>
                             <tbody id="tbodyDespesasFamilia">

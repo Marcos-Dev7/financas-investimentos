@@ -9,7 +9,7 @@
   [![Java](https://img.shields.io/badge/Java-25-f59e0b?style=for-the-badge&logo=openjdk&logoColor=white)](https://openjdk.org/)
   [![Spring Boot](https://img.shields.io/badge/Spring_Boot-4.0.3-6db33f?style=for-the-badge&logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
   [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Neon_Cloud-336791?style=for-the-badge&logo=postgresql&logoColor=white)](https://neon.tech/)
-  [![Tests](https://img.shields.io/badge/Tests-98_Passing-10b981?style=for-the-badge&logo=junit5&logoColor=white)](#%EF%B8%8F-testes-automatizados)
+  [![Tests](https://img.shields.io/badge/Tests-102_Passing-10b981?style=for-the-badge&logo=junit5&logoColor=white)](#%EF%B8%8F-testes-automatizados)
 
   🌐 **Acesse a Plataforma Online:** [https://financial-family.onrender.com](https://financial-family.onrender.com)
 </div>
@@ -28,7 +28,7 @@ O sistema resolve um problema clássico do orçamento doméstico: separar o que 
 
 ### 👨‍👩‍👧‍👦 1. Módulo Família & Membros (Evoluído na `v1.3.0`)
 - **Aba Condicional & Convites 48h:** A aba **"Família"** fica oculta até que exista ao menos 1 membro ativo. Convites (e-mail ou link `?convite=TOKEN` com validade de 48h) e convites recebidos pendentes são gerenciados em **"Minha Conta"**.
-- **Visão Consolidada de Despesas Familiares (Modo Somente Leitura):** Painel dedicado que reúne as despesas compartilhadas da família com **filtro por responsável**, **total por membro** e gráfico de **Distribuição de Gastos por Categoria**. Membros apenas visualizam — **nunca podem editar ou apagar dados de outra pessoa** (garantido no backend).
+- **Visão Consolidada & Papel de Gestor da Família:** Painel dedicado que reúne as despesas compartilhadas da família com **filtro por responsável**, **total por membro** e gráfico de **Distribuição de Gastos por Categoria**. Quem cria a família atua como **Gestor**, podendo dar baixa (`Pagar`) e estornar pagamentos diretamente nas despesas compartilhadas da família; membros convidados permanecem em modo **Somente Leitura** (garantido no backend).
 - **Compartilhamento Independente de Renda e Despesas (*Opt-in / Opt-out*):** Cada membro controla separadamente em **Minha Conta** se deseja compartilhar sua **renda** e suas **despesas** na visão consolidada; ao desligar as despesas, elas somem da tabela e dos totais familiares.
 - **Revogação Imediata & Isolamento Estrito:** O titular pode remover qualquer membro com 1 clique, cortando o acesso imediatamente no banco de dados. Usuários fora da família são bloqueados com `403 Forbidden`, e o backend impede que um mesmo usuário participe de duas famílias ativas simultaneamente.
 
@@ -97,7 +97,9 @@ O sistema resolve um problema clássico do orçamento doméstico: separar o que 
 | `PATCH` | `/familia/compartilhar-renda` | Ativa ou desativa o compartilhamento da própria renda | `Bearer JWT` |
 | `PATCH` | `/familia/compartilhar-despesas` | Ativa ou desativa o compartilhamento das próprias despesas | `Bearer JWT` |
 | `DELETE` | `/familia/membros/{vinculoId}` | Remove membro da família (corta acesso imediato) | `Bearer JWT` |
-| `GET` | `/familia/despesas` | Lista despesas familiares consolidadas (somente leitura) | `Bearer JWT` |
+| `GET` | `/familia/despesas` | Lista despesas familiares consolidadas | `Bearer JWT` |
+| `PATCH` | `/familia/despesas/{id}/pagar` | Gestor dá baixa (paga) em uma despesa compartilhada da família | `Bearer JWT (Gestor)` |
+| `PATCH` | `/familia/despesas/{id}/estornar` | Gestor estorna pagamento de uma despesa compartilhada da família | `Bearer JWT (Gestor)` |
 | `GET` | `/familia/resumo/{mes}` | Calcula receita somada, gastos e Sobra Livre Familiar | `Bearer JWT` |
 
 ### Autenticação & Conta (`/auth`)

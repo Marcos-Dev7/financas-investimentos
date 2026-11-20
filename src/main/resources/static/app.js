@@ -92,7 +92,8 @@ const state = {
     saldos: [],
     resumo: null,
     despesasFamilia: [],
-    filtroResponsavelFamilia: 'todos'
+    filtroResponsavelFamilia: 'todos',
+    souTitularFamilia: false
 };
 
 let ultimoElementoFocado = null;
@@ -395,6 +396,7 @@ function limparSessao() {
     state.user = null;
     state.despesasFamilia = [];
     state.filtroResponsavelFamilia = 'todos';
+    state.souTitularFamilia = false;
     const navFamiliaBtn = document.getElementById('navFamiliaBtn');
     if (navFamiliaBtn) navFamiliaBtn.classList.add('hidden');
     sessionStorage.removeItem(STORAGE_TOKEN_KEY);
@@ -870,6 +872,25 @@ async function carregarModuloFamilia() {
             navegarPara('dashboard');
         }
 
+        state.souTitularFamilia = Boolean(painel.souTitular);
+        const thFamAcoes = document.getElementById('thFamAcoes');
+        if (thFamAcoes) {
+            thFamAcoes.classList.toggle('hidden', !state.souTitularFamilia);
+        }
+        const badgeModoFamilia = document.getElementById('badgeModoFamilia');
+        const subtituloDespesasFamilia = document.getElementById('subtituloDespesasFamilia');
+        if (badgeModoFamilia && subtituloDespesasFamilia) {
+            if (state.souTitularFamilia) {
+                badgeModoFamilia.textContent = 'Gestor da Família';
+                badgeModoFamilia.className = 'badge badge-paga';
+                subtituloDespesasFamilia.innerHTML = 'Modo <strong>Gestor</strong> — você pode realizar baixas e estornos de pagamento nas despesas compartilhadas da família';
+            } else {
+                badgeModoFamilia.textContent = 'Somente Leitura';
+                badgeModoFamilia.className = 'badge badge-cat';
+                subtituloDespesasFamilia.innerHTML = 'Visão consolidada em modo <strong>Somente Leitura</strong> — membros nunca alteram ou apagam dados de outros';
+            }
+        }
+
         const boxConvites = document.getElementById('boxConvitesRecebidos');
         const listaConvites = document.getElementById('listaConvitesRecebidos');
         const pendentes = painel.convitesRecebidosPendentes || [];
@@ -938,7 +959,9 @@ async function carregarModuloFamilia() {
                                 ${m.tokenConvite ? `<div class="token-pill">Código: ${escapeHtml(m.tokenConvite)}</div>` : ''}
                             </div>
                             <span class="badge ${isAceito ? 'badge-paga' : 'badge-pendente'}">
-                                ${isAceito ? `${ICON_SVG.check}<span>Membro Ativo</span>` : `${ICON_SVG.clock}<span>Pendente</span>`}
+                                ${isAceito
+                                    ? `${ICON_SVG.check}<span>${m.isTitular ? 'Gestor' : 'Membro Ativo'}</span>`
+                                    : `${ICON_SVG.clock}<span>Pendente</span>`}
                             </span>
                         </div>
                         <div class="income-bottom" style="justify-content: space-between;">
@@ -1138,11 +1161,12 @@ function renderizarTabelaDespesasFamilia() {
     const filtradas = state.filtroResponsavelFamilia === 'todos'
         ? lista
         : lista.filter(d => (d.responsavelNome || 'Família') === state.filtroResponsavelFamilia);
+    const totalColunas = state.souTitularFamilia ? 8 : 7;
 
     if (filtradas.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="7" class="empty-state">
+                <td colspan="${totalColunas}" class="empty-state">
                     Nenhuma despesa familiar compartilhada em <strong>${MESES_LABEL[state.mesAtual]}</strong>.
                 </td>
             </tr>
@@ -1169,9 +1193,39 @@ function renderizarTabelaDespesasFamilia() {
                 ${d.isFixa ? '<span class="badge badge-fixa">Fixa</span>' : '<span class="income-meta">Variável</span>'}
             </td>
             <td data-label="Valor" class="text-right"><strong>${formatCurrency(d.valor)}</strong></td>
+            ${state.souTitularFamilia ? `
+            <td data-label="Ações">
+                <div class="action-group">
+                    ${d.isPaga
+                        ? `<button type="button" class="btn btn-outline btn-sm" onclick="estornarDespesaFamilia(${d.id})">Estornar</button>`
+                        : `<button type="button" class="btn btn-pay btn-sm" onclick="pagarDespesaFamilia(${d.id})">Pagar</button>`
+                    }
+                </div>
+            </td>
+            ` : ''}
         </tr>
     `).join('');
 }
+
+window.pagarDespesaFamilia = async (id) => {
+    try {
+        await apiFetch(`/familia/despesas/${id}/pagar`, { method: 'PATCH' });
+        showToast('Despesa familiar marcada como paga.');
+        await atualizarTudo();
+    } catch (err) {
+        showToast(err.message, 'error');
+    }
+};
+
+window.estornarDespesaFamilia = async (id) => {
+    try {
+        await apiFetch(`/familia/despesas/${id}/estornar`, { method: 'PATCH' });
+        showToast('Pagamento da despesa familiar estornado.');
+        await atualizarTudo();
+    } catch (err) {
+        showToast(err.message, 'error');
+    }
+};
 
 function renderizarDistribuicaoCategoriasFamilia() {
     const container = document.getElementById('famCategoryBreakdown');

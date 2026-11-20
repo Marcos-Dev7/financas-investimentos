@@ -275,4 +275,62 @@ class FamiliaServiceTest {
         assertThat(resumo.despesasBrutasFamiliares()).isEqualByComparingTo("2000.00");
         assertThat(resumo.saldoDisponivelFamiliar()).isEqualByComparingTo("3000.00");
     }
+
+    @Test
+    @DisplayName("Gestor (criador da família) deve conseguir pagar e estornar despesa compartilhada de membro ativo")
+    void gestorDevePagarEEstornarDespesaCompartilhadaDeMembro() {
+        autenticarComo(titular);
+        MembroFamilia vinculo = new MembroFamilia(
+                10L, titular, conjuge, "ana@email.com", "tok",
+                LocalDateTime.now().plusHours(24), StatusFamilia.ACEITO,
+                true, true, true, true, LocalDateTime.now()
+        );
+        Despesa despesaConjuge = new Despesa(50L, "Unhas", Mes.DEZEMBRO, LocalDate.now(), false, false, new BigDecimal("100.00"), "Lazer");
+        despesaConjuge.setUsuario(conjuge);
+
+        when(membroFamiliaRepository.findByTitularIdOrderByDataCriacaoDesc(1L)).thenReturn(List.of(vinculo));
+        when(despesaRepository.findById(50L)).thenReturn(Optional.of(despesaConjuge));
+        when(despesaRepository.save(despesaConjuge)).thenReturn(despesaConjuge);
+
+        DespesaFamiliaResponseDTO paga = familiaService.pagarDespesaFamilia(50L);
+        assertThat(paga.isPaga()).isTrue();
+        assertThat(paga.responsavelNome()).isEqualTo("Ana Clara");
+
+        DespesaFamiliaResponseDTO estornada = familiaService.estornarDespesaFamilia(50L);
+        assertThat(estornada.isPaga()).isFalse();
+    }
+
+    @Test
+    @DisplayName("Gestor não deve conseguir pagar despesa de membro que desligou o compartilhamento de despesas")
+    void gestorNaoDevePagarDespesaDeMembroSemCompartilhamentoDeDespesas() {
+        autenticarComo(titular);
+        MembroFamilia vinculo = new MembroFamilia(
+                10L, titular, conjuge, "ana@email.com", "tok",
+                LocalDateTime.now().plusHours(24), StatusFamilia.ACEITO,
+                true, true, true, false, LocalDateTime.now()
+        );
+        Despesa despesaConjuge = new Despesa(50L, "Privada", Mes.DEZEMBRO, LocalDate.now(), false, false, new BigDecimal("100.00"), "Outros");
+        despesaConjuge.setUsuario(conjuge);
+
+        when(membroFamiliaRepository.findByTitularIdOrderByDataCriacaoDesc(1L)).thenReturn(List.of(vinculo));
+        when(despesaRepository.findById(50L)).thenReturn(Optional.of(despesaConjuge));
+
+        assertThatThrownBy(() -> familiaService.pagarDespesaFamilia(50L))
+                .isInstanceOf(AccessDeniedException.class);
+        verify(despesaRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Membro convidado não deve conseguir pagar nem estornar despesas pelo painel da família")
+    void membroConvidadoNaoDevePagarDespesaPeloPainelFamilia() {
+        autenticarComo(conjuge);
+        when(membroFamiliaRepository.findByTitularIdOrderByDataCriacaoDesc(2L)).thenReturn(List.of());
+
+        assertThatThrownBy(() -> familiaService.pagarDespesaFamilia(50L))
+                .isInstanceOf(AccessDeniedException.class)
+                .hasMessageContaining("gestor");
+        assertThatThrownBy(() -> familiaService.estornarDespesaFamilia(50L))
+                .isInstanceOf(AccessDeniedException.class)
+                .hasMessageContaining("gestor");
+    }
 }

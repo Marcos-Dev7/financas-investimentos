@@ -132,4 +132,27 @@ class FamiliaControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.minhasDespesasCompartilhadas").value(false));
     }
+
+    @Test
+    @DisplayName("PATCH /familia/despesas/{id}/pagar e /estornar - Gestor gerencia pagamentos e membro recebe 403")
+    void gestorPagaEEstornaDespesaFamiliarEMembroRecebe403() throws Exception {
+        DespesaFamiliaResponseDTO paga = new DespesaFamiliaResponseDTO(
+                50L, "Unhas", new BigDecimal("100.00"), Mes.DEZEMBRO,
+                LocalDate.of(2026, 12, 10), false, "Lazer", true, "Anna Luisa", false
+        );
+        DespesaFamiliaResponseDTO estornada = new DespesaFamiliaResponseDTO(
+                50L, "Unhas", new BigDecimal("100.00"), Mes.DEZEMBRO,
+                LocalDate.of(2026, 12, 10), false, "Lazer", false, "Anna Luisa", false
+        );
+        when(familiaService.pagarDespesaFamilia(50L)).thenReturn(paga);
+        when(familiaService.estornarDespesaFamilia(50L)).thenReturn(estornada);
+
+        mockMvc.perform(patch("/familia/despesas/50/pagar"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.isPaga").value(true));
+
+        mockMvc.perform(patch("/familia/despesas/50/estornar"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.isPaga").value(false));
+    }
 }
