@@ -25,10 +25,16 @@ const MESES_LABEL = {
     dezembro: 'Dezembro'
 };
 
+const ICON_SVG = {
+    check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>',
+    clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+    alert: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>'
+};
+
 const state = {
     token: localStorage.getItem(STORAGE_TOKEN_KEY) || null,
     user: JSON.parse(localStorage.getItem(STORAGE_USER_KEY) || 'null'),
-    abaAtiva: 'dashboard', // 'dashboard' | 'account'
+    abaAtiva: 'dashboard',
     pendingVerifyEmail: '',
     mesAtual: MESES[new Date().getMonth()],
     filtroDespesa: 'mes',
@@ -42,6 +48,10 @@ const state = {
     saldos: [],
     resumo: null
 };
+
+let ultimoElementoFocado = null;
+let modalAtivoEl = null;
+let resolverConfirmacao = null;
 
 const formatCurrency = (valor) => {
     const num = Number(valor || 0);
@@ -79,6 +89,102 @@ const showToast = (msg, type = 'success') => {
     container.appendChild(toast);
     setTimeout(() => toast.remove(), 4200);
 };
+
+function renderizarStatusPill(el, status) {
+    if (!el) return;
+    const st = status || 'LIMITE';
+    const icon = st === 'POSITIVO' ? ICON_SVG.check : (st === 'DEFICIT' ? ICON_SVG.alert : ICON_SVG.clock);
+    el.className = `status-pill status-${st}`;
+    el.innerHTML = `${icon}<span>${escapeHtml(st)}</span>`;
+}
+
+function renderizarBadgePagamento(isPaga) {
+    if (isPaga) {
+        return `<span class="badge badge-paga">${ICON_SVG.check}<span>Paga</span></span>`;
+    }
+    return `<span class="badge badge-pendente">${ICON_SVG.clock}<span>Pendente</span></span>`;
+}
+
+// ==========================================
+// GERENCIAMENTO DE FOCO & MODAL ACESSÍVEL (WCAG 2.2 AA)
+// ==========================================
+function abrirModalAcessivel(modalBackdropEl, elementoFocoInicial) {
+    ultimoElementoFocado = document.activeElement;
+    modalAtivoEl = modalBackdropEl;
+    modalBackdropEl.classList.remove('hidden');
+
+    setTimeout(() => {
+        if (elementoFocoInicial) {
+            elementoFocoInicial.focus();
+        } else {
+            const focaveis = obterElementosFocaveis(modalBackdropEl);
+            if (focaveis.length > 0) focaveis[0].focus();
+        }
+    }, 20);
+}
+
+function fecharModalAcessivel(modalBackdropEl) {
+    if (!modalBackdropEl) return;
+    modalBackdropEl.classList.add('hidden');
+    if (modalAtivoEl === modalBackdropEl) {
+        modalAtivoEl = null;
+    }
+    if (ultimoElementoFocado && typeof ultimoElementoFocado.focus === 'function') {
+        ultimoElementoFocado.focus();
+    }
+}
+
+function obterElementosFocaveis(container) {
+    return Array.from(
+        container.querySelectorAll('button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), [tabindex]:not([tabindex="-1"])')
+    ).filter(el => !el.closest('.hidden'));
+}
+
+document.addEventListener('keydown', (e) => {
+    if (!modalAtivoEl) return;
+
+    if (e.key === 'Escape') {
+        e.preventDefault();
+        if (modalAtivoEl.id === 'modalConfirmacao' && resolverConfirmacao) {
+            const resolve = resolverConfirmacao;
+            resolverConfirmacao = null;
+            fecharModalAcessivel(modalAtivoEl);
+            resolve(false);
+        } else {
+            fecharModalAcessivel(modalAtivoEl);
+        }
+        return;
+    }
+
+    if (e.key === 'Tab') {
+        const focaveis = obterElementosFocaveis(modalAtivoEl);
+        if (focaveis.length === 0) return;
+        const primeiro = focaveis[0];
+        const ultimo = focaveis[focaveis.length - 1];
+
+        if (e.shiftKey && document.activeElement === primeiro) {
+            e.preventDefault();
+            ultimo.focus();
+        } else if (!e.shiftKey && document.activeElement === ultimo) {
+            e.preventDefault();
+            primeiro.focus();
+        }
+    }
+});
+
+function confirmarAcaoDestrutiva(titulo, mensagem, textoBotao = 'Confirmar Exclusão') {
+    return new Promise((resolve) => {
+        resolverConfirmacao = resolve;
+        document.getElementById('modalConfirmacaoTitulo').textContent = titulo;
+        document.getElementById('modalConfirmacaoTexto').textContent = mensagem;
+        const btnConfirmar = document.getElementById('btnConfirmarAcaoDestrutiva');
+        const btnCancelar = document.getElementById('btnCancelarConfirmacao');
+        btnConfirmar.textContent = textoBotao;
+
+        const modalEl = document.getElementById('modalConfirmacao');
+        abrirModalAcessivel(modalEl, btnCancelar);
+    });
+}
 
 // Regras de Senha Forte
 function avaliarRegrasSenha(senha) {
@@ -167,7 +273,6 @@ function atualizarDadosUsuarioNaTela() {
         btnRemoverFoto.classList.toggle('hidden', !state.user.fotoPerfil);
     }
 
-    // Área Minha Conta
     document.getElementById('perfilNomeHeader').textContent = state.user.nome;
     document.getElementById('perfilEmailHeader').textContent = state.user.email;
     document.getElementById('perfilInputEmail').value = state.user.email;
@@ -188,13 +293,16 @@ function navegarPara(aba) {
     if (familiaView) familiaView.classList.add('hidden');
     accountView.classList.add('hidden');
 
-    navDashboardBtn.classList.remove('active');
-    if (navFamiliaBtn) navFamiliaBtn.classList.remove('active');
-    navAccountBtn.classList.remove('active');
+    [navDashboardBtn, navFamiliaBtn, navAccountBtn].forEach(btn => {
+        if (!btn) return;
+        btn.classList.remove('active');
+        btn.removeAttribute('aria-current');
+    });
 
     if (aba === 'account') {
         accountView.classList.remove('hidden');
         navAccountBtn.classList.add('active');
+        navAccountBtn.setAttribute('aria-current', 'page');
         monthSelectorBar.classList.add('hidden');
         atualizarDadosUsuarioNaTela();
         document.getElementById('statTotalDespesas').textContent = String(state.totalDespesasCount || state.despesas.length);
@@ -202,12 +310,16 @@ function navegarPara(aba) {
         carregarModuloFamilia();
     } else if (aba === 'familia') {
         if (familiaView) familiaView.classList.remove('hidden');
-        if (navFamiliaBtn) navFamiliaBtn.classList.add('active');
+        if (navFamiliaBtn) {
+            navFamiliaBtn.classList.add('active');
+            navFamiliaBtn.setAttribute('aria-current', 'page');
+        }
         monthSelectorBar.classList.remove('hidden');
         carregarModuloFamilia();
     } else {
         dashboardView.classList.remove('hidden');
         navDashboardBtn.classList.add('active');
+        navDashboardBtn.setAttribute('aria-current', 'page');
         monthSelectorBar.classList.remove('hidden');
     }
 }
@@ -220,7 +332,7 @@ function limparSessao() {
     mostrarTelaAuth('login');
 }
 
-function mostrarTelaAuth(modo = 'login', emailVerificacao = '', codigoDemo = null) {
+function mostrarTelaAuth(modo = 'login', emailVerificacao = '') {
     document.getElementById('authScreen').classList.remove('hidden');
     document.getElementById('appScreen').classList.add('hidden');
 
@@ -244,12 +356,16 @@ function mostrarTelaAuth(modo = 'login', emailVerificacao = '', codigoDemo = nul
     } else if (modo === 'register') {
         tabsWrap.classList.remove('hidden');
         tabRegisterBtn.classList.add('active');
+        tabRegisterBtn.setAttribute('aria-selected', 'true');
         tabLoginBtn.classList.remove('active');
+        tabLoginBtn.setAttribute('aria-selected', 'false');
         formRegister.classList.remove('hidden');
     } else {
         tabsWrap.classList.remove('hidden');
         tabLoginBtn.classList.add('active');
+        tabLoginBtn.setAttribute('aria-selected', 'true');
         tabRegisterBtn.classList.remove('active');
+        tabRegisterBtn.setAttribute('aria-selected', 'false');
         formLogin.classList.remove('hidden');
     }
 }
@@ -321,13 +437,11 @@ async function carregarResumoMes() {
 
         document.getElementById('kpiReceitaTotal').textContent = formatCurrency(receita);
         document.getElementById('kpiDespesasPagas').textContent = formatCurrency(pagas);
-        document.getElementById('kpiFaltaPagar').textContent = `Falta pagar no mês: ${formatCurrency(faltaPagar)}`;
+        document.getElementById('kpiFaltaPagar').textContent = `Pendente no mês: ${formatCurrency(faltaPagar)}`;
         document.getElementById('kpiDespesasBrutas').textContent = formatCurrency(brutas);
         document.getElementById('kpiSaldoDisponivel').textContent = formatCurrency(resumo.saldoDisponivel);
 
-        const badge = document.getElementById('badgeStatusFinanceiro');
-        badge.textContent = resumo.status;
-        badge.className = `status-pill status-${resumo.status}`;
+        renderizarStatusPill(document.getElementById('badgeStatusFinanceiro'), resumo.status);
 
         const pctQuitado = brutas > 0 ? Math.min(100, Math.round((pagas / brutas) * 100)) : 0;
         document.getElementById('progressPagas').style.width = `${pctQuitado}%`;
@@ -341,7 +455,7 @@ async function carregarResumoMes() {
         if (receita === 0 && brutas === 0) {
             txtRec.textContent = 'Cadastre suas receitas e despesas do mês para acompanhar a saúde do orçamento.';
         } else if (pctComprometido <= 70) {
-            txtRec.textContent = 'Excelente! Mais de 30% da sua renda está livre para reserva ou investimentos.';
+            txtRec.textContent = 'Mais de 30% da sua renda está livre para reserva ou investimentos.';
         } else if (pctComprometido <= 95) {
             txtRec.textContent = 'Atenção: Suas despesas previstas consomem boa parte da renda mensal.';
         } else {
@@ -363,7 +477,7 @@ async function carregarDespesas() {
         renderizarDistribuicaoCategorias();
     } catch (err) {
         document.getElementById('tbodyDespesas').innerHTML = `
-            <tr><td colspan="7" class="empty-state">Não foi possível carregar as despesas (${err.message}).</td></tr>
+            <tr><td colspan="7" class="empty-state">Não foi possível carregar as despesas (${escapeHtml(err.message)}).</td></tr>
         `;
     }
 }
@@ -397,7 +511,7 @@ function renderizarDistribuicaoCategorias() {
                     <span>${escapeHtml(cat)}</span>
                     <span>${formatCurrency(valor)} (${pct}%)</span>
                 </div>
-                <div class="progress-wrap" style="margin-bottom:0">
+                <div class="progress-wrap">
                     <div class="progress-bar" style="width: ${pct}%"></div>
                 </div>
             </div>
@@ -441,9 +555,7 @@ function renderizarDespesas() {
     tbody.innerHTML = filtradas.map(d => `
         <tr>
             <td data-label="Status">
-                <span class="badge ${d.isPaga ? 'badge-paga' : 'badge-pendente'}">
-                    ${d.isPaga ? '✓ Paga' : 'Pendente'}
-                </span>
+                ${renderizarBadgePagamento(d.isPaga)}
             </td>
             <td data-label="Descrição">
                 <div class="td-desc-wrap">
@@ -462,11 +574,11 @@ function renderizarDespesas() {
             <td data-label="Ações" class="text-right td-actions">
                 <div class="action-group">
                     ${d.isPaga
-                        ? `<button class="btn btn-outline btn-sm" onclick="estornarDespesa(${d.id})" title="Estornar pagamento">Estornar</button>`
-                        : `<button class="btn btn-success btn-sm" onclick="pagarDespesa(${d.id})" title="Dar baixa como paga">Pagar</button>`
+                        ? `<button type="button" class="btn btn-outline btn-sm" onclick="estornarDespesa(${d.id})" aria-label="Estornar pagamento de ${escapeHtml(d.descricao)}">Estornar</button>`
+                        : `<button type="button" class="btn btn-success btn-sm" onclick="pagarDespesa(${d.id})" aria-label="Dar baixa em ${escapeHtml(d.descricao)}">Pagar</button>`
                     }
-                    <button class="btn btn-outline btn-sm" onclick="abrirEditarDespesa(${d.id})" title="Editar">Editar</button>
-                    <button class="btn btn-danger-ghost btn-sm" onclick="excluirDespesa(${d.id})" title="Excluir">Excluir</button>
+                    <button type="button" class="btn btn-outline btn-sm" onclick="abrirEditarDespesa(${d.id})" aria-label="Editar ${escapeHtml(d.descricao)}">Editar</button>
+                    <button type="button" class="btn btn-danger-ghost btn-sm" onclick="excluirDespesa(${d.id})" aria-label="Excluir ${escapeHtml(d.descricao)}">Excluir</button>
                 </div>
             </td>
         </tr>
@@ -481,7 +593,7 @@ async function carregarSaldos() {
         renderizarSaldos();
     } catch (err) {
         document.getElementById('listaSaldos').innerHTML = `
-            <div class="empty-state">Não foi possível carregar as receitas (${err.message}).</div>
+            <div class="empty-state">Não foi possível carregar as receitas (${escapeHtml(err.message)}).</div>
         `;
     }
 }
@@ -512,18 +624,18 @@ function renderizarSaldos() {
                 <span class="income-amount">${formatCurrency(s.valor)}</span>
             </div>
             <div class="income-bottom">
-                <button class="btn btn-outline btn-sm" onclick="abrirEditarSaldo(${s.id})" title="Editar receita">Editar</button>
-                <button class="btn btn-danger-ghost btn-sm" onclick="excluirSaldo(${s.id})" title="Excluir receita">Excluir</button>
+                <button type="button" class="btn btn-outline btn-sm" onclick="abrirEditarSaldo(${s.id})" aria-label="Editar receita ${escapeHtml(s.descricao)}">Editar</button>
+                <button type="button" class="btn btn-danger-ghost btn-sm" onclick="excluirSaldo(${s.id})" aria-label="Excluir receita ${escapeHtml(s.descricao)}">Excluir</button>
             </div>
         </div>
     `).join('');
 }
 
-// Ações de Despesa
+// Ações de Despesa (Com Confirmação Acessível)
 window.pagarDespesa = async (id) => {
     try {
         await apiFetch(`/despesas/${id}/pagar`, { method: 'PATCH' });
-        showToast('Despesa marcada como paga!');
+        showToast('Despesa marcada como paga.');
         await atualizarTudo();
     } catch (err) {
         showToast(err.message, 'error');
@@ -533,7 +645,7 @@ window.pagarDespesa = async (id) => {
 window.estornarDespesa = async (id) => {
     try {
         await apiFetch(`/despesas/${id}/estornar`, { method: 'PATCH' });
-        showToast('Pagamento estornado com sucesso!');
+        showToast('Pagamento estornado.');
         await atualizarTudo();
     } catch (err) {
         showToast(err.message, 'error');
@@ -541,10 +653,18 @@ window.estornarDespesa = async (id) => {
 };
 
 window.excluirDespesa = async (id) => {
-    if (!confirm('Deseja realmente excluir esta despesa?')) return;
+    const d = state.despesas.find(item => item.id === id);
+    const nome = d ? `"${d.descricao}"` : 'esta despesa';
+    const confirmado = await confirmarAcaoDestrutiva(
+        'Excluir Despesa',
+        `Tem certeza que deseja excluir permanentemente ${nome}? Esta ação não pode ser desfeita.`,
+        'Excluir Despesa'
+    );
+    if (!confirmado) return;
+
     try {
         await apiFetch(`/despesas/${id}`, { method: 'DELETE' });
-        showToast('Despesa excluída!');
+        showToast('Despesa excluída.');
         await atualizarTudo();
     } catch (err) {
         showToast(err.message, 'error');
@@ -564,7 +684,7 @@ window.abrirEditarDespesa = (id) => {
     document.getElementById('despesaCategoria').value = d.categoria || '';
     document.getElementById('despesaIsFixa').checked = Boolean(d.isFixa);
 
-    document.getElementById('modalDespesa').classList.remove('hidden');
+    abrirModalAcessivel(document.getElementById('modalDespesa'), document.getElementById('despesaDescricao'));
 };
 
 window.abrirEditarSaldo = (id) => {
@@ -578,14 +698,22 @@ window.abrirEditarSaldo = (id) => {
     document.getElementById('saldoMes').value = (s.mes || state.mesAtual).toLowerCase();
     document.getElementById('saldoAno').value = s.ano || new Date().getFullYear();
 
-    document.getElementById('modalSaldo').classList.remove('hidden');
+    abrirModalAcessivel(document.getElementById('modalSaldo'), document.getElementById('saldoDescricao'));
 };
 
 window.excluirSaldo = async (id) => {
-    if (!confirm('Deseja realmente remover esta fonte de renda?')) return;
+    const s = state.saldos.find(item => item.id === id);
+    const nome = s ? `"${s.descricao}"` : 'esta receita';
+    const confirmado = await confirmarAcaoDestrutiva(
+        'Excluir Receita',
+        `Deseja realmente remover a fonte de renda ${nome}?`,
+        'Excluir Receita'
+    );
+    if (!confirmado) return;
+
     try {
         await apiFetch(`/saldos/${id}`, { method: 'DELETE' });
-        showToast('Receita removida!');
+        showToast('Receita removida.');
         await atualizarTudo();
     } catch (err) {
         showToast(err.message, 'error');
@@ -624,7 +752,6 @@ async function carregarModuloFamilia() {
         const painel = await apiFetch('/familia');
         if (!painel) return;
 
-        // 1. Convites Recebidos Pendentes para o usuário logado
         const boxConvites = document.getElementById('boxConvitesRecebidos');
         const listaConvites = document.getElementById('listaConvitesRecebidos');
         const pendentes = painel.convitesRecebidosPendentes || [];
@@ -638,7 +765,7 @@ async function carregarModuloFamilia() {
                             <h4>Família de ${escapeHtml(c.nome)}</h4>
                             <span class="income-meta">${escapeHtml(c.email)} &bull; Válido até ${escapeHtml(c.dataExpiracao || '')}</span>
                         </div>
-                        <button class="btn btn-primary btn-sm" onclick="aceitarConviteDireto('${escapeHtml(c.tokenConvite)}')">
+                        <button type="button" class="btn btn-primary btn-sm" onclick="aceitarConviteDireto('${escapeHtml(c.tokenConvite)}')">
                             Aceitar Convite
                         </button>
                     </div>
@@ -648,23 +775,19 @@ async function carregarModuloFamilia() {
             boxConvites.classList.add('hidden');
         }
 
-        // 2. Toggle de compartilhamento da própria renda
         const chkRenda = document.getElementById('chkCompartilharMinhaRenda');
         chkRenda.checked = Boolean(painel.minhaRendaCompartilhada);
         chkRenda.disabled = !painel.possuiFamiliaAtiva && (painel.membros || []).length === 0;
 
-        // 3. Bloco de convidar (apenas titular pode convidar novos membros)
         const blocoConvidar = document.getElementById('blocoConvidarMembro');
         blocoConvidar.classList.toggle('hidden', !painel.souTitular);
 
-        // Oculta o campo de "Possui um Código de Convite?" depois que o usuário já faz parte de uma família ou já enviou convites!
         const blocoCodigo = document.getElementById('blocoAceitarCodigoConvite');
         const membros = painel.membros || [];
         if (blocoCodigo) {
             blocoCodigo.classList.toggle('hidden', painel.possuiFamiliaAtiva || membros.length > 0);
         }
 
-        // 4. Lista de Membros (na seção Configurações da Família em Minha Conta)
         const containerMembros = document.getElementById('listaMembrosFamilia');
 
         if (membros.length === 0) {
@@ -689,7 +812,7 @@ async function carregarModuloFamilia() {
                                 ${m.tokenConvite ? `<div class="token-pill">Código: ${escapeHtml(m.tokenConvite)}</div>` : ''}
                             </div>
                             <span class="badge ${isAceito ? 'badge-paga' : 'badge-pendente'}">
-                                ${isAceito ? '✓ Membro Ativo' : 'Convite Pendente'}
+                                ${isAceito ? `${ICON_SVG.check}<span>Membro Ativo</span>` : `${ICON_SVG.clock}<span>Pendente</span>`}
                             </span>
                         </div>
                         <div class="income-bottom" style="justify-content: space-between;">
@@ -700,11 +823,11 @@ async function carregarModuloFamilia() {
                                 }
                             </span>
                             <div class="action-group">
-                                ${linkConvite ? `<button class="btn btn-outline btn-sm" onclick="copiarLinkConvite('${escapeHtml(linkConvite)}', '${escapeHtml(m.tokenConvite)}')">Copiar Link</button>` : ''}
+                                ${linkConvite ? `<button type="button" class="btn btn-outline btn-sm" onclick="copiarLinkConvite('${escapeHtml(linkConvite)}', '${escapeHtml(m.tokenConvite)}')">Copiar Link</button>` : ''}
                                 ${(painel.souTitular && !m.isTitular)
-                                    ? `<button class="btn btn-danger-ghost btn-sm" onclick="removerMembroFamilia(${m.vinculoId})">${isAceito ? 'Remover Membro' : 'Cancelar'}</button>`
+                                    ? `<button type="button" class="btn btn-danger-ghost btn-sm" onclick="removerMembroFamilia(${m.vinculoId}, '${escapeHtml(m.nome)}', true)">${isAceito ? 'Remover Membro' : 'Cancelar Convite'}</button>`
                                     : (!painel.souTitular && !m.isTitular && m.email.toLowerCase() === (state.user?.email || '').toLowerCase())
-                                        ? `<button class="btn btn-danger-ghost btn-sm" onclick="removerMembroFamilia(${m.vinculoId})">Sair da Família</button>`
+                                        ? `<button type="button" class="btn btn-danger-ghost btn-sm" onclick="removerMembroFamilia(${m.vinculoId}, '${escapeHtml(painel.nomeTitular)}', false)">Sair da Família</button>`
                                         : ''
                                 }
                             </div>
@@ -714,7 +837,6 @@ async function carregarModuloFamilia() {
             }).join('');
         }
 
-        // 5. Se possui família ativa, mostra o Resumo Consolidado + Despesas Familiares direto no topo da aba Família
         const painelConsolidado = document.getElementById('painelConsolidadoFamilia');
         const estadoSemFamilia = document.getElementById('estadoSemFamiliaAtiva');
         if (painel.possuiFamiliaAtiva) {
@@ -745,13 +867,11 @@ async function carregarResumoFamiliaMes() {
 
         document.getElementById('kpiFamReceitaTotal').textContent = formatCurrency(receita);
         document.getElementById('kpiFamDespesasPagas').textContent = formatCurrency(pagas);
-        document.getElementById('kpiFamFaltaPagar').textContent = `Falta pagar: ${formatCurrency(falta)}`;
+        document.getElementById('kpiFamFaltaPagar').textContent = `Pendente no mês: ${formatCurrency(falta)}`;
         document.getElementById('kpiFamDespesasBrutas').textContent = formatCurrency(brutas);
         document.getElementById('kpiFamSaldoDisponivel').textContent = formatCurrency(resumo.saldoDisponivelFamiliar);
 
-        const badge = document.getElementById('badgeFamStatus');
-        badge.textContent = resumo.status;
-        badge.className = `status-pill status-${resumo.status}`;
+        renderizarStatusPill(document.getElementById('badgeFamStatus'), resumo.status);
 
         const pct = brutas > 0 ? Math.min(100, Math.round((pagas / brutas) * 100)) : 0;
         document.getElementById('progressFamPagas').style.width = `${pct}%`;
@@ -780,9 +900,7 @@ async function carregarDespesasFamiliaMes() {
         tbody.innerHTML = lista.map(d => `
             <tr>
                 <td data-label="Status">
-                    <span class="badge ${d.isPaga ? 'badge-paga' : 'badge-pendente'}">
-                        ${d.isPaga ? '✓ Paga' : 'Pendente'}
-                    </span>
+                    ${renderizarBadgePagamento(d.isPaga)}
                 </td>
                 <td data-label="Responsável">
                     <span class="badge badge-fixa">${escapeHtml(d.responsavelNome)}</span>
@@ -808,7 +926,7 @@ async function carregarDespesasFamiliaMes() {
 window.copiarLinkConvite = async (link, token) => {
     try {
         await navigator.clipboard.writeText(link);
-        showToast('Link de convite copiado! Envie para o seu familiar.');
+        showToast('Link de convite copiado para a área de transferência.');
     } catch (_) {
         prompt('Copie o código ou link do convite:', token);
     }
@@ -827,11 +945,19 @@ window.aceitarConviteDireto = async (token) => {
     }
 };
 
-window.removerMembroFamilia = async (vinculoId) => {
-    if (!confirm('Tem certeza que deseja encerrar este vínculo familiar? O acesso será cortado imediatamente.')) return;
+window.removerMembroFamilia = async (vinculoId, nomeAlvo, souTitular) => {
+    const titulo = souTitular ? 'Remover Membro da Família' : 'Sair da Família';
+    const msg = souTitular
+        ? `Tem certeza que deseja encerrar o acesso de "${nomeAlvo}" à visão familiar? O acesso será cortado imediatamente.`
+        : `Tem certeza que deseja sair da família de "${nomeAlvo}"? Você perderá acesso à visão consolidada imediatamente.`;
+    const botao = souTitular ? 'Remover Membro' : 'Sair da Família';
+
+    const confirmado = await confirmarAcaoDestrutiva(titulo, msg, botao);
+    if (!confirmado) return;
+
     try {
         await apiFetch(`/familia/membros/${vinculoId}`, { method: 'DELETE' });
-        showToast('Vínculo familiar removido e acesso encerrado imediatamente.');
+        showToast('Vínculo familiar encerrado imediatamente.');
         await carregarModuloFamilia();
     } catch (err) {
         showToast(err.message, 'error');
@@ -839,12 +965,24 @@ window.removerMembroFamilia = async (vinculoId) => {
 };
 
 document.addEventListener('DOMContentLoaded', async () => {
+    // Modal de Confirmação Destrutiva
+    const modalConfirmacao = document.getElementById('modalConfirmacao');
+    const encerrarConfirmacao = (resultado) => {
+        const resolve = resolverConfirmacao;
+        resolverConfirmacao = null;
+        fecharModalAcessivel(modalConfirmacao);
+        if (resolve) resolve(resultado);
+    };
+    document.getElementById('btnConfirmarAcaoDestrutiva').addEventListener('click', () => encerrarConfirmacao(true));
+    document.getElementById('btnCancelarConfirmacao').addEventListener('click', () => encerrarConfirmacao(false));
+    document.getElementById('btnFecharConfirmacao').addEventListener('click', () => encerrarConfirmacao(false));
+
     // Abas Login / Cadastro
     document.getElementById('tabLoginBtn').addEventListener('click', () => mostrarTelaAuth('login'));
     document.getElementById('tabRegisterBtn').addEventListener('click', () => mostrarTelaAuth('register'));
     document.getElementById('btnBackToLogin').addEventListener('click', () => mostrarTelaAuth('login'));
 
-    // Navegação entre Visão Geral, Família e Minha Conta
+    // Navegação entre Painel Financeiro, Família e Minha Conta
     document.getElementById('navDashboardBtn').addEventListener('click', () => navegarPara('dashboard'));
     document.getElementById('navFamiliaBtn').addEventListener('click', () => navegarPara('familia'));
     document.getElementById('brandHomeLink').addEventListener('click', () => navegarPara('dashboard'));
@@ -873,7 +1011,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 body: JSON.stringify({ emailConvidado: input.value.trim() })
             });
             input.value = '';
-            showToast('Convite gerado com validade de 48h! Você também pode copiar o link na lista.');
+            showToast('Convite gerado com validade de 48h.');
             await carregarModuloFamilia();
         } catch (err) {
             showToast(err.message, 'error');
@@ -978,7 +1116,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         } finally {
             btn.disabled = false;
-            btn.textContent = 'Acessar Plataforma';
+            btn.textContent = 'Entrar no Sistema';
         }
     });
 
@@ -1016,12 +1154,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             atualizarChecklistSenha('', 'regPwdRules');
             atualizarDicaConfirmacao('', '', 'regMatchHint');
             showToast(resp.mensagem);
-            mostrarTelaAuth('verify', resp.email, resp.codigoDemonstracao);
+            mostrarTelaAuth('verify', resp.email);
         } catch (err) {
             showToast(err.message, 'error');
         } finally {
             btn.disabled = false;
-            btn.textContent = 'Cadastrar e Enviar Código';
+            btn.textContent = 'Criar Conta e Receber Código';
         }
     });
 
@@ -1050,7 +1188,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             showToast(err.message, 'error');
         } finally {
             btn.disabled = false;
-            btn.textContent = 'Confirmar Código e Entrar';
+            btn.textContent = 'Validar Código e Acessar';
         }
     });
 
@@ -1063,7 +1201,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 body: JSON.stringify({ email: state.pendingVerifyEmail })
             });
             showToast(resp.mensagem);
-            mostrarTelaAuth('verify', resp.email, resp.codigoDemonstracao);
+            mostrarTelaAuth('verify', resp.email);
         } catch (err) {
             showToast(err.message, 'error');
         }
@@ -1089,7 +1227,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 canvas.height = size;
                 const ctx = canvas.getContext('2d');
 
-                // Crop central quadrado
                 const minSide = Math.min(img.width, img.height);
                 const sx = (img.width - minSide) / 2;
                 const sy = (img.height - minSide) / 2;
@@ -1108,7 +1245,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     });
                     salvarSessao(authAtualizado);
                     atualizarDadosUsuarioNaTela();
-                    showToast('Foto de perfil atualizada com sucesso!');
+                    showToast('Foto de perfil atualizada.');
                 } catch (err) {
                     showToast(err.message, 'error');
                 } finally {
@@ -1121,6 +1258,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     document.getElementById('btnRemoverFoto').addEventListener('click', async () => {
+        const confirmado = await confirmarAcaoDestrutiva(
+            'Remover Foto de Perfil',
+            'Deseja remover sua foto de perfil atual e voltar para o avatar com suas iniciais?',
+            'Remover Foto'
+        );
+        if (!confirmado) return;
+
         try {
             const authAtualizado = await apiFetch('/auth/perfil', {
                 method: 'PUT',
@@ -1154,7 +1298,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
             salvarSessao(authAtualizado);
             atualizarDadosUsuarioNaTela();
-            showToast('Dados da conta atualizados com sucesso!');
+            showToast('Dados da conta atualizados.');
         } catch (err) {
             showToast(err.message, 'error');
         } finally {
@@ -1192,7 +1336,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             formAlterarSenha.reset();
             atualizarChecklistSenha('', 'perfilPwdRules');
             atualizarDicaConfirmacao('', '', 'perfilMatchHint');
-            showToast('Sua senha foi alterada com sucesso!');
+            showToast('Sua senha foi alterada com sucesso.');
         } catch (err) {
             showToast(err.message, 'error');
         } finally {
@@ -1200,9 +1344,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    // Excluir Minha Conta
+    // Excluir Minha Conta (Com Confirmação Acessível)
     document.getElementById('btnExcluirMinhaConta').addEventListener('click', async () => {
-        if (!confirm('Tem certeza absoluta que deseja excluir sua conta e todos os seus dados financeiros?')) return;
+        const confirmado = await confirmarAcaoDestrutiva(
+            'Excluir Minha Conta Permanentemente',
+            'Tem certeza absoluta que deseja excluir sua conta e todos os seus saldos e despesas registrados? Esta operação é irreversível.',
+            'Sim, Excluir Minha Conta'
+        );
+        if (!confirmado) return;
+
         try {
             await apiFetch('/auth/conta', { method: 'DELETE' });
             limparSessao();
@@ -1215,7 +1365,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Logout
     document.getElementById('btnLogout').addEventListener('click', () => {
         limparSessao();
-        showToast('Você saiu da sua conta.');
+        showToast('Sessão encerrada.');
     });
 
     // Seletor de Mês
@@ -1241,11 +1391,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         atualizarTudo();
     });
 
-    // Filtros de despesas
+    // Filtros de despesas com aria-selected
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', () => {
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => {
+                b.classList.remove('active');
+                b.setAttribute('aria-selected', 'false');
+            });
             btn.classList.add('active');
+            btn.setAttribute('aria-selected', 'true');
             state.filtroDespesa = btn.dataset.filter;
             renderizarDespesas();
         });
@@ -1276,7 +1430,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    // Modal Despesa
+    // Modal Despesa (Foco Acessível)
     const modalDespesa = document.getElementById('modalDespesa');
     document.getElementById('btnNovaDespesa').addEventListener('click', () => {
         document.getElementById('formDespesa').reset();
@@ -1284,10 +1438,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('modalDespesaTitulo').textContent = 'Nova Despesa';
         document.getElementById('despesaMes').value = state.mesAtual;
         document.getElementById('despesaDataVencimento').value = new Date().toISOString().split('T')[0];
-        modalDespesa.classList.remove('hidden');
+        abrirModalAcessivel(modalDespesa, document.getElementById('despesaDescricao'));
     });
 
-    const fecharModalDespesa = () => modalDespesa.classList.add('hidden');
+    const fecharModalDespesa = () => fecharModalAcessivel(modalDespesa);
     document.getElementById('btnFecharModalDespesa').addEventListener('click', fecharModalDespesa);
     document.getElementById('btnCancelarDespesa').addEventListener('click', fecharModalDespesa);
 
@@ -1309,13 +1463,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                     method: 'PUT',
                     body: JSON.stringify(payload)
                 });
-                showToast('Despesa atualizada com sucesso!');
+                showToast('Despesa atualizada.');
             } else {
                 await apiFetch('/despesas', {
                     method: 'POST',
                     body: JSON.stringify(payload)
                 });
-                showToast('Despesa cadastrada com sucesso!');
+                showToast('Despesa cadastrada.');
             }
             fecharModalDespesa();
             await atualizarTudo();
@@ -1324,7 +1478,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    // Modal Saldo
+    // Modal Saldo (Foco Acessível)
     const modalSaldo = document.getElementById('modalSaldo');
     document.getElementById('btnNovoSaldo').addEventListener('click', () => {
         document.getElementById('formSaldo').reset();
@@ -1332,10 +1486,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('modalSaldoTitulo').textContent = 'Nova Receita';
         document.getElementById('saldoMes').value = state.mesAtual;
         document.getElementById('saldoAno').value = new Date().getFullYear();
-        modalSaldo.classList.remove('hidden');
+        abrirModalAcessivel(modalSaldo, document.getElementById('saldoDescricao'));
     });
 
-    const fecharModalSaldo = () => modalSaldo.classList.add('hidden');
+    const fecharModalSaldo = () => fecharModalAcessivel(modalSaldo);
     document.getElementById('btnFecharModalSaldo').addEventListener('click', fecharModalSaldo);
     document.getElementById('btnCancelarSaldo').addEventListener('click', fecharModalSaldo);
 
@@ -1355,13 +1509,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                     method: 'PUT',
                     body: JSON.stringify(payload)
                 });
-                showToast('Receita atualizada com sucesso!');
+                showToast('Receita atualizada.');
             } else {
                 await apiFetch('/saldos', {
                     method: 'POST',
                     body: JSON.stringify(payload)
                 });
-                showToast('Receita cadastrada com sucesso!');
+                showToast('Receita cadastrada.');
             }
             fecharModalSaldo();
             await atualizarTudo();
@@ -1386,7 +1540,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 mostrarTelaApp();
                 await atualizarTudo();
                 if (tokenConviteUrl) {
-                    navegarPara('familia');
+                    navegarPara('account');
                 }
                 return;
             }
