@@ -43,6 +43,8 @@ public class SecurityConfig {
                                 "/logo.svg",
                                 "/logo.png",
                                 "/favicon.ico",
+                                "/favicon-32x32.png",
+                                "/error",
                                 "/assets/**",
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",

@@ -34,6 +34,7 @@ public class TokenService {
             Algorithm algorithm = Algorithm.HMAC256(secret);
             return JWT.require(algorithm)
                     .withIssuer(ISSUER)
+                    .acceptLeeway(60)
                     .build()
                     .verify(tokenJWT)
                     .getSubject();

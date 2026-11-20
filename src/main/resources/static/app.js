@@ -131,7 +131,7 @@ function salvarSessao(authData) {
         nome: authData.nome,
         email: authData.email,
         emailVerificado: true,
-        fotoPerfil: authData.fotoPerfil ?? state.user?.fotoPerfil ?? null
+        fotoPerfil: authData.fotoPerfil !== undefined ? authData.fotoPerfil : null
     };
     localStorage.setItem(STORAGE_TOKEN_KEY, state.token);
     localStorage.setItem(STORAGE_USER_KEY, JSON.stringify(state.user));

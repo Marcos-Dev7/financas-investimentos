@@ -24,6 +24,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 @Service
+@Transactional
 @RequiredArgsConstructor
 public class FamiliaService {
 

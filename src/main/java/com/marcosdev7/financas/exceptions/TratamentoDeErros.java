@@ -53,4 +53,10 @@ public class TratamentoDeErros {
     public ResponseEntity tratarErroDeRota(){
        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new DadosErroMensagemDTO("Rota não encontrada"));
     }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity tratarErroInterno(Exception ex) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new DadosErroMensagemDTO("Erro ao processar requisição: " + ex.getMessage()));
+    }
 }
