@@ -199,6 +199,7 @@ function navegarPara(aba) {
         atualizarDadosUsuarioNaTela();
         document.getElementById('statTotalDespesas').textContent = String(state.totalDespesasCount || state.despesas.length);
         document.getElementById('statTotalSaldos').textContent = String(state.saldos.length);
+        carregarModuloFamilia();
     } else if (aba === 'familia') {
         if (familiaView) familiaView.classList.remove('hidden');
         if (navFamiliaBtn) navFamiliaBtn.classList.add('active');
@@ -656,14 +657,20 @@ async function carregarModuloFamilia() {
         const blocoConvidar = document.getElementById('blocoConvidarMembro');
         blocoConvidar.classList.toggle('hidden', !painel.souTitular);
 
-        // 4. Lista de Membros
-        const containerMembros = document.getElementById('listaMembrosFamilia');
+        // Oculta o campo de "Possui um Código de Convite?" depois que o usuário já faz parte de uma família ou já enviou convites!
+        const blocoCodigo = document.getElementById('blocoAceitarCodigoConvite');
         const membros = painel.membros || [];
+        if (blocoCodigo) {
+            blocoCodigo.classList.toggle('hidden', painel.possuiFamiliaAtiva || membros.length > 0);
+        }
+
+        // 4. Lista de Membros (na seção Configurações da Família em Minha Conta)
+        const containerMembros = document.getElementById('listaMembrosFamilia');
 
         if (membros.length === 0) {
             containerMembros.innerHTML = `
-                <div class="empty-state">
-                    Nenhum membro na família ainda. Envie um convite ao lado para compartilhar a visão familiar.
+                <div class="empty-state-sm">
+                    Nenhum membro vinculado ainda. Utilize o campo ao lado para convidar um familiar.
                 </div>
             `;
         } else {
@@ -707,16 +714,19 @@ async function carregarModuloFamilia() {
             }).join('');
         }
 
-        // 5. Se possui família ativa, carrega Resumo Consolidado + Despesas Familiares
+        // 5. Se possui família ativa, mostra o Resumo Consolidado + Despesas Familiares direto no topo da aba Família
         const painelConsolidado = document.getElementById('painelConsolidadoFamilia');
+        const estadoSemFamilia = document.getElementById('estadoSemFamiliaAtiva');
         if (painel.possuiFamiliaAtiva) {
             painelConsolidado.classList.remove('hidden');
+            if (estadoSemFamilia) estadoSemFamilia.classList.add('hidden');
             await Promise.all([
                 carregarResumoFamiliaMes(),
                 carregarDespesasFamiliaMes()
             ]);
         } else {
             painelConsolidado.classList.add('hidden');
+            if (estadoSemFamilia) estadoSemFamilia.classList.remove('hidden');
         }
     } catch (err) {
         showToast(err.message, 'error');
@@ -841,6 +851,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('btnVoltarPainel').addEventListener('click', () => navegarPara('dashboard'));
     document.getElementById('navAccountBtn').addEventListener('click', () => navegarPara('account'));
     document.getElementById('btnAbrirMinhaConta').addEventListener('click', () => navegarPara('account'));
+
+    const irParaConfigFamilia = () => {
+        navegarPara('account');
+        setTimeout(() => {
+            document.getElementById('secaoConfigFamilia')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
+    };
+    document.getElementById('btnIrConfigurarFamilia')?.addEventListener('click', irParaConfigFamilia);
+    document.getElementById('btnAtalhoConfigFamilia')?.addEventListener('click', irParaConfigFamilia);
 
     // Eventos do Módulo Família
     document.getElementById('formEnviarConviteFamilia').addEventListener('submit', async (e) => {

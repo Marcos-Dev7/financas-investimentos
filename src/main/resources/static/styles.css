@@ -1101,34 +1101,191 @@ h1, h2, h3, h4, .wordmark-main, .kpi-value {
     margin-top: 0.9rem;
 }
 
-/* Family Module Styles */
+/* Family Module & Compact Settings in Minha Conta */
 .invite-alert-panel {
     border-color: rgba(245, 158, 11, 0.45);
     background: linear-gradient(180deg, rgba(245, 158, 11, 0.09), rgba(15, 22, 34, 0.96));
     margin-bottom: 1.35rem;
 }
 
-.family-income-toggle-box {
-    background: var(--bg-input);
-    border: 1px solid rgba(16, 185, 129, 0.3);
-    border-radius: var(--radius-md);
-    padding: 0.85rem 1rem;
-    margin-bottom: 1.1rem;
+.invite-alert-header {
+    margin-bottom: 0.85rem;
 }
 
-.section-divider {
-    border: none;
-    border-top: 1px solid var(--border-color);
-    margin: 1.4rem 0;
-}
-
-.family-section-banner {
+.family-top-bar {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
     flex-wrap: wrap;
-    margin: 1.5rem 0 1.15rem;
+    margin-bottom: 1.25rem;
+}
+
+.family-top-bar h2 {
+    font-size: 1.4rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+}
+
+.family-top-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    flex-wrap: wrap;
+}
+
+.empty-family-panel {
+    text-align: center;
+    padding: 3rem 1.5rem;
+}
+
+.empty-family-content {
+    max-width: 480px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.85rem;
+}
+
+.empty-family-content h3 {
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+
+.empty-family-content p {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.35rem;
+}
+
+.family-settings-panel {
+    margin-bottom: 1.35rem;
+}
+
+.family-switch-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.25rem;
+    background: var(--bg-input);
+    border: 1px solid rgba(16, 185, 129, 0.28);
+    border-radius: var(--radius-md);
+    padding: 1rem 1.2rem;
+    margin-bottom: 1.35rem;
+}
+
+.family-switch-info strong {
+    display: block;
+    font-size: 0.92rem;
+    margin-bottom: 0.15rem;
+}
+
+.family-switch-info span {
+    font-size: 0.79rem;
+    color: var(--text-secondary);
+}
+
+/* Modern iOS / Fintech Toggle Switch */
+.switch-toggle {
+    position: relative;
+    display: inline-block;
+    width: 48px;
+    height: 26px;
+    flex-shrink: 0;
+}
+
+.switch-toggle input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.switch-slider {
+    position: absolute;
+    cursor: pointer;
+    inset: 0;
+    background-color: #1e293b;
+    border: 1px solid var(--border-color);
+    transition: 0.2s;
+    border-radius: 999px;
+}
+
+.switch-slider::before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: #94a3b8;
+    transition: 0.2s;
+    border-radius: 50%;
+}
+
+.switch-toggle input:checked + .switch-slider {
+    background-color: rgba(16, 185, 129, 0.25);
+    border-color: #10b981;
+}
+
+.switch-toggle input:checked + .switch-slider::before {
+    transform: translateX(22px);
+    background-color: #34d399;
+}
+
+.family-settings-grid {
+    display: grid;
+    grid-template-columns: 1.15fr 1fr;
+    gap: 1.25rem;
+    align-items: start;
+}
+
+.sub-box-title {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 0.55rem;
+}
+
+.family-actions-col {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.compact-invite-box {
+    background: var(--bg-input);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 1rem 1.1rem;
+}
+
+.inline-action-form {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+}
+
+.inline-action-form input {
+    flex: 1;
+    min-width: 0;
+    background: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    padding: 0.56rem 0.85rem;
+    border-radius: var(--radius-md);
+    font-size: 0.86rem;
+    outline: none;
+}
+
+.inline-action-form input:focus {
+    border-color: var(--accent-primary);
+}
+
+.inline-action-form .btn {
+    flex-shrink: 0;
+    padding: 0.56rem 1.1rem;
+    white-space: nowrap;
 }
 
 .token-pill {
@@ -1477,6 +1634,7 @@ h1, h2, h3, h4, .wordmark-main, .kpi-value {
     }
 
     .account-grid,
+    .family-settings-grid,
     .workspace-grid {
         grid-template-columns: 1fr;
     }

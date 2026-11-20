@@ -420,101 +420,53 @@
         </main>
 
         <!-- ==========================================
-             ABA 2: MÓDULO FAMÍLIA & MEMBROS
+             ABA 2: MÓDULO FAMÍLIA (VISÃO CONSOLIDADA DIRETO NO TOPO)
              ========================================== -->
         <section id="familiaView" class="container main-content hidden">
-            <div class="account-page-header">
-                <div>
-                    <h2>Família &amp; Visão Consolidada</h2>
-                    <p class="panel-subtitle">Compartilhe a visualização de despesas com membros da família e consolide a renda familiar</p>
-                </div>
-            </div>
-
             <!-- Notificação de Convites Recebidos Pendentes -->
             <div id="boxConvitesRecebidos" class="panel invite-alert-panel hidden">
-                <div class="panel-header-compact">
-                    <h3>Convites Recebidos para Você</h3>
-                    <p class="panel-subtitle">Você foi convidado para integrar uma família no FinancialFamily</p>
+                <div class="invite-alert-header">
+                    <div>
+                        <h3>Convite Familiar Recebido</h3>
+                        <p class="panel-subtitle">Você foi convidado para integrar uma família no FinancialFamily</p>
+                    </div>
                 </div>
                 <div id="listaConvitesRecebidos" class="income-list"></div>
             </div>
 
-            <!-- Grid Superior: Membros da Família + Convite / Configuração de Renda -->
-            <div class="account-grid">
-                <!-- Coluna 1: Lista de Membros e Compartilhamento de Renda -->
-                <div class="panel">
-                    <div class="panel-header">
-                        <div>
-                            <h3 id="tituloGrupoFamiliar">Membros da Família</h3>
-                            <p class="panel-subtitle" id="subtituloGrupoFamiliar">Gerencie quem tem acesso à visão familiar</p>
-                        </div>
-                    </div>
-
-                    <div class="family-income-toggle-box">
-                        <label class="checkbox-inline">
-                            <input type="checkbox" id="chkCompartilharMinhaRenda">
-                            <span><strong>Incluir minha renda na soma familiar</strong> (você pode ativar ou desativar quando quiser)</span>
-                        </label>
-                    </div>
-
-                    <div id="listaMembrosFamilia" class="income-list">
-                        <div class="empty-state">Nenhum membro vinculado ainda.</div>
-                    </div>
-                </div>
-
-                <!-- Coluna 2: Enviar Convite (Titular) e Aceitar Código/Token -->
-                <div class="panel">
-                    <div id="blocoConvidarMembro">
-                        <div class="panel-header-compact">
-                            <h3>Convidar Membro para a Família</h3>
-                            <p class="panel-subtitle">O convidado poderá visualizar as despesas familiares (somente leitura, sem editar ou apagar seus dados). O convite vale por 48 horas.</p>
-                        </div>
-
-                        <form id="formEnviarConviteFamilia">
-                            <div class="form-group">
-                                <label for="inputEmailConvidado">E-mail do Familiar / Cônjuge *</label>
-                                <input type="email" id="inputEmailConvidado" required placeholder="familiar@email.com">
-                            </div>
-                            <button type="submit" class="btn btn-primary btn-block" id="btnEnviarConviteFamilia">
-                                Gerar e Enviar Convite (48h)
-                            </button>
-                        </form>
-
-                        <hr class="section-divider">
-                    </div>
-
-                    <div class="panel-header-compact">
-                        <h3>Entrar em uma Família com Código</h3>
-                        <p class="panel-subtitle">Recebeu um código ou link de convite? Cole o token abaixo para aceitar:</p>
-                    </div>
-
-                    <form id="formAceitarConviteToken">
-                        <div class="form-group">
-                            <label for="inputTokenConvite">Código / Token do Convite</label>
-                            <input type="text" id="inputTokenConvite" required placeholder="Cole o código do convite aqui">
-                        </div>
-                        <button type="submit" class="btn btn-gold btn-block" id="btnAceitarConviteToken">
-                            Aceitar Convite Familiar
-                        </button>
-                    </form>
+            <!-- Estado Vazio: Exibido apenas quando o usuário ainda não tem família ativa -->
+            <div id="estadoSemFamiliaAtiva" class="panel empty-family-panel hidden">
+                <div class="empty-family-content">
+                    <h3>Você ainda não possui uma Família ativa</h3>
+                    <p>Convide seu cônjuge ou familiares (ou aceite um código de convite) nas configurações da sua conta para liberar o painel consolidado de renda e despesas familiares.</p>
+                    <button type="button" class="btn btn-primary" id="btnIrConfigurarFamilia">
+                        Configurar Família em Minha Conta
+                    </button>
                 </div>
             </div>
 
-            <!-- Visão Consolidada Familiar (Exibida quando há família ativa) -->
+            <!-- Visão Consolidada Familiar (Direto no topo quando há família ativa!) -->
             <div id="painelConsolidadoFamilia" class="hidden">
-                <div class="family-section-banner">
+                <div class="family-top-bar">
                     <div>
-                        <h3>Resumo Consolidado da Família</h3>
-                        <p class="panel-subtitle">Soma das rendas de quem ativou o compartilhamento menos despesas familiares pagas no mês selecionado</p>
+                        <h2>Resumo Consolidado da Família</h2>
+                        <p class="panel-subtitle">Soma das rendas compartilhadas menos despesas familiares pagas no mês selecionado</p>
                     </div>
-                    <span class="badge badge-fixa" id="badgeTotalMembrosFamilia">2 Membros Ativos</span>
+                    <div class="family-top-actions">
+                        <span class="badge badge-fixa" id="badgeTotalMembrosFamilia">2 Membros Ativos</span>
+                        <button type="button" class="btn btn-outline btn-sm" id="btnAtalhoConfigFamilia">
+                            Gerenciar Membros &amp; Renda
+                        </button>
+                    </div>
                 </div>
 
                 <section class="summary-grid" aria-label="Resumo financeiro familiar">
                     <article class="kpi-card kpi-income">
                         <div class="kpi-header">
                             <span class="kpi-label">Renda Familiar Somada</span>
-                            <span class="kpi-icon-box income-box">↑</span>
+                            <span class="kpi-icon-box income-box">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+                            </span>
                         </div>
                         <div class="kpi-value" id="kpiFamReceitaTotal">R$ 0,00</div>
                         <div class="kpi-sub">Soma apenas de quem ativou o compartilhamento</div>
@@ -523,7 +475,9 @@
                     <article class="kpi-card kpi-paid">
                         <div class="kpi-header">
                             <span class="kpi-label">Despesas Familiares Pagas</span>
-                            <span class="kpi-icon-box paid-box">✓</span>
+                            <span class="kpi-icon-box paid-box">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                            </span>
                         </div>
                         <div class="kpi-value" id="kpiFamDespesasPagas">R$ 0,00</div>
                         <div class="kpi-sub" id="kpiFamFaltaPagar">Falta pagar: R$ 0,00</div>
@@ -532,7 +486,9 @@
                     <article class="kpi-card kpi-gross">
                         <div class="kpi-header">
                             <span class="kpi-label">Despesas Familiares Brutas</span>
-                            <span class="kpi-icon-box gross-box">≡</span>
+                            <span class="kpi-icon-box gross-box">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                            </span>
                         </div>
                         <div class="kpi-value" id="kpiFamDespesasBrutas">R$ 0,00</div>
                         <div class="progress-wrap">
@@ -558,7 +514,7 @@
                             <h2>Despesas Familiares do Mês</h2>
                             <p class="panel-subtitle">Visão consolidada em modo <strong>Somente Leitura</strong> — membros nunca alteram ou apagam dados de outros</p>
                         </div>
-                        <span class="badge badge-cat">Modo Visualização Segura</span>
+                        <span class="badge badge-cat">Visualização Consolidada</span>
                     </div>
 
                     <div class="table-responsive">
@@ -586,7 +542,7 @@
         </section>
 
         <!-- ==========================================
-             ABA 3: ÁREA DO USUÁRIO (MINHA CONTA + FOTO DE PERFIL)
+             ABA 3: ÁREA DO USUÁRIO (MINHA CONTA + CONFIGURAÇÕES DE FAMÍLIA)
              ========================================== -->
         <section id="accountView" class="container main-content hidden">
             <div class="account-page-header">
@@ -708,6 +664,65 @@
                             </button>
                         </div>
                     </form>
+                </div>
+            </div>
+
+            <!-- Seção de Configurações da Família & Membros (Dentro de Minha Conta!) -->
+            <div class="panel family-settings-panel" id="secaoConfigFamilia">
+                <div class="panel-header">
+                    <div>
+                        <h3>Configurações da Família &amp; Membros</h3>
+                        <p class="panel-subtitle">Gerencie convites, membros vinculados e o compartilhamento da sua renda no painel familiar</p>
+                    </div>
+                </div>
+
+                <!-- Switch Moderno de Compartilhamento de Renda -->
+                <div class="family-switch-bar">
+                    <div class="family-switch-info">
+                        <strong>Compartilhar minha renda na soma familiar</strong>
+                        <span>Quando ativado, suas receitas cadastradas entram no cálculo da Sobra Livre da Família.</span>
+                    </div>
+                    <label class="switch-toggle" aria-label="Compartilhar minha renda">
+                        <input type="checkbox" id="chkCompartilharMinhaRenda">
+                        <span class="switch-slider"></span>
+                    </label>
+                </div>
+
+                <div class="family-settings-grid">
+                    <!-- Lista de Membros Vinculados -->
+                    <div>
+                        <h4 class="sub-box-title">Membros &amp; Convites Ativos</h4>
+                        <div id="listaMembrosFamilia" class="income-list">
+                            <div class="empty-state-sm">Nenhum membro vinculado ainda.</div>
+                        </div>
+                    </div>
+
+                    <!-- Ações de Convite Compactas (Sem botões gigantes!) -->
+                    <div class="family-actions-col">
+                        <!-- Enviar Convite (Visível para o Titular) -->
+                        <div id="blocoConvidarMembro" class="compact-invite-box">
+                            <h4 class="sub-box-title">Convidar Novo Familiar</h4>
+                            <p class="panel-subtitle" style="margin-bottom: 0.65rem;">Envie um convite de visualização (validade de 48h):</p>
+                            <form id="formEnviarConviteFamilia" class="inline-action-form">
+                                <input type="email" id="inputEmailConvidado" required placeholder="E-mail do familiar">
+                                <button type="submit" class="btn btn-primary" id="btnEnviarConviteFamilia">
+                                    Convidar
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- Inserir Código Recebido (Ocultado automaticamente quando já faz parte de uma família!) -->
+                        <div id="blocoAceitarCodigoConvite" class="compact-invite-box">
+                            <h4 class="sub-box-title">Possui um Código de Convite?</h4>
+                            <p class="panel-subtitle" style="margin-bottom: 0.65rem;">Cole o código enviado pelo titular da família:</p>
+                            <form id="formAceitarConviteToken" class="inline-action-form">
+                                <input type="text" id="inputTokenConvite" required placeholder="Código do convite">
+                                <button type="submit" class="btn btn-gold" id="btnAceitarConviteToken">
+                                    Entrar
+                                </button>
+                            </form>
+                        </div>
+                    </div>
                 </div>
             </div>
 
