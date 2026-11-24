@@ -41,6 +41,8 @@ public class SecurityConfig {
                                 "/termos.html",
                                 "/privacidade.html",
                                 "/styles.css",
+                                "/css/**",
+                                "/js/**",
                                 "/app.js",
                                 "/logo.svg",
                                 "/logo.png",

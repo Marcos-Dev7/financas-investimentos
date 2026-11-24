@@ -1,0 +1,220 @@
+/* ==========================================================================
+   FINANCIAL FAMILY v2.0 — DESIGN TOKENS (UI/UX PRO MAX FINTECH SYSTEM)
+   Tipografia: IBM Plex Sans | Modos: Dark (padrão) e Light | WCAG 2.2 AA
+   ========================================================================== */
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap');
+
+:root,
+[data-theme="dark"] {
+    color-scheme: dark;
+
+    /* Superfícies (Slate Fintech Dark) */
+    --bg-canvas: #0B1120;
+    --bg-sidebar: #0F172A;
+    --bg-surface: #131C31;
+    --bg-elevated: #1A2540;
+    --bg-control: #0E1629;
+    --bg-hover: rgba(148, 163, 184, 0.10);
+
+    /* Bordas */
+    --border-subtle: rgba(148, 163, 184, 0.13);
+    --border-default: rgba(148, 163, 184, 0.24);
+    --border-strong: rgba(148, 163, 184, 0.38);
+
+    /* Tipografia (Contraste >= 6.4:1) */
+    --text-primary: #F8FAFC;
+    --text-secondary: #CBD5E1;
+    --text-muted: #94A3B8;
+    --text-on-accent: #FFFFFF;
+
+    /* Marca & Ações (Trust Blue + Profit Emerald) */
+    --accent-primary: #2563EB;
+    --accent-primary-hover: #1D4ED8;
+    --accent-secondary: #60A5FA;
+    --accent-soft: rgba(59, 130, 246, 0.15);
+
+    --profit-solid: #059669;
+    --profit-solid-hover: #047857;
+    --profit-fg: #34D399;
+    --profit-bg: rgba(16, 185, 129, 0.15);
+    --profit-border: rgba(52, 211, 153, 0.32);
+
+    /* Estados Semânticos */
+    --status-success-fg: #34D399;
+    --status-success-bg: rgba(16, 185, 129, 0.15);
+    --status-success-border: rgba(52, 211, 153, 0.32);
+
+    --status-warning-fg: #FBBF24;
+    --status-warning-bg: rgba(245, 158, 11, 0.15);
+    --status-warning-border: rgba(251, 191, 36, 0.34);
+
+    --status-danger-fg: #F87171;
+    --status-danger-bg: rgba(239, 68, 68, 0.15);
+    --status-danger-border: rgba(248, 113, 113, 0.35);
+    --status-danger-solid: #DC2626;
+
+    --status-info-fg: #60A5FA;
+    --status-info-bg: rgba(59, 130, 246, 0.15);
+    --status-info-border: rgba(96, 165, 250, 0.32);
+
+    /* Paleta de Categorias (Dados) */
+    --cat-1: #3B82F6;
+    --cat-2: #10B981;
+    --cat-3: #F59E0B;
+    --cat-4: #8B5CF6;
+    --cat-5: #06B6D4;
+    --cat-6: #EC4899;
+    --cat-7: #6366F1;
+    --cat-8: #94A3B8;
+
+    /* Foco & Sombras */
+    --focus-ring: 0 0 0 3px rgba(96, 165, 250, 0.45);
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+    --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.45);
+    --shadow-lg: 0 20px 48px rgba(0, 0, 0, 0.65);
+    --backdrop-bg: rgba(2, 6, 23, 0.72);
+
+    /* Tipografia & Escala */
+    --font-sans: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+    --text-xs: 0.75rem;
+    --text-sm: 0.875rem;
+    --text-base: 0.9375rem;
+    --text-lg: 1.125rem;
+    --text-xl: 1.375rem;
+    --text-2xl: 1.75rem;
+
+    --space-1: 0.25rem;
+    --space-2: 0.5rem;
+    --space-3: 0.75rem;
+    --space-4: 1rem;
+    --space-5: 1.25rem;
+    --space-6: 1.5rem;
+    --space-8: 2rem;
+
+    --radius-sm: 6px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 16px;
+    --radius-pill: 9999px;
+
+    --sidebar-width: 248px;
+    --topbar-height: 64px;
+    --touch-target-min: 44px;
+}
+
+[data-theme="light"] {
+    color-scheme: light;
+
+    /* Superfícies (Banking Clean Light) */
+    --bg-canvas: #F1F5F9;
+    --bg-sidebar: #FFFFFF;
+    --bg-surface: #FFFFFF;
+    --bg-elevated: #F8FAFC;
+    --bg-control: #F8FAFC;
+    --bg-hover: #F1F5F9;
+
+    /* Bordas */
+    --border-subtle: #E2E8F0;
+    --border-default: #CBD5E1;
+    --border-strong: #94A3B8;
+
+    /* Tipografia (Contraste >= 7.5:1) */
+    --text-primary: #0F172A;
+    --text-secondary: #334155;
+    --text-muted: #475569;
+    --text-on-accent: #FFFFFF;
+
+    /* Marca & Ações */
+    --accent-primary: #1D4ED8;
+    --accent-primary-hover: #1E40AF;
+    --accent-secondary: #1D4ED8;
+    --accent-soft: #EFF6FF;
+
+    --profit-solid: #059669;
+    --profit-solid-hover: #047857;
+    --profit-fg: #047857;
+    --profit-bg: #ECFDF5;
+    --profit-border: #A7F3D0;
+
+    /* Estados Semânticos */
+    --status-success-fg: #047857;
+    --status-success-bg: #ECFDF5;
+    --status-success-border: #A7F3D0;
+
+    --status-warning-fg: #B45309;
+    --status-warning-bg: #FFFBEB;
+    --status-warning-border: #FDE68A;
+
+    --status-danger-fg: #B91C1C;
+    --status-danger-bg: #FEF2F2;
+    --status-danger-border: #FECACA;
+    --status-danger-solid: #DC2626;
+
+    --status-info-fg: #1D4ED8;
+    --status-info-bg: #EFF6FF;
+    --status-info-border: #BFDBFE;
+
+    /* Foco & Sombras */
+    --focus-ring: 0 0 0 3px rgba(29, 78, 216, 0.30);
+    --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06);
+    --shadow-md: 0 4px 16px rgba(15, 23, 42, 0.08);
+    --shadow-lg: 0 20px 44px rgba(15, 23, 42, 0.16);
+    --backdrop-bg: rgba(15, 23, 42, 0.50);
+}
+
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html, body {
+    font-family: var(--font-sans);
+    background-color: var(--bg-canvas);
+    color: var(--text-primary);
+    font-size: 16px;
+    line-height: 1.5;
+    min-height: 100vh;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+}
+
+.hidden {
+    display: none !important;
+}
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.text-right {
+    text-align: right;
+}
+
+.text-healthy {
+    color: var(--status-success-fg) !important;
+}
+
+.text-warning {
+    color: var(--status-warning-fg) !important;
+}
+
+.text-danger {
+    color: var(--status-danger-fg) !important;
+}

@@ -3,9 +3,9 @@
 
   # FinancialFamily — Gestão Financeira & Patrimonial Familiar
 
-  **Versão 1.4.0** &bull; Plataforma Full-Stack de Governança Financeira Familiar, Membros & Cálculo de Sobra Livre
+  **Versão 2.0.0** &bull; Plataforma Full-Stack de Governança Financeira Familiar, Membros & Cálculo de Sobra Livre
 
-  [![Version](https://img.shields.io/badge/version-1.4.0-10b981?style=for-the-badge)](https://github.com/Marcos-Dev7/financas-investimentos)
+  [![Version](https://img.shields.io/badge/version-2.0.0-2563eb?style=for-the-badge)](https://github.com/Marcos-Dev7/financas-investimentos)
   [![Java](https://img.shields.io/badge/Java-25-f59e0b?style=for-the-badge&logo=openjdk&logoColor=white)](https://openjdk.org/)
   [![Spring Boot](https://img.shields.io/badge/Spring_Boot-4.0.3-6db33f?style=for-the-badge&logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
   [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Neon_Cloud-336791?style=for-the-badge&logo=postgresql&logoColor=white)](https://neon.tech/)
@@ -24,7 +24,7 @@ O sistema resolve um problema clássico do orçamento doméstico: separar o que 
 
 ---
 
-## ✨ Funcionalidades Principais (`v1.4.0`)
+## ✨ Funcionalidades Principais (`v2.0.0`)
 
 ### 👨‍👩‍👧‍👦 1. Módulo Família & Membros (Evoluído na `v1.3.0`)
 - **Aba Condicional & Convites 48h:** A aba **"Família"** fica oculta até que exista ao menos 1 membro ativo. Convites (e-mail ou link `?convite=TOKEN` com validade de 48h) e convites recebidos pendentes são gerenciados em **"Minha Conta"**.
@@ -53,7 +53,7 @@ O sistema resolve um problema clássico do orçamento doméstico: separar o que 
 ### ⚡ 5. Controle de Carga, Rate Limiting, Acessibilidade & Mobile-First
 - **Rate Limiting por IP (`RateLimitFilter`):** Limite de 15 requisições/minuto por IP nas rotas de autenticação e 120 requisições/minuto na API (`HTTP 429 Too Many Requests`).
 - **Pool `HikariCP` Serverless & Controle de RAM da JVM:** Pool otimizado para *scale-to-zero* na Neon Cloud, índices compostos no PostgreSQL e teto de memória (`-XX:MaxRAMPercentage=75.0`) no container Docker.
-- **Design System Sobriedade Financeira & WCAG 2.2 AA:** Paleta escura de alto contraste (≥ 4.5:1 em textos e ≥ 3:1 em controles), numerais tabulares (`tabular-nums`), foco visível (`:focus-visible`), navegação por teclado com *focus trap* em modais, confirmações via diálogo acessível (`role="alertdialog"`) para ações destrutivas, *landmarks* semânticos e suporte a `prefers-reduced-motion`.
+- **Design System Fintech v2.0 (Sidebar + Dark/Light Mode & WCAG 2.2 AA):** Interface reestruturada em **App Shell** (Sidebar fixa `248px` com *drawer* mobile + Topbar limpa), alternância **Modo Escuro / Modo Claro**, tipografia **IBM Plex Sans** com numerais tabulares (`tabular-nums`), paleta de dados distinta por categoria, CSS modular (`css/tokens.css`, `css/layout.css`, `css/components.css`) e ES Modules nativos (`js/state.js`, `js/api.js`, `js/ui.js`, `js/main.js`) mantendo deploy zero-build no Spring Boot.
 - **Layout Responsivo Mobile-First:** Menu compacto no mobile, alvos de toque de no mínimo `44×44px` e tabelas convertidas em cards sem rolagem horizontal a partir de `320px`.
 
 ---
@@ -81,7 +81,7 @@ O sistema resolve um problema clássico do orçamento doméstico: separar o que 
 | **Framework Backend** | Spring Boot 4.0.3 (WebMVC, Validation, Scheduling, Mail) |
 | **Segurança & Carga** | Spring Security 6 + Token JWT + Rate Limiting Filter por IP |
 | **Banco de Dados & Migrations** | PostgreSQL (Neon Serverless) + Spring Data JPA / Hibernate + Flyway (`V1` a `V10`) |
-| **Frontend** | HTML5 Semântico, CSS3 Design System com Tokens (Sobriedade Financeira & WCAG 2.2 AA), Vanilla JS ES6+ & Canvas API |
+| **Frontend** | HTML5 Semântico (App Shell Sidebar + Dark/Light Mode), CSS3 Modular (IBM Plex Sans & WCAG 2.2 AA), Vanilla ES Modules & Canvas API |
 | **Testes** | JUnit 5, Mockito, AssertJ e Spring `MockMvc` (87 testes automatizados) |
 | **Infraestrutura & Deploy** | Docker (Multi-Stage Build), Docker Compose, Render & Neon Cloud |
 
