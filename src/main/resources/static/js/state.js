@@ -44,14 +44,9 @@ export function obterConsentimentoCookies() {
 }
 
 function carregarSessaoInicial() {
-    const sessionToken = sessionStorage.getItem(STORAGE_TOKEN_KEY);
-    const sessionUser = sessionStorage.getItem(STORAGE_USER_KEY);
-    if (sessionToken) {
-        return {
-            token: sessionToken,
-            user: JSON.parse(sessionUser || 'null')
-        };
-    }
+    // Limpa qualquer resquício em sessionStorage (padrão bancário: recarregar a página encerra a sessão em memória)
+    sessionStorage.removeItem(STORAGE_TOKEN_KEY);
+    sessionStorage.removeItem(STORAGE_USER_KEY);
 
     const consent = obterConsentimentoCookies();
     const manterConectado = localStorage.getItem(STORAGE_KEEP_LOGGED_KEY) === 'true';
@@ -64,6 +59,7 @@ function carregarSessaoInicial() {
 
     localStorage.removeItem(STORAGE_TOKEN_KEY);
     localStorage.removeItem(STORAGE_USER_KEY);
+    localStorage.removeItem(STORAGE_KEEP_LOGGED_KEY);
     return { token: null, user: null };
 }
 
@@ -107,8 +103,9 @@ export function salvarSessao(authData, manterConectado = null) {
         tipoDoisFatores: authData.tipoDoisFatores !== undefined ? authData.tipoDoisFatores : (state.user?.tipoDoisFatores || null)
     };
 
-    sessionStorage.setItem(STORAGE_TOKEN_KEY, state.token);
-    sessionStorage.setItem(STORAGE_USER_KEY, JSON.stringify(state.user));
+    // Por padrão o token fica APENAS em memória RAM (não sobrevive a reload ou nova aba)
+    sessionStorage.removeItem(STORAGE_TOKEN_KEY);
+    sessionStorage.removeItem(STORAGE_USER_KEY);
 
     const persistir = manterConectado !== null
         ? manterConectado
@@ -127,7 +124,6 @@ export function salvarSessao(authData, manterConectado = null) {
 
 export function sincronizarUsuarioEmStorage(perfil) {
     state.user = perfil;
-    sessionStorage.setItem(STORAGE_USER_KEY, JSON.stringify(perfil));
     if (localStorage.getItem(STORAGE_KEEP_LOGGED_KEY) === 'true' && obterConsentimentoCookies() === 'all') {
         localStorage.setItem(STORAGE_USER_KEY, JSON.stringify(perfil));
     }
