@@ -314,7 +314,7 @@ function renderizarDespesas() {
                 <td data-label="Vencimento">${escapeHtml(d.dataVencimento || '-')}</td>
                 <td data-label="Tipo">${d.isFixa ? '<span class="badge badge-fixa">Fixa</span>' : '<span class="income-meta">Variável</span>'}</td>
                 <td data-label="Valor" class="text-right"><strong>${formatCurrency(d.valor)}</strong></td>
-                <td data-label="Ações">
+                <td data-label="Ações" class="text-right">
                     <div class="action-group">
                         ${d.isPaga
                             ? `<button type="button" class="btn btn-outline btn-sm" onclick="estornarDespesa(${d.id})">Estornar</button>`
@@ -640,7 +640,7 @@ function renderizarPainelDespesasFamilia() {
             <td data-label="Tipo">${d.isFixa ? '<span class="badge badge-fixa">Fixa</span>' : '<span class="income-meta">Variável</span>'}</td>
             <td data-label="Valor" class="text-right"><strong>${formatCurrency(d.valor)}</strong></td>
             ${state.souTitularFamilia ? `
-            <td data-label="Ações">
+            <td data-label="Ações" class="text-right">
                 <div class="action-group">
                     ${d.isPaga
                         ? `<button type="button" class="btn btn-outline btn-sm" onclick="estornarDespesaFamilia(${d.id})">Estornar</button>`

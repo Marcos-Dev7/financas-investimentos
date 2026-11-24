@@ -8,8 +8,8 @@
     align-items: center;
     justify-content: center;
     gap: 0.45rem;
-    min-height: var(--touch-target-min);
-    padding: 0.55rem 1rem;
+    min-height: 40px;
+    padding: 0.5rem 0.95rem;
     border-radius: var(--radius-md);
     border: 1px solid transparent;
     font-family: var(--font-sans);
@@ -27,8 +27,8 @@
 }
 
 .btn-sm {
-    min-height: 36px;
-    padding: 0.35rem 0.75rem;
+    min-height: 32px;
+    padding: 0.28rem 0.65rem;
     font-size: var(--text-xs);
 }
 
@@ -311,7 +311,7 @@
 
 .panel-header {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: space-between;
     gap: var(--space-3);
     flex-wrap: wrap;
@@ -604,19 +604,31 @@
 }
 
 .search-wrap {
-    flex: 1 1 220px;
-    max-width: 280px;
+    flex: 1 1 240px;
+    max-width: 320px;
+}
+
+.search-wrap .input-search {
+    min-height: 40px;
+    height: 40px;
+    padding: 0.4rem 0.8rem;
 }
 
 .table-responsive {
     width: 100%;
     overflow-x: auto;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
 }
 
 .data-table {
     width: 100%;
     border-collapse: collapse;
     font-variant-numeric: tabular-nums;
+}
+
+.data-table thead {
+    background-color: var(--bg-control);
 }
 
 .data-table th {
@@ -626,17 +638,27 @@
     text-transform: uppercase;
     letter-spacing: 0.06em;
     color: var(--text-muted);
-    padding: 0.7rem 0.75rem;
+    padding: 0.7rem 0.85rem;
     border-bottom: 1px solid var(--border-default);
     white-space: nowrap;
 }
 
 .data-table td {
-    padding: 0.8rem 0.75rem;
+    padding: 0.7rem 0.85rem;
     border-bottom: 1px solid var(--border-subtle);
     font-size: var(--text-sm);
     color: var(--text-primary);
     vertical-align: middle;
+}
+
+.data-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.data-table td.text-right,
+.data-table th.text-right {
+    text-align: right;
+    white-space: nowrap;
 }
 
 .data-table tbody tr:hover {
@@ -647,6 +669,7 @@
     display: flex;
     flex-direction: column;
     gap: 0.1rem;
+    min-width: 140px;
 }
 
 .desc-cell small,
@@ -660,7 +683,8 @@
     align-items: center;
     justify-content: flex-end;
     gap: 0.35rem;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    white-space: nowrap;
 }
 
 .pagination-bar {
@@ -677,6 +701,12 @@
 .income-list {
     display: flex;
     flex-direction: column;
+    gap: var(--space-3);
+}
+
+#listaSaldos.income-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
     gap: var(--space-3);
 }
 
@@ -1238,8 +1268,17 @@
 
 /* Tabelas viram cards no mobile */
 @media (max-width: 768px) {
+    .table-responsive {
+        border: none;
+        overflow-x: visible;
+    }
+
     .data-table thead {
         display: none;
+    }
+
+    .action-group {
+        flex-wrap: wrap;
     }
 
     .data-table,
