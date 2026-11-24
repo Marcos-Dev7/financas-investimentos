@@ -38,6 +38,8 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/",
                                 "/index.html",
+                                "/termos.html",
+                                "/privacidade.html",
                                 "/styles.css",
                                 "/app.js",
                                 "/logo.svg",
@@ -53,6 +55,7 @@ public class SecurityConfig {
                         .requestMatchers(
                                 HttpMethod.POST,
                                 "/auth/login",
+                                "/auth/verificar-2fa",
                                 "/auth/registrar",
                                 "/auth/verificar-email",
                                 "/auth/reenviar-codigo",

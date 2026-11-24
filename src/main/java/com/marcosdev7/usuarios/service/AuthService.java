@@ -13,6 +13,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -24,12 +26,15 @@ public class AuthService {
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
     private static final int MINUTOS_EXPIRACAO_CODIGO = 15;
     private static final int MINUTOS_EXPIRACAO_RECUPERACAO = 30;
+    private static final int MINUTOS_EXPIRACAO_2FA = 5;
+    private static final int MAX_TENTATIVAS_2FA = 5;
     private static final int MAX_FOTO_BASE64_LEN = 750_000;
 
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
     private final TokenService tokenService;
     private final EmailService emailService;
+    private final TotpService totpService;
 
     @Transactional
     public CadastroResponseDTO registrar(CadastroUsuarioDTO dto) {
@@ -95,6 +100,7 @@ public class AuthService {
         return gerarEEnviarCodigo(usuario);
     }
 
+    @Transactional
     public AuthResponseDTO login(LoginRequestDTO dto) {
         String emailNormalizado = dto.email().trim().toLowerCase();
 
@@ -109,13 +115,147 @@ public class AuthService {
             throw new IllegalArgumentException("EMAIL_NAO_VERIFICADO:" + usuario.getEmail());
         }
 
+        if (Boolean.TRUE.equals(usuario.getDoisFatoresAtivo())) {
+            String desafioToken = UUID.randomUUID().toString();
+            LocalDateTime expiracao = LocalDateTime.now().plusMinutes(MINUTOS_EXPIRACAO_2FA);
+            String tipo = "APP".equalsIgnoreCase(usuario.getTipoDoisFatores()) ? "APP" : "EMAIL";
+
+            if ("APP".equals(tipo)) {
+                usuario.iniciarDesafio2Fa(desafioToken, null, expiracao);
+                usuarioRepository.save(usuario);
+            } else {
+                String codigo2Fa = String.format("%06d", SECURE_RANDOM.nextInt(1_000_000));
+                usuario.iniciarDesafio2Fa(desafioToken, codigo2Fa, expiracao);
+                usuarioRepository.save(usuario);
+                emailService.enviarCodigo2Fa(usuario.getEmail(), usuario.getNome(), codigo2Fa);
+            }
+
+            return new AuthResponseDTO(
+                    null,
+                    usuario.getId(),
+                    usuario.getNome(),
+                    usuario.getEmail(),
+                    usuario.getFotoPerfil(),
+                    true,
+                    tipo,
+                    desafioToken
+            );
+        }
+
         String token = tokenService.gerarToken(usuario);
         return paraAuthResponse(token, usuario);
     }
 
+    @Transactional(dontRollbackOn = BadCredentialsException.class)
+    public AuthResponseDTO verificarDoisFatores(Verificar2FaDTO dto) {
+        Usuario usuario = usuarioRepository.findByDesafio2FaToken(dto.desafioToken().trim())
+                .orElseThrow(() -> new BadCredentialsException("Sessão de verificação 2FA inválida. Faça login novamente."));
+
+        if (usuario.getCodigo2FaExpiracao() == null || LocalDateTime.now().isAfter(usuario.getCodigo2FaExpiracao())) {
+            usuario.limparDesafio2Fa();
+            usuarioRepository.save(usuario);
+            throw new BadCredentialsException("O código de verificação 2FA expirou. Faça login novamente.");
+        }
+
+        int tentativasAtuais = usuario.getTentativas2Fa() == null ? 0 : usuario.getTentativas2Fa();
+        if (tentativasAtuais >= MAX_TENTATIVAS_2FA) {
+            usuario.limparDesafio2Fa();
+            usuarioRepository.save(usuario);
+            throw new BadCredentialsException("Muitas tentativas incorretas. Faça login novamente.");
+        }
+
+        String codigoInformado = dto.codigo().trim();
+        boolean valido;
+        if ("APP".equalsIgnoreCase(usuario.getTipoDoisFatores())) {
+            valido = totpService.validarCodigo(usuario.getSegredoTotp(), codigoInformado);
+        } else {
+            valido = usuario.getCodigo2Fa() != null && MessageDigest.isEqual(
+                    codigoInformado.getBytes(StandardCharsets.UTF_8),
+                    usuario.getCodigo2Fa().getBytes(StandardCharsets.UTF_8)
+            );
+        }
+
+        if (!valido) {
+            usuario.incrementarTentativa2Fa();
+            if (usuario.getTentativas2Fa() >= MAX_TENTATIVAS_2FA) {
+                usuario.limparDesafio2Fa();
+                usuarioRepository.save(usuario);
+                throw new BadCredentialsException("Muitas tentativas incorretas. Desafio cancelado — faça login novamente.");
+            }
+            usuarioRepository.save(usuario);
+            throw new BadCredentialsException("Código de verificação 2FA inválido.");
+        }
+
+        usuario.limparDesafio2Fa();
+        usuarioRepository.save(usuario);
+
+        String token = tokenService.gerarToken(usuario);
+        return paraAuthResponse(token, usuario);
+    }
+
+    @Transactional
+    public UsuarioResponseDTO ativar2FaEmail(Configurar2FaSenhaDTO dto) {
+        Usuario usuario = carregarUsuarioAutenticadoDoBanco();
+        validarSenhaAtual(dto.senhaAtual(), usuario);
+        usuario.ativar2FaEmail();
+        usuarioRepository.save(usuario);
+        return paraUsuarioResponse(usuario);
+    }
+
+    @Transactional
+    public IniciarTotpResponseDTO iniciarConfiguracaoTotp() {
+        Usuario usuario = carregarUsuarioAutenticadoDoBanco();
+        String segredo = totpService.gerarSegredoBase32();
+        usuario.prepararTotpPendente(segredo);
+        usuarioRepository.save(usuario);
+        String otpauthUri = totpService.gerarOtpAuthUri(usuario.getEmail(), segredo);
+        return new IniciarTotpResponseDTO(segredo, otpauthUri, "FinancialFamily");
+    }
+
+    @Transactional
+    public UsuarioResponseDTO confirmarConfiguracaoTotp(ConfirmarTotpDTO dto) {
+        Usuario usuario = carregarUsuarioAutenticadoDoBanco();
+        validarSenhaAtual(dto.senhaAtual(), usuario);
+
+        if (usuario.getSegredoTotpPendente() == null || usuario.getSegredoTotpPendente().isBlank()) {
+            throw new IllegalArgumentException("Inicie primeiro a geração da chave do aplicativo autenticador.");
+        }
+
+        if (!totpService.validarCodigo(usuario.getSegredoTotpPendente(), dto.codigo().trim())) {
+            throw new IllegalArgumentException("Código do aplicativo autenticador inválido. Confira o código de 6 dígitos e tente novamente.");
+        }
+
+        usuario.confirmarTotp();
+        usuarioRepository.save(usuario);
+        return paraUsuarioResponse(usuario);
+    }
+
+    @Transactional
+    public UsuarioResponseDTO desativar2Fa(Configurar2FaSenhaDTO dto) {
+        Usuario usuario = carregarUsuarioAutenticadoDoBanco();
+        validarSenhaAtual(dto.senhaAtual(), usuario);
+        usuario.desativar2Fa();
+        usuarioRepository.save(usuario);
+        return paraUsuarioResponse(usuario);
+    }
+
     public UsuarioResponseDTO obterPerfilAtual() {
+        Usuario usuario = carregarUsuarioAutenticadoDoBanco();
+        return paraUsuarioResponse(usuario);
+    }
+
+    private Usuario carregarUsuarioAutenticadoDoBanco() {
         Usuario autenticado = exigirUsuarioAutenticado();
-        Usuario usuario = usuarioRepository.findById(autenticado.getId()).orElse(autenticado);
+        return usuarioRepository.findById(autenticado.getId()).orElse(autenticado);
+    }
+
+    private void validarSenhaAtual(String senhaInformada, Usuario usuario) {
+        if (!passwordEncoder.matches(senhaInformada, usuario.getSenha())) {
+            throw new BadCredentialsException("A senha atual informada está incorreta");
+        }
+    }
+
+    private UsuarioResponseDTO paraUsuarioResponse(Usuario usuario) {
         return new UsuarioResponseDTO(
                 usuario.getId(),
                 usuario.getNome(),
@@ -123,7 +263,9 @@ public class AuthService {
                 usuario.getEmailVerificado(),
                 usuario.getFotoPerfil(),
                 usuario.getTelefone(),
-                usuario.getEmailRecuperacao()
+                usuario.getEmailRecuperacao(),
+                Boolean.TRUE.equals(usuario.getDoisFatoresAtivo()),
+                usuario.getTipoDoisFatores()
         );
     }
 

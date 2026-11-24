@@ -9,25 +9,53 @@ import com.marcosdev7.usuarios.domain.Usuario;
 import com.marcosdev7.usuarios.service.AuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
 public class DespesaService {
 
+    private static final int MAX_PAGE_SIZE = 100;
+    private static final Set<String> CAMPOS_ORDENACAO_PERMITIDOS = Set.of(
+            "dataVencimento", "valor", "descricao", "categoria", "isPaga", "mes", "id"
+    );
+
     private final DespesaRepository despesaRepository;
 
     public Page<DespesaResponseDTO> listarDespesas(Pageable paginacao){
+        Pageable paginacaoSegura = sanitizarPaginacao(paginacao);
         Usuario usuario = AuthService.obterUsuarioAutenticado();
         if (usuario != null) {
-            return despesaRepository.findByUsuarioId(usuario.getId(), paginacao)
+            return despesaRepository.findByUsuarioId(usuario.getId(), paginacaoSegura)
                     .map(this::paraDTO);
         }
-        return despesaRepository.findAll(paginacao)
+        return despesaRepository.findAll(paginacaoSegura)
                 .map(this::paraDTO);
+    }
+
+    private Pageable sanitizarPaginacao(Pageable paginacao) {
+        if (paginacao == null || paginacao.isUnpaged()) {
+            return PageRequest.of(0, 10, Sort.by("dataVencimento"));
+        }
+        int page = Math.max(0, paginacao.getPageNumber());
+        int size = Math.min(Math.max(1, paginacao.getPageSize()), MAX_PAGE_SIZE);
+
+        List<Sort.Order> ordensValidas = paginacao.getSort().stream()
+                .filter(order -> CAMPOS_ORDENACAO_PERMITIDOS.contains(order.getProperty()))
+                .toList();
+
+        Sort sortSeguro = ordensValidas.isEmpty()
+                ? (paginacao.getSort().isUnsorted() ? Sort.unsorted() : Sort.by("dataVencimento"))
+                : Sort.by(ordensValidas);
+
+        return PageRequest.of(page, size, sortSeguro);
     }
 
     public Despesa encontrarDespesa(Long id){

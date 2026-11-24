@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Política de Privacidade — Gestão</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" href="/favicon.ico" sizes="any">
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <header class="topbar">
+        <div class="container topbar-inner">
+            <a href="/" class="brand-btn" style="text-decoration: none;">
+                <img src="/logo.png" alt="" class="brand-logo" aria-hidden="true">
+                <div>
+                    <h1>Financial<span class="wordmark-accent">Family</span></h1>
+                    <p>Política de Privacidade &amp; LGPD</p>
+                </div>
+            </a>
+            <div class="topbar-controls">
+                <a href="/termos.html" class="btn btn-outline btn-sm">Termos de Uso</a>
+                <a href="/" class="btn btn-primary btn-sm">Voltar ao Sistema</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="container main-content" style="max-width: 860px; padding-top: 2rem; padding-bottom: 3rem;">
+        <article class="panel" style="padding: 2rem;">
+            <div class="panel-header">
+                <div>
+                    <h2>Política de Privacidade e Cookies (LGPD)</h2>
+                    <p class="panel-subtitle">Em conformidade com a Lei Geral de Proteção de Dados (Lei nº 13.709/2018) &bull; Novembro de 2026</p>
+                </div>
+            </div>
+
+            <div class="legal-content">
+                <h3>1. Dados Pessoais Coletados</h3>
+                <p>Coletamos apenas os dados estritamente necessários para operação e segurança da sua conta:</p>
+                <ul>
+                    <li><strong>Identificação e Acesso:</strong> nome completo, e-mail principal e hash criptográfico da senha (BCrypt — nunca armazenamos senhas em texto puro).</li>
+                    <li><strong>Recuperação e 2FA (opcionais):</strong> telefone de recuperação, e-mail secundário de recuperação e segredo TOTP criptográfico para verificação em dois fatores.</li>
+                    <li><strong>Dados Financeiros:</strong> receitas, despesas, categorias e status de pagamento cadastrados voluntariamente pelo usuário.</li>
+                    <li><strong>Foto de Perfil (opcional):</strong> imagem redimensionada enviada pelo usuário para exibição no avatar da conta.</li>
+                </ul>
+
+                <h3>2. Finalidade e Base Legal</h3>
+                <p>Os dados são tratados exclusivamente para execução do serviço contratado/solicitado pelo titular (art. 7º, V da LGPD) e para prevenção à fraude e segurança da autenticação (art. 7º, IX), incluindo envio de códigos de verificação, recuperação de senha e convites familiares.</p>
+
+                <h3>3. Política de Cookies e Armazenamento Local</h3>
+                <ul>
+                    <li><strong>Cookies Essenciais (sempre ativos):</strong> utilizados para registrar sua preferência de consentimento (<code>ff_cookie_consent</code>) e manter a sessão autenticada restrita à aba atual (<code>sessionStorage</code>), evitando login automático em novas abas.</li>
+                    <li><strong>Cookies de Persistência / Preferências (opcionais):</strong> ativados somente mediante seu consentimento expresso no banner/modal de cookies e marcação da opção <em>"Manter conectado neste navegador"</em>.</li>
+                </ul>
+
+                <h3>4. Segurança e Proteção dos Dados</h3>
+                <p>Adotamos boas práticas de segurança da informação: tráfego criptografado via HTTPS/TLS, senhas protegidas com BCrypt, autenticação stateless JWT, proteção contra força bruta via Rate Limiting por IP e bloqueio de tentativas em 2FA, consultas parametrizadas via JPA/Hibernate (proteção contra SQL Injection) e isolamento estrito por usuário no banco de dados.</p>
+
+                <h3>5. Compartilhamento de Dados</h3>
+                <p>Não vendemos nem compartilhamos seus dados com terceiros para fins publicitários. O compartilhamento dentro do <strong>Módulo Família</strong> ocorre exclusivamente com os membros aceitos na sua família e respeita os interruptores individuais de compartilhamento de renda e despesas.</p>
+
+                <h3>6. Direitos do Titular (LGPD)</h3>
+                <p>A qualquer momento você pode acessar, corrigir ou atualizar seus dados em <strong>Minha Conta</strong>, revogar o consentimento de cookies opcionais ou solicitar a <strong>exclusão definitiva</strong> da sua conta e de todos os lançamentos vinculados diretamente pela interface do sistema.</p>
+            </div>
+        </article>
+    </main>
+</body>
+</html>

@@ -42,10 +42,45 @@ public class AuthController {
     }
 
     @Operation(summary = "Realiza login na plataforma",
-            description = "Autentica e-mail e senha (exige e-mail verificado) e retorna o token JWT Bearer.")
+            description = "Autentica e-mail e senha (exige e-mail verificado). Se 2FA estiver ativo, retorna desafio 2FA sem emitir JWT.")
     @PostMapping("/login")
     public ResponseEntity<AuthResponseDTO> login(@RequestBody @Valid LoginRequestDTO dto) {
         return ResponseEntity.ok(authService.login(dto));
+    }
+
+    @Operation(summary = "Valida o código de 6 dígitos da verificação em 2 fatores (2FA)",
+            description = "Conclui o login após validar o código TOTP (App) ou código enviado por e-mail e retorna o token JWT.")
+    @PostMapping("/verificar-2fa")
+    public ResponseEntity<AuthResponseDTO> verificarDoisFatores(@RequestBody @Valid Verificar2FaDTO dto) {
+        return ResponseEntity.ok(authService.verificarDoisFatores(dto));
+    }
+
+    @Operation(summary = "Ativa 2FA via E-mail para a conta logada",
+            description = "Exige confirmação da senha atual e passa a exigir código de 6 dígitos por e-mail a cada login.")
+    @PostMapping("/2fa/ativar-email")
+    public ResponseEntity<UsuarioResponseDTO> ativar2FaEmail(@RequestBody @Valid Configurar2FaSenhaDTO dto) {
+        return ResponseEntity.ok(authService.ativar2FaEmail(dto));
+    }
+
+    @Operation(summary = "Inicia configuração de 2FA via App Autenticador (TOTP)",
+            description = "Gera uma chave Base32 (RFC 6238) e URI otpauth:// para cadastro no Google Authenticator, Authy ou Apple Senhas.")
+    @PostMapping("/2fa/totp/iniciar")
+    public ResponseEntity<IniciarTotpResponseDTO> iniciarTotp() {
+        return ResponseEntity.ok(authService.iniciarConfiguracaoTotp());
+    }
+
+    @Operation(summary = "Confirma e ativa 2FA via App Autenticador (TOTP)",
+            description = "Valida senha atual e o código de 6 dígitos do app autenticador para concluir a ativação do 2FA.")
+    @PostMapping("/2fa/totp/confirmar")
+    public ResponseEntity<UsuarioResponseDTO> confirmarTotp(@RequestBody @Valid ConfirmarTotpDTO dto) {
+        return ResponseEntity.ok(authService.confirmarConfiguracaoTotp(dto));
+    }
+
+    @Operation(summary = "Desativa a verificação em 2 fatores (2FA)",
+            description = "Exige confirmação da senha atual e remove o segundo fator da conta.")
+    @PostMapping("/2fa/desativar")
+    public ResponseEntity<UsuarioResponseDTO> desativar2Fa(@RequestBody @Valid Configurar2FaSenhaDTO dto) {
+        return ResponseEntity.ok(authService.desativar2Fa(dto));
     }
 
     @Operation(summary = "Solicita link de recuperação de senha",

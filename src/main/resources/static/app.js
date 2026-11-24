@@ -93,7 +93,10 @@ const state = {
     resumo: null,
     despesasFamilia: [],
     filtroResponsavelFamilia: 'todos',
-    souTitularFamilia: false
+    souTitularFamilia: false,
+    pending2FaToken: null,
+    pending2FaTipo: null,
+    pending2FaManterConectado: false
 };
 
 let ultimoElementoFocado = null;
@@ -345,6 +348,18 @@ function atualizarDadosUsuarioNaTela() {
     if (telInput) telInput.value = state.user.telefone || '';
     const emailRecInput = document.getElementById('perfilInputEmailRecuperacao');
     if (emailRecInput) emailRecInput.value = state.user.emailRecuperacao || '';
+
+    const badge2Fa = document.getElementById('badgeStatus2Fa');
+    const btnDesativar2Fa = document.getElementById('btnDesativar2Fa');
+    if (badge2Fa) {
+        const ativo = Boolean(state.user.doisFatoresAtivo);
+        const tipo = state.user.tipoDoisFatores === 'APP' ? 'App Autenticador (TOTP)' : 'E-mail';
+        badge2Fa.textContent = ativo ? `Ativo (${tipo})` : 'Desativado';
+        badge2Fa.className = `badge ${ativo ? 'badge-paga' : 'badge-pendente'}`;
+    }
+    if (btnDesativar2Fa) {
+        btnDesativar2Fa.classList.toggle('hidden', !state.user.doisFatoresAtivo);
+    }
 }
 
 function navegarPara(aba) {
@@ -417,12 +432,14 @@ function mostrarTelaAuth(modo = 'login', emailVerificacao = '') {
     const formLogin = document.getElementById('formLogin');
     const formRegister = document.getElementById('formRegister');
     const formVerifyEmail = document.getElementById('formVerifyEmail');
+    const formVerificar2Fa = document.getElementById('formVerificar2Fa');
     const formEsqueciSenha = document.getElementById('formEsqueciSenha');
     const formRedefinirSenha = document.getElementById('formRedefinirSenha');
 
     formLogin.classList.add('hidden');
     formRegister.classList.add('hidden');
     formVerifyEmail.classList.add('hidden');
+    if (formVerificar2Fa) formVerificar2Fa.classList.add('hidden');
     if (formEsqueciSenha) formEsqueciSenha.classList.add('hidden');
     if (formRedefinirSenha) formRedefinirSenha.classList.add('hidden');
 
@@ -432,6 +449,14 @@ function mostrarTelaAuth(modo = 'login', emailVerificacao = '') {
         state.pendingVerifyEmail = emailVerificacao;
         document.getElementById('verifyEmailTarget').textContent = emailVerificacao;
         document.getElementById('inputCodigoVerificacao').value = '';
+    } else if (modo === '2fa') {
+        tabsWrap.classList.add('hidden');
+        if (formVerificar2Fa) formVerificar2Fa.classList.remove('hidden');
+        const input2Fa = document.getElementById('inputCodigo2Fa');
+        if (input2Fa) {
+            input2Fa.value = '';
+            input2Fa.focus();
+        }
     } else if (modo === 'forgot') {
         tabsWrap.classList.add('hidden');
         if (formEsqueciSenha) formEsqueciSenha.classList.remove('hidden');
@@ -1465,6 +1490,23 @@ document.addEventListener('DOMContentLoaded', async () => {
                     senha: document.getElementById('loginSenha').value
                 })
             });
+
+            if (data.requerDoisFatores && data.desafioToken) {
+                state.pending2FaToken = data.desafioToken;
+                state.pending2FaTipo = data.tipoDoisFatores || 'EMAIL';
+                state.pending2FaManterConectado = manterConectado;
+                const promptEl = document.getElementById('twoFaPromptText');
+                if (promptEl) {
+                    promptEl.textContent = state.pending2FaTipo === 'APP'
+                        ? 'Abra seu aplicativo autenticador (Google Authenticator / Authy / Apple Senhas) e informe o código de 6 dígitos.'
+                        : `Enviamos um código de segurança de 6 dígitos para ${data.email} (válido por 5 minutos).`;
+                }
+                formLogin.reset();
+                mostrarTelaAuth('2fa');
+                showToast('Verificação em 2 fatores necessária para concluir o login.');
+                return;
+            }
+
             if (manterConectado && obterConsentimentoCookies() !== 'all') {
                 setCookie(COOKIE_CONSENT_NAME, 'all');
                 const banner = document.getElementById('cookieBanner');
@@ -1473,6 +1515,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             salvarSessao(data, manterConectado);
             formLogin.reset();
             mostrarTelaApp();
+            const perfil = await apiFetch('/auth/me');
+            if (perfil) {
+                state.user = perfil;
+                atualizarDadosUsuarioNaTela();
+            }
             showToast(`Bem-vindo(a), ${data.nome}!`);
             await atualizarTudo();
         } catch (err) {
@@ -1891,6 +1938,165 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
             fecharModalSaldo();
             await atualizarTudo();
+        } catch (err) {
+            showToast(err.message, 'error');
+        }
+    });
+
+    // ==========================================
+    // VERIFICAÇÃO EM 2 FATORES (2FA) - LOGIN E MINHA CONTA
+    // ==========================================
+    document.getElementById('btnVoltarLogin2Fa')?.addEventListener('click', () => {
+        state.pending2FaToken = null;
+        state.pending2FaTipo = null;
+        mostrarTelaAuth('login');
+    });
+
+    document.getElementById('formVerificar2Fa')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (!state.pending2FaToken) {
+            mostrarTelaAuth('login');
+            return;
+        }
+        const btn = document.getElementById('btnSubmit2Fa');
+        btn.disabled = true;
+        btn.textContent = 'Verificando...';
+        try {
+            const data = await apiFetch('/auth/verificar-2fa', {
+                method: 'POST',
+                body: JSON.stringify({
+                    desafioToken: state.pending2FaToken,
+                    codigo: document.getElementById('inputCodigo2Fa').value.trim()
+                })
+            });
+            const manter = state.pending2FaManterConectado;
+            state.pending2FaToken = null;
+            state.pending2FaTipo = null;
+            state.pending2FaManterConectado = false;
+
+            if (manter && obterConsentimentoCookies() !== 'all') {
+                setCookie(COOKIE_CONSENT_NAME, 'all');
+                document.getElementById('cookieBanner')?.classList.add('hidden');
+            }
+            salvarSessao(data, manter);
+            document.getElementById('formVerificar2Fa').reset();
+            mostrarTelaApp();
+            const perfil = await apiFetch('/auth/me');
+            if (perfil) {
+                state.user = perfil;
+                atualizarDadosUsuarioNaTela();
+            }
+            showToast(`Verificação 2FA concluída! Bem-vindo(a), ${data.nome}!`);
+            await atualizarTudo();
+        } catch (err) {
+            showToast(err.message, 'error');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Confirmar e Entrar';
+        }
+    });
+
+    document.getElementById('btnAtivar2FaEmail')?.addEventListener('click', async () => {
+        const senhaInput = document.getElementById('twoFaSenhaAtualInput');
+        const senhaAtual = senhaInput?.value || '';
+        if (!senhaAtual) {
+            showToast('Digite sua senha atual acima para ativar o 2FA.', 'error');
+            senhaInput?.focus();
+            return;
+        }
+        try {
+            const perfil = await apiFetch('/auth/2fa/ativar-email', {
+                method: 'POST',
+                body: JSON.stringify({ senhaAtual })
+            });
+            state.user = perfil;
+            if (senhaInput) senhaInput.value = '';
+            document.getElementById('boxSetupTotp')?.classList.add('hidden');
+            atualizarDadosUsuarioNaTela();
+            showToast('2FA via E-mail ativado com sucesso!');
+        } catch (err) {
+            showToast(err.message, 'error');
+        }
+    });
+
+    document.getElementById('btnIniciarTotp')?.addEventListener('click', async () => {
+        try {
+            const resp = await apiFetch('/auth/2fa/totp/iniciar', { method: 'POST' });
+            document.getElementById('totpSecretCode').textContent = resp.segredo;
+            const linkOtp = document.getElementById('linkOtpAuth');
+            if (linkOtp) linkOtp.href = resp.otpauthUri;
+            document.getElementById('inputCodigoConfirmarTotp').value = '';
+            document.getElementById('boxSetupTotp').classList.remove('hidden');
+            showToast('Chave gerada! Cadastre no app autenticador e confirme com o código de 6 dígitos.');
+        } catch (err) {
+            showToast(err.message, 'error');
+        }
+    });
+
+    document.getElementById('btnCopiarSegredoTotp')?.addEventListener('click', async () => {
+        const segredo = document.getElementById('totpSecretCode')?.textContent?.trim();
+        if (!segredo || segredo === '---') return;
+        try {
+            await navigator.clipboard.writeText(segredo);
+            showToast('Chave secreta copiada!');
+        } catch (_) {
+            showToast('Selecione e copie a chave manualmente.');
+        }
+    });
+
+    document.getElementById('btnConfirmarTotp')?.addEventListener('click', async () => {
+        const senhaInput = document.getElementById('twoFaSenhaAtualInput');
+        const senhaAtual = senhaInput?.value || '';
+        const codigo = document.getElementById('inputCodigoConfirmarTotp')?.value.trim() || '';
+        if (!senhaAtual) {
+            showToast('Digite sua senha atual acima para confirmar o 2FA.', 'error');
+            senhaInput?.focus();
+            return;
+        }
+        if (!/^\d{6}$/.test(codigo)) {
+            showToast('Informe o código de 6 dígitos do aplicativo autenticador.', 'error');
+            return;
+        }
+        try {
+            const perfil = await apiFetch('/auth/2fa/totp/confirmar', {
+                method: 'POST',
+                body: JSON.stringify({ senhaAtual, codigo })
+            });
+            state.user = perfil;
+            if (senhaInput) senhaInput.value = '';
+            document.getElementById('inputCodigoConfirmarTotp').value = '';
+            document.getElementById('boxSetupTotp')?.classList.add('hidden');
+            atualizarDadosUsuarioNaTela();
+            showToast('2FA via App Autenticador (TOTP) ativado com sucesso!');
+        } catch (err) {
+            showToast(err.message, 'error');
+        }
+    });
+
+    document.getElementById('btnDesativar2Fa')?.addEventListener('click', async () => {
+        const senhaInput = document.getElementById('twoFaSenhaAtualInput');
+        const senhaAtual = senhaInput?.value || '';
+        if (!senhaAtual) {
+            showToast('Digite sua senha atual acima para desativar o 2FA.', 'error');
+            senhaInput?.focus();
+            return;
+        }
+        const confirmado = await confirmarAcaoDestrutiva(
+            'Desativar Verificação em 2 Fatores',
+            'Sua conta deixará de exigir código de segurança no login. Deseja realmente desativar o 2FA?',
+            'Desativar 2FA'
+        );
+        if (!confirmado) return;
+        try {
+            const perfil = await apiFetch('/auth/2fa/desativar', {
+                method: 'POST',
+                body: JSON.stringify({ senhaAtual })
+            });
+            state.user = perfil;
+            if (senhaInput) senhaInput.value = '';
+            document.getElementById('boxSetupTotp')?.classList.add('hidden');
+            atualizarDadosUsuarioNaTela();
+            showToast('Verificação em 2 fatores desativada.');
         } catch (err) {
             showToast(err.message, 'error');
         }

@@ -49,6 +49,30 @@ public class Usuario implements UserDetails {
     @Column(name = "token_recuperacao_expiracao")
     private LocalDateTime tokenRecuperacaoExpiracao;
 
+    @Column(name = "dois_fatores_ativo", nullable = false)
+    private Boolean doisFatoresAtivo = false;
+
+    @Column(name = "tipo_dois_fatores", length = 20)
+    private String tipoDoisFatores;
+
+    @Column(name = "segredo_totp", length = 64)
+    private String segredoTotp;
+
+    @Column(name = "segredo_totp_pendente", length = 64)
+    private String segredoTotpPendente;
+
+    @Column(name = "desafio_2fa_token", length = 100)
+    private String desafio2FaToken;
+
+    @Column(name = "codigo_2fa", length = 10)
+    private String codigo2Fa;
+
+    @Column(name = "codigo_2fa_expiracao")
+    private LocalDateTime codigo2FaExpiracao;
+
+    @Column(name = "tentativas_2fa", nullable = false)
+    private Integer tentativas2Fa = 0;
+
     public Usuario(Long id, String nome, String email, String senha) {
         this.id = id;
         this.nome = nome;
@@ -120,6 +144,52 @@ public class Usuario implements UserDetails {
     public void limparTokenRecuperacao() {
         this.tokenRecuperacao = null;
         this.tokenRecuperacaoExpiracao = null;
+    }
+
+    public void ativar2FaEmail() {
+        this.doisFatoresAtivo = true;
+        this.tipoDoisFatores = "EMAIL";
+        this.segredoTotp = null;
+        this.segredoTotpPendente = null;
+        limparDesafio2Fa();
+    }
+
+    public void prepararTotpPendente(String segredo) {
+        this.segredoTotpPendente = segredo;
+    }
+
+    public void confirmarTotp() {
+        this.segredoTotp = this.segredoTotpPendente;
+        this.segredoTotpPendente = null;
+        this.doisFatoresAtivo = true;
+        this.tipoDoisFatores = "APP";
+        limparDesafio2Fa();
+    }
+
+    public void desativar2Fa() {
+        this.doisFatoresAtivo = false;
+        this.tipoDoisFatores = null;
+        this.segredoTotp = null;
+        this.segredoTotpPendente = null;
+        limparDesafio2Fa();
+    }
+
+    public void iniciarDesafio2Fa(String tokenDesafio, String codigoEmail, LocalDateTime expiracao) {
+        this.desafio2FaToken = tokenDesafio;
+        this.codigo2Fa = codigoEmail;
+        this.codigo2FaExpiracao = expiracao;
+        this.tentativas2Fa = 0;
+    }
+
+    public void incrementarTentativa2Fa() {
+        this.tentativas2Fa = (this.tentativas2Fa == null ? 0 : this.tentativas2Fa) + 1;
+    }
+
+    public void limparDesafio2Fa() {
+        this.desafio2FaToken = null;
+        this.codigo2Fa = null;
+        this.codigo2FaExpiracao = null;
+        this.tentativas2Fa = 0;
     }
 
     @Override

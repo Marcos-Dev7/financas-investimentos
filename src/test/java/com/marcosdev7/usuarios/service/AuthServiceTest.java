@@ -38,6 +38,9 @@ class AuthServiceTest {
     @Mock
     private EmailService emailService;
 
+    @Mock
+    private TotpService totpService;
+
     @InjectMocks
     private AuthService authService;
 
@@ -232,5 +235,78 @@ class AuthServiceTest {
                 new RedefinirSenhaRequestDTO("token-expirado", "NovaSenha@2026", "NovaSenha@2026")))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("expirou");
+    }
+
+    @Test
+    @DisplayName("Login com 2FA via E-mail não deve emitir JWT antes da verificação do código de 6 dígitos")
+    void deveExigir2FaViaEmailNoLoginEEmitirJwtAposValidarCodigo() {
+        Usuario usuario = new Usuario(1L, "Marcos Paulo", "marcos@email.com", "hash_bcrypt");
+        usuario.ativar2FaEmail();
+
+        when(usuarioRepository.findByEmail("marcos@email.com")).thenReturn(Optional.of(usuario));
+        when(passwordEncoder.matches("Senha@2026", "hash_bcrypt")).thenReturn(true);
+        when(emailService.enviarCodigo2Fa(eq("marcos@email.com"), eq("Marcos Paulo"), matches("\\d{6}")))
+                .thenReturn(true);
+
+        AuthResponseDTO desafio = authService.login(new LoginRequestDTO("marcos@email.com", "Senha@2026"));
+
+        assertThat(desafio.token()).isNull();
+        assertThat(desafio.requerDoisFatores()).isTrue();
+        assertThat(desafio.tipoDoisFatores()).isEqualTo("EMAIL");
+        assertThat(desafio.desafioToken()).isNotBlank();
+        verify(tokenService, never()).gerarToken(any());
+
+        // Etapa 2: Validar código de 6 dígitos recebido
+        String codigoGerado = usuario.getCodigo2Fa();
+        when(usuarioRepository.findByDesafio2FaToken(desafio.desafioToken())).thenReturn(Optional.of(usuario));
+        when(tokenService.gerarToken(usuario)).thenReturn("jwt_pos_2fa");
+
+        AuthResponseDTO autenticado = authService.verificarDoisFatores(
+                new Verificar2FaDTO(desafio.desafioToken(), codigoGerado)
+        );
+
+        assertThat(autenticado.token()).isEqualTo("jwt_pos_2fa");
+        assertThat(autenticado.requerDoisFatores()).isFalse();
+        assertThat(usuario.getDesafio2FaToken()).isNull();
+    }
+
+    @Test
+    @DisplayName("Deve bloquear e invalidar o desafio 2FA após 5 tentativas incorretas")
+    void deveBloquearDesafio2FaAposCincoTentativasIncorretas() {
+        Usuario usuario = new Usuario(1L, "Marcos Paulo", "marcos@email.com", "hash_bcrypt");
+        usuario.ativar2FaEmail();
+        usuario.iniciarDesafio2Fa("desafio-abc", "654321", LocalDateTime.now().plusMinutes(5));
+
+        when(usuarioRepository.findByDesafio2FaToken("desafio-abc")).thenReturn(Optional.of(usuario));
+
+        for (int i = 0; i < 4; i++) {
+            assertThatThrownBy(() -> authService.verificarDoisFatores(new Verificar2FaDTO("desafio-abc", "000000")))
+                    .isInstanceOf(BadCredentialsException.class);
+            assertThat(usuario.getDesafio2FaToken()).isEqualTo("desafio-abc");
+        }
+
+        // 5ª tentativa incorreta invalida o desafio imediatamente
+        assertThatThrownBy(() -> authService.verificarDoisFatores(new Verificar2FaDTO("desafio-abc", "000000")))
+                .isInstanceOf(BadCredentialsException.class)
+                .hasMessageContaining("Muitas tentativas");
+        assertThat(usuario.getDesafio2FaToken()).isNull();
+    }
+
+    @Test
+    @DisplayName("Login com 2FA via App Autenticador (TOTP) deve validar código via TotpService")
+    void deveValidar2FaViaAppAutenticadorTotp() {
+        Usuario usuario = new Usuario(1L, "Marcos Paulo", "marcos@email.com", "hash_bcrypt");
+        usuario.prepararTotpPendente("JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP");
+        usuario.confirmarTotp();
+        usuario.iniciarDesafio2Fa("desafio-totp", null, LocalDateTime.now().plusMinutes(5));
+
+        when(usuarioRepository.findByDesafio2FaToken("desafio-totp")).thenReturn(Optional.of(usuario));
+        when(totpService.validarCodigo("JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP", "123456")).thenReturn(true);
+        when(tokenService.gerarToken(usuario)).thenReturn("jwt_totp_ok");
+
+        AuthResponseDTO autenticado = authService.verificarDoisFatores(new Verificar2FaDTO("desafio-totp", "123456"));
+
+        assertThat(autenticado.token()).isEqualTo("jwt_totp_ok");
+        assertThat(usuario.getDesafio2FaToken()).isNull();
     }
 }

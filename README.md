@@ -3,13 +3,13 @@
 
   # FinancialFamily — Gestão Financeira & Patrimonial Familiar
 
-  **Versão 1.3.0** &bull; Plataforma Full-Stack de Governança Financeira Familiar, Membros & Cálculo de Sobra Livre
+  **Versão 1.4.0** &bull; Plataforma Full-Stack de Governança Financeira Familiar, Membros & Cálculo de Sobra Livre
 
-  [![Version](https://img.shields.io/badge/version-1.3.0-10b981?style=for-the-badge)](https://github.com/Marcos-Dev7/financas-investimentos)
+  [![Version](https://img.shields.io/badge/version-1.4.0-10b981?style=for-the-badge)](https://github.com/Marcos-Dev7/financas-investimentos)
   [![Java](https://img.shields.io/badge/Java-25-f59e0b?style=for-the-badge&logo=openjdk&logoColor=white)](https://openjdk.org/)
   [![Spring Boot](https://img.shields.io/badge/Spring_Boot-4.0.3-6db33f?style=for-the-badge&logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
   [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Neon_Cloud-336791?style=for-the-badge&logo=postgresql&logoColor=white)](https://neon.tech/)
-  [![Tests](https://img.shields.io/badge/Tests-102_Passing-10b981?style=for-the-badge&logo=junit5&logoColor=white)](#%EF%B8%8F-testes-automatizados)
+  [![Tests](https://img.shields.io/badge/Tests-111_Passing-10b981?style=for-the-badge&logo=junit5&logoColor=white)](#%EF%B8%8F-testes-automatizados)
 
   🌐 **Acesse a Plataforma Online:** [https://financial-family.onrender.com](https://financial-family.onrender.com)
 </div>
@@ -24,7 +24,7 @@ O sistema resolve um problema clássico do orçamento doméstico: separar o que 
 
 ---
 
-## ✨ Funcionalidades Principais (`v1.3.0`)
+## ✨ Funcionalidades Principais (`v1.4.0`)
 
 ### 👨‍👩‍👧‍👦 1. Módulo Família & Membros (Evoluído na `v1.3.0`)
 - **Aba Condicional & Convites 48h:** A aba **"Família"** fica oculta até que exista ao menos 1 membro ativo. Convites (e-mail ou link `?convite=TOKEN` com validade de 48h) e convites recebidos pendentes são gerenciados em **"Minha Conta"**.
@@ -32,12 +32,13 @@ O sistema resolve um problema clássico do orçamento doméstico: separar o que 
 - **Compartilhamento Independente de Renda e Despesas (*Opt-in / Opt-out*):** Cada membro controla separadamente em **Minha Conta** se deseja compartilhar sua **renda** e suas **despesas** na visão consolidada; ao desligar as despesas, elas somem da tabela e dos totais familiares.
 - **Revogação Imediata & Isolamento Estrito:** O titular pode remover qualquer membro com 1 clique, cortando o acesso imediatamente no banco de dados. Usuários fora da família são bloqueados com `403 Forbidden`, e o backend impede que um mesmo usuário participe de duas famílias ativas simultaneamente.
 
-### 🔐 2. Autenticação, Recuperação de Senha, Cookies & Isolamento de Dados
+### 🔐 2. Autenticação, 2FA, Recuperação de Senha, LGPD & Proteção contra SQL Injection
+- **Verificação em 2 Fatores (2FA — E-mail ou App Autenticador TOTP RFC 6238):** Suporte a código de 6 dígitos enviado por e-mail (5 min) ou gerado offline em apps como Google Authenticator, Authy e Apple Senhas, com bloqueio automático após 5 tentativas inválidas e confirmação de senha atual para ativar/desativar.
 - **Cadastro com Política de Senha Forte:** Validação em tempo real (mínimo 8 caracteres, maiúscula, minúscula, número e caractere especial) + confirmação obrigatória de senha.
 - **Verificação de E-mail com Código de 6 Dígitos:** Envio de código numérico temporário (`SecureRandom`, válido por 15 minutos) para ativação da conta.
 - **Recuperação de Senha ("Esqueci minha senha"):** Fluxo completo com envio de link (`?resetToken=...`, válido por 30 min) por **E-mail Principal** ou **E-mail de Recuperação**, ou **código numérico de 6 dígitos via SMS** (Brevo Transactional SMS API, válido por 15 min, com fallback automático para o e-mail vinculado se não houver créditos SMS ativos).
-- **Sessão por Aba & Gestão de Cookies:** Por padrão a sessão é isolada por aba (`sessionStorage`), impedindo login automático ao abrir novas páginas. Inclui banner e modal de **Preferências de Cookies** (`Apenas Essenciais` ou `Aceitar Todos`) e opção explícita *"Manter conectado"* no login.
-- **Sessão Stateless JWT & Isolamento Multi-Usuário:** Cada conta possui ambiente totalmente isolado — um usuário gerencia exclusivamente suas próprias receitas e despesas.
+- **Sessão por Aba, Cookies & Documentos Legais (LGPD):** Sessão isolada por aba (`sessionStorage`), banner e modal de **Preferências de Cookies** linkados aos [Termos de Uso](src/main/resources/static/termos.html) (`/termos.html`) e à [Política de Privacidade](src/main/resources/static/privacidade.html) (`/privacidade.html`).
+- **Blindagem contra SQL Injection & Isolamento Multi-Usuário:** Consultas 100% parametrizadas via Spring Data JPA/JPQL (zero `nativeQuery`), validação estrita de entrada, *whitelist* de campos de ordenação (`Pageable`) e tratamento de erros sem vazamento de mensagens internas.
 
 ### 👤 3. Área do Usuário ("Minha Conta")
 - **Upload de Foto de Perfil:** Recorte quadrado e compressão automática (`256x256`) no navegador, com persistência direta no banco de dados na nuvem.
@@ -108,7 +109,12 @@ O sistema resolve um problema clássico do orçamento doméstico: separar o que 
 | `POST` | `/auth/registrar` | Cadastra usuário e envia código de 6 dígitos | Pública |
 | `POST` | `/auth/verificar-email` | Valida o código de 6 dígitos e retorna Token JWT | Pública |
 | `POST` | `/auth/reenviar-codigo` | Reenvia novo código de verificação | Pública |
-| `POST` | `/auth/login` | Autentica e-mail/senha e retorna Token JWT | Pública |
+| `POST` | `/auth/login` | Autentica e-mail/senha (retorna JWT ou desafio 2FA se ativo) | Pública |
+| `POST` | `/auth/verificar-2fa` | Valida código 2FA de 6 dígitos (E-mail ou TOTP) e emite Token JWT | Pública |
+| `POST` | `/auth/2fa/ativar-email` | Ativa 2FA via E-mail (exige senha atual) | `Bearer JWT` |
+| `POST` | `/auth/2fa/totp/iniciar` | Gera chave Base32 e URI `otpauth://` para App Autenticador | `Bearer JWT` |
+| `POST` | `/auth/2fa/totp/confirmar` | Valida senha atual + código 6 dígitos do App e ativa 2FA TOTP | `Bearer JWT` |
+| `POST` | `/auth/2fa/desativar` | Desativa 2FA (exige senha atual) | `Bearer JWT` |
 | `POST` | `/auth/esqueci-senha` | Envia link de recuperação via e-mail, e-mail de recuperação ou telefone | Pública |
 | `POST` | `/auth/redefinir-senha` | Redefine a senha validando o token de recuperação (30 min) | Pública |
 | `GET` | `/auth/me` | Retorna dados, contatos de recuperação e foto do usuário autenticado | `Bearer JWT` |

@@ -161,6 +161,31 @@ public class EmailService {
         return false;
     }
 
+    public boolean enviarCodigo2Fa(String emailDestino, String nomeUsuario, String codigo) {
+        String assunto = "FinancialFamily — Código de acesso 2FA: " + codigo;
+        String html = """
+                <div style="font-family: Inter, -apple-system, BlinkMacSystemFont, Arial, sans-serif; max-width: 520px; margin: 0 auto; background: #0A0D12; color: #F0F4F8; padding: 36px 32px; border-radius: 12px; border: 1px solid #1F2937;">
+                    <div style="margin-bottom: 24px;">
+                        <span style="display: inline-block; background: #059669; color: #FFFFFF; font-weight: 700; font-size: 13px; padding: 6px 12px; border-radius: 6px; letter-spacing: 0.5px;">FINANCIAL FAMILY • 2FA</span>
+                    </div>
+                    <h2 style="margin: 0 0 12px 0; font-size: 20px; color: #F0F4F8;">Verificação em 2 Fatores</h2>
+                    <p style="color: #B4C0D0; font-size: 14px; line-height: 1.6;">Olá, <strong>%s</strong>! Uma tentativa de login na sua conta foi iniciada.</p>
+                    <p style="color: #8B9BB0; font-size: 14px; line-height: 1.6;">Informe o código de segurança de 6 dígitos abaixo para concluir seu acesso (válido por 5 minutos):</p>
+                    <div style="background: #11151C; border: 1px solid #059669; border-radius: 10px; padding: 20px; text-align: center; margin: 22px 0;">
+                        <span style="font-size: 32px; font-weight: 800; letter-spacing: 10px; color: #34D399;">%s</span>
+                    </div>
+                    <p style="color: #8B9BB0; font-size: 12px; line-height: 1.5; margin-bottom: 0;">Se não foi você quem tentou acessar, recomendamos alterar sua senha imediatamente.</p>
+                </div>
+                """.formatted(nomeUsuario, codigo);
+
+        if (enviarEmailHtml(emailDestino, nomeUsuario, assunto, html)) {
+            return true;
+        }
+
+        log.info("Código 2FA gerado para {}: {}", emailDestino, codigo);
+        return false;
+    }
+
     public boolean enviarSmsCodigoRecuperacao(String telefone, String codigo) {
         if (telefone == null || telefone.isBlank()) {
             return false;

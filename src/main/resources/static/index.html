@@ -124,6 +124,10 @@
 
                         <div class="auth-cookie-footer">
                             <button type="button" class="btn-link-inline" id="btnAbrirCookiesAuth">Preferências de Cookies</button>
+                            <span class="legal-sep" aria-hidden="true">&bull;</span>
+                            <a href="/termos.html" target="_blank" rel="noopener noreferrer" class="btn-link-inline">Termos de Uso</a>
+                            <span class="legal-sep" aria-hidden="true">&bull;</span>
+                            <a href="/privacidade.html" target="_blank" rel="noopener noreferrer" class="btn-link-inline">Privacidade</a>
                         </div>
                     </form>
 
@@ -186,6 +190,27 @@
                         <div class="verify-actions">
                             <button type="button" class="btn btn-outline btn-sm" id="btnResendCode">Reenviar código</button>
                             <button type="button" class="btn btn-outline btn-sm" id="btnBackToLogin">Voltar ao Login</button>
+                        </div>
+                    </form>
+
+                    <!-- 3b. Formulário de Verificação em 2 Fatores (2FA) -->
+                    <form id="formVerificar2Fa" class="auth-form hidden" aria-label="Verificação em 2 fatores">
+                        <div class="auth-form-header">
+                            <h2>Verificação em 2 Fatores</h2>
+                            <p id="twoFaPromptText">Digite o código de 6 dígitos para concluir seu acesso com segurança.</p>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="inputCodigo2Fa">Código de Segurança (6 dígitos)</label>
+                            <input type="text" id="inputCodigo2Fa" class="input-code-6" required minlength="6" maxlength="6" pattern="[0-9]{6}" placeholder="000000" inputmode="numeric" autocomplete="one-time-code">
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-block btn-lg" id="btnSubmit2Fa">
+                            Confirmar e Entrar
+                        </button>
+
+                        <div class="verify-actions">
+                            <button type="button" class="btn btn-outline btn-sm" id="btnVoltarLogin2Fa">Cancelar e Voltar</button>
                         </div>
                     </form>
 
@@ -776,6 +801,52 @@
                 </div>
             </div>
 
+            <!-- Seção de Verificação em 2 Fatores (2FA) -->
+            <div class="panel family-settings-panel" id="secaoSeguranca2Fa">
+                <div class="panel-header">
+                    <div>
+                        <h3>Verificação em 2 Fatores (2FA)</h3>
+                        <p class="panel-subtitle">Adicione uma segunda camada de proteção exigindo um código de 6 dígitos (via E-mail ou App Autenticador TOTP) a cada login</p>
+                    </div>
+                    <span class="badge badge-pendente" id="badgeStatus2Fa">Desativado</span>
+                </div>
+
+                <div class="twofa-controls-box">
+                    <div class="form-group" style="max-width: 380px; margin-bottom: var(--space-3);">
+                        <label for="twoFaSenhaAtualInput">Confirme sua senha atual para alterar o 2FA *</label>
+                        <input type="password" id="twoFaSenhaAtualInput" placeholder="Digite sua senha atual" autocomplete="current-password">
+                    </div>
+
+                    <div class="twofa-actions">
+                        <button type="button" class="btn btn-primary btn-sm" id="btnAtivar2FaEmail">
+                            Ativar 2FA via E-mail
+                        </button>
+                        <button type="button" class="btn btn-outline btn-sm" id="btnIniciarTotp">
+                            Configurar App Autenticador (TOTP)
+                        </button>
+                        <button type="button" class="btn btn-danger-ghost btn-sm hidden" id="btnDesativar2Fa">
+                            Desativar 2FA
+                        </button>
+                    </div>
+                </div>
+
+                <div id="boxSetupTotp" class="totp-setup-box hidden" aria-live="polite">
+                    <h4>Configurar Aplicativo Autenticador (Google Authenticator / Authy / Apple Senhas)</h4>
+                    <p class="panel-subtitle">1. Copie a chave secreta abaixo (ou abra o link no app autenticador) e crie a conta no seu aplicativo:</p>
+                    <div class="totp-secret-row">
+                        <code id="totpSecretCode" class="totp-secret-code">---</code>
+                        <button type="button" class="btn btn-outline btn-sm" id="btnCopiarSegredoTotp">Copiar Chave</button>
+                        <a id="linkOtpAuth" href="#" class="btn btn-outline btn-sm">Abrir no App</a>
+                    </div>
+                    <p class="panel-subtitle" style="margin-top: var(--space-3);">2. Digite sua senha atual acima e o código de 6 dígitos gerado pelo aplicativo para ativar:</p>
+                    <div class="inline-action-form" style="max-width: 420px; margin-top: var(--space-2);">
+                        <label for="inputCodigoConfirmarTotp" class="sr-only">Código de 6 dígitos do aplicativo autenticador</label>
+                        <input type="text" id="inputCodigoConfirmarTotp" minlength="6" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" placeholder="Código 6 dígitos (ex.: 123456)">
+                        <button type="button" class="btn btn-primary btn-sm" id="btnConfirmarTotp">Confirmar e Ativar</button>
+                    </div>
+                </div>
+            </div>
+
             <!-- Seção de Configurações da Família & Membros -->
             <div class="panel family-settings-panel" id="secaoConfigFamilia">
                 <div class="panel-header">
@@ -1046,6 +1117,10 @@
                         <span><strong>Cookies de Persistência / Preferências</strong> — Permitem manter a sessão ativa ao marcar "Manter conectado" e lembrar suas preferências visuais.</span>
                     </label>
                 </div>
+                <p class="panel-subtitle">
+                    Consulte nossos <a href="/termos.html" target="_blank" rel="noopener noreferrer" class="legal-inline-link">Termos de Uso</a>
+                    e nossa <a href="/privacidade.html" target="_blank" rel="noopener noreferrer" class="legal-inline-link">Política de Privacidade (LGPD)</a>.
+                </p>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-outline" id="btnSalvarCookiesEssenciais">Apenas Essenciais</button>
@@ -1057,7 +1132,11 @@
     <!-- Banner de Cookies -->
     <aside class="cookie-banner hidden" id="cookieBanner" role="region" aria-label="Aviso de Cookies">
         <div class="cookie-banner-content">
-            <p><strong>Privacidade e Cookies:</strong> Utilizamos apenas cookies essenciais por padrão. Nenhuma nova aba faz login automático sem sua autorização expressa.</p>
+            <p>
+                <strong>Privacidade e Cookies:</strong> Utilizamos apenas cookies essenciais por padrão (nenhuma nova aba faz login automático sem sua autorização). Saiba mais nos
+                <a href="/termos.html" target="_blank" rel="noopener noreferrer" class="legal-inline-link">Termos de Uso</a> e na
+                <a href="/privacidade.html" target="_blank" rel="noopener noreferrer" class="legal-inline-link">Política de Privacidade</a>.
+            </p>
             <div class="cookie-banner-actions">
                 <button type="button" class="btn btn-outline btn-sm" id="btnCookiePersonalizar">Personalizar</button>
                 <button type="button" class="btn btn-outline btn-sm" id="btnCookieEssenciais">Apenas Essenciais</button>
