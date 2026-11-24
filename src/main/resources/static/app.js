@@ -2244,6 +2244,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     document.getElementById('btnAbrirCookiesAuth')?.addEventListener('click', abrirModalCookies);
     document.getElementById('btnAbrirCookiesConta')?.addEventListener('click', abrirModalCookies);
+    document.getElementById('btnAbrirCookiesFooter')?.addEventListener('click', abrirModalCookies);
     document.getElementById('btnCookiePersonalizar')?.addEventListener('click', abrirModalCookies);
     document.getElementById('btnFecharCookies')?.addEventListener('click', () => fecharModalAcessivel(modalCookies));
     document.getElementById('btnCookieEssenciais')?.addEventListener('click', () => aplicarPreferenciaCookies('essential'));
