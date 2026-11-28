@@ -8,7 +8,7 @@
   [![Version](https://img.shields.io/badge/version-2.0.0-2563eb?style=for-the-badge)](https://github.com/Marcos-Dev7/financas-investimentos)
   [![Java](https://img.shields.io/badge/Java-25-f59e0b?style=for-the-badge&logo=openjdk&logoColor=white)](https://openjdk.org/)
   [![Spring Boot](https://img.shields.io/badge/Spring_Boot-4.0.3-6db33f?style=for-the-badge&logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
-  [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Neon_Cloud-336791?style=for-the-badge&logo=postgresql&logoColor=white)](https://neon.tech/)
+  [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Database-336791?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
   [![Tests](https://img.shields.io/badge/Tests-123_Passing-10b981?style=for-the-badge&logo=junit5&logoColor=white)](#%EF%B8%8F-testes-automatizados)
 
   🌐 **Acesse a Plataforma Online:** [https://financial-family.onrender.com](https://financial-family.onrender.com)
@@ -18,58 +18,41 @@
 
 ## 📌 Sobre o Projeto
 
-**FinancialFamily** é uma plataforma web completa (API REST + Interface Web Responsiva Desktop & Mobile) desenvolvida para o controle financeiro familiar, focada na clareza de gastos, gestão compartilhada de caixa e construção de patrimônio.
+**FinancialFamily** é uma plataforma web completa (API REST + Interface Web Responsiva Desktop & Mobile) desenvolvida para o controle financeiro pessoal e familiar, focada na clareza de gastos, gestão compartilhada de caixa e acompanhamento do orçamento mensal.
 
-O sistema resolve um problema clássico do orçamento doméstico: separar o que é **conta prevista (Despesa Bruta)** do que já foi **efetivamente quitado (Despesa Paga)**, revelando em tempo real a verdadeira **Sobra Livre** mensal — tanto no perfil individual quanto na **Visão Consolidada da Família**.
+O sistema separa o que é **conta prevista (Despesa Bruta)** do que já foi **efetivamente quitado (Despesa Paga)**, revelando em tempo real a **Sobra Livre** mensal — tanto no perfil individual quanto na **Visão Consolidada da Família**.
 
 ---
 
 ## ✨ Funcionalidades Principais (`v2.0.0`)
 
-### 👨‍👩‍👧‍👦 1. Módulo Família & Membros (Evoluído na `v1.3.0`)
-- **Aba Condicional & Convites 48h:** A aba **"Família"** fica oculta até que exista ao menos 1 membro ativo. Convites (e-mail ou link `?convite=TOKEN` com validade de 48h) e convites recebidos pendentes são gerenciados em **"Minha Conta"**.
-- **Visão Consolidada & Papel de Gestor da Família:** Painel dedicado que reúne as despesas compartilhadas da família com **filtro por responsável**, **total por membro** e gráfico de **Distribuição de Gastos por Categoria**. Quem cria a família atua como **Gestor**, podendo dar baixa (`Pagar`) e estornar pagamentos diretamente nas despesas compartilhadas da família; membros convidados permanecem em modo **Somente Leitura** (garantido no backend).
-- **Compartilhamento Independente de Renda e Despesas (*Opt-in / Opt-out*):** Cada membro controla separadamente em **Minha Conta** se deseja compartilhar sua **renda** e suas **despesas** na visão consolidada; ao desligar as despesas, elas somem da tabela e dos totais familiares.
-- **Revogação Imediata & Isolamento Estrito:** O titular pode remover qualquer membro com 1 clique, cortando o acesso imediatamente no banco de dados. Usuários fora da família são bloqueados com `403 Forbidden`, e o backend impede que um mesmo usuário participe de duas famílias ativas simultaneamente.
+### 👨‍👩‍👧‍👦 1. Módulo Família & Membros
+- **Convites com Prazo de Validade:** Convide familiares por e-mail ou código de convite diretamente em **Minha Conta**.
+- **Visão Consolidada & Papéis de Acesso:** Painel dedicado que reúne as despesas compartilhadas da família com filtro por responsável, total por membro e distribuição por categoria. O criador do grupo atua como **Gestor** (podendo dar baixa e estornar pagamentos nas despesas compartilhadas), enquanto membros convidados visualizam o consolidado em modo **Somente Leitura**.
+- **Compartilhamento Granular (*Opt-in / Opt-out*):** Cada participante escolhe individualmente se deseja compartilhar sua renda e/ou suas despesas no consolidado familiar, podendo alterar ou revogar o vínculo a qualquer momento.
 
-### 🔐 2. Autenticação, 2FA, Recuperação de Senha, LGPD & Proteção contra SQL Injection
-- **Verificação em 2 Fatores (2FA — E-mail ou App Autenticador TOTP RFC 6238):** Suporte a código de 6 dígitos enviado por e-mail (5 min) ou gerado offline em apps como Google Authenticator, Authy e Apple Senhas, com bloqueio automático após 5 tentativas inválidas e confirmação de senha atual para ativar/desativar.
-- **Cadastro com Política de Senha Forte:** Validação em tempo real (mínimo 8 caracteres, maiúscula, minúscula, número e caractere especial) + confirmação obrigatória de senha.
-- **Verificação de E-mail com Código de 6 Dígitos:** Envio de código numérico temporário (`SecureRandom`, válido por 15 minutos) para ativação da conta.
-- **Recuperação de Senha ("Esqueci minha senha"):** Fluxo completo com envio de link (`?resetToken=...`, válido por 30 min) por **E-mail Principal** ou **E-mail de Recuperação**, ou **código numérico de 6 dígitos via SMS** (Brevo Transactional SMS API, válido por 15 min, com fallback automático para o e-mail vinculado se não houver créditos SMS ativos).
-- **Sessão por Aba, Cookies & Documentos Legais (LGPD):** Sessão isolada por aba (`sessionStorage`), banner e modal de **Preferências de Cookies** linkados aos [Termos de Uso](src/main/resources/static/termos.html) (`/termos.html`) e à [Política de Privacidade](src/main/resources/static/privacidade.html) (`/privacidade.html`).
-- **Blindagem contra SQL Injection & Isolamento Multi-Usuário:** Consultas 100% parametrizadas via Spring Data JPA/JPQL (zero `nativeQuery`), validação estrita de entrada, *whitelist* de campos de ordenação (`Pageable`) e tratamento de erros sem vazamento de mensagens internas.
+### 🔐 2. Conta, Segurança & Privacidade (LGPD)
+- **Autenticação Segura & Verificação em 2 Fatores (2FA):** Suporte a confirmação em duas etapas via e-mail ou aplicativo autenticador (Google Authenticator, Authy, Apple Senhas), além de confirmação de e-mail no cadastro e na alteração de endereço.
+- **Recuperação de Acesso:** Fluxo completo de recuperação de senha via e-mail principal, e-mail secundário ou telefone cadastrado.
+- **Proteção de Conta & Dados:** Política de senha forte, isolamento estrito de dados por usuário, proteção contra tentativas abusivas de acesso, cabeçalhos de segurança web e conformidade com a LGPD (banner de cookies configurável, Termos de Uso e Política de Privacidade integrados à interface).
 
-### 👤 3. Área do Usuário ("Minha Conta")
-- **Upload de Foto de Perfil:** Recorte quadrado e compressão automática (`256x256`) no navegador, com persistência direta no banco de dados na nuvem.
-- **Gestão de Dados Cadastrais, Recuperação & Segurança:** Atualização de nome completo, e-mail principal, **telefone** e **e-mail de recuperação**, alteração de senha, preferências de cookies e opção de exclusão permanente da conta.
+### 💰 3. Gestão de Despesas, Receitas & Sobra Livre
+- **Despesas Mensais:** Cadastro, edição, exclusão, busca por descrição ou categoria, controle de contas fixas/variáveis, baixa de pagamento com 1 clique e estorno.
+- **Receitas & Fontes de Renda:** Registro organizado por mês e ano (salários, extras, freelances, bônus).
+- **Motor de Sobra Livre & Painel Analítico:** Indicadores de saúde orçamentária (`POSITIVO`, `LIMITE`, `DÉFICIT`), saldo previsto versus caixa atual, gráfico de distribuição por categoria e projeção automática de despesas fixas na virada do mês.
 
-### 💰 4. Gestão de Despesas, Receitas e Motor de Sobra Livre
-- **Despesas Mensais:** Cadastro, edição, exclusão, paginação, busca por descrição/categoria, baixa de pagamento com 1 clique (`Pagar`) e reversão (`Estornar`).
-- **Saldos e Receitas:** Registro de múltiplas fontes de renda por mês/ano (Salários, Freelances, Bônus).
-- **Motor de Cálculo de Sobra Livre & Painel Analítico:** Calcula automaticamente a **Sobra Livre (Prevista)** (`Receita Total - Despesas Brutas`) para sinalizar imediatamente `POSITIVO`, `LIMITE` ou `DEFICIT` antes mesmo do vencimento das contas, mantendo visível o caixa atual (`Receita - Despesas Pagas`), a distribuição por categoria e o termômetro de comprometimento com alerta visual crítico.
-- **Agendador Automático (`@Scheduled`):** Projeta automaticamente todas as despesas fixas para o mês seguinte na virada de cada dia 1º.
-
-### ⚡ 5. Controle de Carga, Rate Limiting, Acessibilidade & Mobile-First
-- **Rate Limiting por IP (`RateLimitFilter`):** Limite de 15 requisições/minuto por IP nas rotas de autenticação e 120 requisições/minuto na API (`HTTP 429 Too Many Requests`).
-- **Pool `HikariCP` Serverless & Controle de RAM da JVM:** Pool otimizado para *scale-to-zero* na Neon Cloud, índices compostos no PostgreSQL e teto de memória (`-XX:MaxRAMPercentage=75.0`) no container Docker.
-- **Design System Fintech v2.0 (Sidebar + Dark/Light Mode & WCAG 2.2 AA):** Interface reestruturada em **App Shell** (Sidebar fixa `248px` com *drawer* mobile + Topbar limpa), alternância **Modo Escuro / Modo Claro**, tipografia **IBM Plex Sans** com numerais tabulares (`tabular-nums`), paleta de dados distinta por categoria, CSS modular (`css/tokens.css`, `css/layout.css`, `css/components.css`) e ES Modules nativos (`js/state.js`, `js/api.js`, `js/ui.js`, `js/main.js`) mantendo deploy zero-build no Spring Boot.
-- **Layout Responsivo Mobile-First:** Menu compacto no mobile, alvos de toque de no mínimo `44×44px` e tabelas convertidas em cards sem rolagem horizontal a partir de `320px`.
+### 🎨 4. Interface Fintech v2.0 & Responsividade
+- **App Shell Moderno:** Navegação lateral fixa no desktop (*drawer* no mobile), alternância **Modo Escuro / Modo Claro**, tipografia otimizada para valores numéricos e contraste acessível (WCAG 2.2 AA).
+- **Mobile-First:** Tabelas adaptadas para visualização em cartões em telas pequenas e modais acessíveis com navegação por teclado.
 
 ---
 
-## 📖 Como Utilizar o Sistema (Guia do Usuário)
+## 📖 Como Utilizar o Sistema
 
-1. **Criar sua Conta e Validar E-mail:**
-   - Acesse a plataforma, clique em **"Criar Conta"**, preencha seus dados seguindo o indicador de senha forte e confirme sua conta com o **código de 6 dígitos** recebido por e-mail.
-2. **Cadastrar Receitas e Despesas Individuais:**
-   - No **Painel Financeiro**, selecione o mês no topo, adicione suas fontes de renda em **`+ Nova Receita`** e suas contas em **`+ Nova Despesa`**.
-   - Clique em **`Pagar`** conforme quitar cada conta no mês para atualizar sua **Sobra Livre Disponível**.
-3. **Convidar Familiares e Usar a Visão Consolidada ("Família"):**
-   - Acesse **"Minha Conta"** → **"Configurações da Família & Membros"** para enviar convites por e-mail (ou copiar o link/código de 48h), aceitar um convite via token e gerenciar os membros ativos ou o compartilhamento de renda (**"Incluir minha renda na soma familiar"**).
-   - Na aba **"Família"** do menu superior, você acessa diretamente no topo o **Resumo Consolidado da Família** e a tabela de **Despesas Familiares do Mês** (em modo somente leitura, além de alertas de convites pendentes recebidos quando houver).
-4. **Personalizar seu Perfil ("Minha Conta"):**
-   - Na aba **"Minha Conta"**, envie sua **foto de perfil**, atualize seu nome/e-mail ou altere sua senha.
+1. **Criar Conta e Confirmar E-mail:** Cadastre-se com uma senha forte e valide o código de verificação enviado ao seu e-mail.
+2. **Registrar Receitas e Despesas:** No **Painel Financeiro**, selecione o mês desejado, cadastre suas receitas e contas e marque cada despesa como paga conforme quitar.
+3. **Configurar Família (Opcional):** Em **Minha Conta**, envie convites para familiares, aceite convites pendentes e ajuste as opções de compartilhamento de renda e despesas.
+4. **Reforçar a Segurança:** Ative a **Verificação em 2 Fatores (2FA)** e cadastre canais de recuperação em **Minha Conta**.
 
 ---
 
@@ -78,100 +61,37 @@ O sistema resolve um problema clássico do orçamento doméstico: separar o que 
 | Camada | Tecnologias |
 | :--- | :--- |
 | **Linguagem & Runtime** | Java 25 |
-| **Framework Backend** | Spring Boot 4.0.3 (WebMVC, Validation, Scheduling, Mail) |
-| **Segurança & Carga** | Spring Security + JWT (HMAC-SHA256 sem fallback hardcoded), CSP Strict, CORS restrito, Lockout de conta e Rate Limiting por IP |
-| **Banco de Dados & Migrations** | PostgreSQL (Neon Serverless) + Spring Data JPA / Hibernate + Flyway (`V1` a `V14`) |
-| **Frontend** | HTML5 Semântico (App Shell Sidebar + Dark/Light Mode), CSS3 Modular (IBM Plex Sans & WCAG 2.2 AA), Vanilla ES Modules (zero inline JS) & Canvas API |
-| **Testes** | JUnit 5, Mockito, AssertJ e Spring `MockMvc` (123 testes automatizados) |
-| **Infraestrutura & Deploy** | Docker (Multi-Stage Build), Docker Compose, Render & Neon Cloud |
+| **Framework Backend** | Spring Boot 4 (WebMVC, Validation, Security, Scheduling, Mail) |
+| **Banco de Dados** | PostgreSQL + Spring Data JPA / Hibernate + Flyway |
+| **Frontend** | HTML5 Semântico, CSS3 Modular, JavaScript ES Modules & Canvas API |
+| **Testes** | JUnit 5, Mockito, AssertJ e Spring `MockMvc` |
+| **Infraestrutura** | Docker (Multi-Stage Build) & Docker Compose |
 
 ---
 
-## 🔌 Principais Endpoints da API REST
+## 💻 Como Rodar Localmente
 
-### Família & Membros (`/familia`)
-| Método | Rota | Descrição | Autenticação |
-| :--- | :--- | :--- | :---: |
-| `GET` | `/familia` | Retorna membros ativos, convites e status de renda | `Bearer JWT` |
-| `POST` | `/familia/convites` | Gera convite familiar com token válido por 48h | `Bearer JWT` |
-| `POST` | `/familia/convites/aceitar` | Aceita convite validando token, prazo e e-mail | `Bearer JWT` |
-| `PATCH` | `/familia/compartilhar-renda` | Ativa ou desativa o compartilhamento da própria renda | `Bearer JWT` |
-| `PATCH` | `/familia/compartilhar-despesas` | Ativa ou desativa o compartilhamento das próprias despesas | `Bearer JWT` |
-| `DELETE` | `/familia/membros/{vinculoId}` | Remove membro da família (corta acesso imediato) | `Bearer JWT` |
-| `GET` | `/familia/despesas` | Lista despesas familiares consolidadas | `Bearer JWT` |
-| `PATCH` | `/familia/despesas/{id}/pagar` | Gestor dá baixa (paga) em uma despesa compartilhada da família | `Bearer JWT (Gestor)` |
-| `PATCH` | `/familia/despesas/{id}/estornar` | Gestor estorna pagamento de uma despesa compartilhada da família | `Bearer JWT (Gestor)` |
-| `GET` | `/familia/resumo/{mes}` | Calcula receita somada, gastos e Sobra Livre Familiar | `Bearer JWT` |
-
-### Autenticação & Conta (`/auth`)
-| Método | Rota | Descrição | Autenticação |
-| :--- | :--- | :--- | :---: |
-| `POST` | `/auth/registrar` | Cadastra usuário e envia código de 6 dígitos | Pública |
-| `POST` | `/auth/verificar-email` | Valida o código de 6 dígitos e retorna Token JWT | Pública |
-| `POST` | `/auth/reenviar-codigo` | Reenvia novo código de verificação | Pública |
-| `POST` | `/auth/login` | Autentica e-mail/senha (retorna JWT ou desafio 2FA se ativo) | Pública |
-| `POST` | `/auth/verificar-2fa` | Valida código 2FA de 6 dígitos (E-mail ou TOTP) e emite Token JWT | Pública |
-| `POST` | `/auth/2fa/ativar-email` | Ativa 2FA via E-mail (exige senha atual) | `Bearer JWT` |
-| `POST` | `/auth/2fa/totp/iniciar` | Gera chave Base32 e URI `otpauth://` para App Autenticador | `Bearer JWT` |
-| `POST` | `/auth/2fa/totp/confirmar` | Valida senha atual + código 6 dígitos do App e ativa 2FA TOTP | `Bearer JWT` |
-| `POST` | `/auth/2fa/desativar` | Desativa 2FA (exige senha atual) | `Bearer JWT` |
-| `POST` | `/auth/esqueci-senha` | Envia link de recuperação via e-mail, e-mail de recuperação ou telefone | Pública |
-| `POST` | `/auth/redefinir-senha` | Redefine a senha validando o token de recuperação (30 min) | Pública |
-| `GET` | `/auth/me` | Retorna dados, contatos de recuperação e foto do usuário autenticado | `Bearer JWT` |
-| `PUT` | `/auth/perfil` | Atualiza nome, e-mail, telefone, e-mail de recuperação e foto | `Bearer JWT` |
-| `PUT` | `/auth/alterar-senha` | Altera a senha validando a senha atual e força | `Bearer JWT` |
-| `DELETE` | `/auth/conta` | Exclui permanentemente a conta e seus dados | `Bearer JWT` |
-
-### Finanças (`/despesas`, `/saldos`, `/calculos`)
-| Método | Rota | Descrição | Autenticação |
-| :--- | :--- | :--- | :---: |
-| `GET` | `/despesas` | Lista despesas do usuário (paginado) | `Bearer JWT` |
-| `POST` | `/despesas` | Cadastra nova despesa | `Bearer JWT` |
-| `PUT` | `/despesas/{id}` | Atualiza dados de uma despesa | `Bearer JWT` |
-| `PATCH` | `/despesas/{id}/pagar` | Dá baixa na despesa (`isPaga = true`) | `Bearer JWT` |
-| `PATCH` | `/despesas/{id}/estornar` | Estorna o pagamento (`isPaga = false`) | `Bearer JWT` |
-| `DELETE` | `/despesas/{id}` | Remove uma despesa | `Bearer JWT` |
-| `GET` | `/saldos` | Lista todas as receitas do usuário | `Bearer JWT` |
-| `POST` | `/saldos` | Cadastra nova fonte de receita | `Bearer JWT` |
-| `PUT` | `/saldos/{id}` | Atualiza uma receita existente | `Bearer JWT` |
-| `DELETE` | `/saldos/{id}` | Remove uma receita | `Bearer JWT` |
-| `GET` | `/calculos/sobra/{mes}` | Retorna o resumo mensal e a Sobra Livre | `Bearer JWT` |
-
----
-
-## 💻 Como Rodar o Projeto Localmente
-
-### Opção 1: Com Docker Compose (Mais rápida — sobe API + PostgreSQL)
-```bash
-git clone https://github.com/Marcos-Dev7/financas-investimentos.git
-cd financas-investimentos
-docker compose up --build
-```
-Acesse em seguida: **`http://localhost:8080`**
-
-### Opção 2: Com Maven + Arquivo `.env`
-1. Crie um arquivo `.env` na raiz do projeto com as variáveis:
-   ```env
-   DB_URL=jdbc:postgresql://localhost:5432/financas_db
-   DB_USERNAME=postgres
-   DB_PASSWORD=sua_senha
-   JWT_SECRET=sua_chave_secreta_jwt_com_pelo_menos_32_caracteres_aqui
-
-   # Opcional (para envio externo de e-mail via Brevo HTTPS API ou SMTP)
-   BREVO_API_KEY=
-   MAIL_FROM=
+### Opção 1: Com Docker Compose
+1. Crie um arquivo `.env` na raiz do projeto com suas variáveis locais (consulte as chaves esperadas em `application.properties`, definindo uma `JWT_SECRET` forte de pelo menos 32 caracteres).
+2. Suba o ambiente:
+   ```bash
+   docker compose up --build
    ```
-2. Execute a aplicação:
+3. Acesse **`http://localhost:8080`**.
+
+### Opção 2: Com Maven Local
+1. Configure o banco PostgreSQL e o arquivo `.env` local (nunca versione arquivos `.env`).
+2. Execute:
    ```bash
    ./mvnw spring-boot:run
    ```
-3. Abra **`http://localhost:8080`** no navegador.
+3. Acesse **`http://localhost:8080`**.
 
 ---
 
 ## 🧪 Testes Automatizados
 
-O projeto conta com **123 testes automatizados** cobrindo Entidades de Domínio, Enums, Conversores, Validador de Senha Forte, Segurança (JWT, XSS/MIME, Lockout, Rate Limiting anti-spoofing, SQL Injection e Fail-Closed IDOR), Módulo Família, Services (Mockito) e Controllers (MockMvc). Para executá-los:
+O projeto conta com **123 testes automatizados** cobrindo domínio, regras financeiras, módulo família, validações, segurança e controladores:
 
 ```bash
 ./mvnw test -Dtest="*Test"
