@@ -153,6 +153,11 @@ export function aplicarTema(tema) {
     const modo = tema === 'light' ? 'light' : 'dark';
     document.documentElement.setAttribute('data-theme', modo);
 
+    const metaTheme = document.querySelector('meta[name="theme-color"]');
+    if (metaTheme) {
+        metaTheme.setAttribute('content', modo === 'light' ? '#F4F7F6' : '#0C0A08');
+    }
+
     document.querySelectorAll('[data-theme-toggle]').forEach(btn => {
         const iconEl = btn.querySelector('.theme-icon');
         const labelEl = btn.querySelector('.theme-label');
@@ -160,6 +165,8 @@ export function aplicarTema(tema) {
         if (labelEl) labelEl.textContent = modo === 'dark' ? 'Claro' : 'Escuro';
         btn.setAttribute('aria-label', modo === 'dark' ? 'Mudar para tema claro' : 'Mudar para tema escuro');
     });
+
+    window.dispatchEvent(new CustomEvent('ff:theme-change', { detail: { tema: modo } }));
 }
 
 export function inicializarTema() {

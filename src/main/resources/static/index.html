@@ -2,26 +2,33 @@
 <html lang="pt-BR" data-theme="dark">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestão</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#0C0A08">
+    <meta name="description" content="FinancialFamily: controle financeiro pessoal e familiar com previsão de sobra livre, baixas de pagamento e visão consolidada por membro.">
+    <title>FinancialFamily | Gestão Financeira Familiar</title>
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
     <link rel="icon" href="/favicon.ico" sizes="any">
     <link rel="apple-touch-icon" href="/logo.png">
     <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
+    <a class="skip-link" href="#dashboardView">Pular para o conteúdo</a>
+
     <!-- ==========================================
-         TELA 1: AUTENTICAÇÃO (LOGIN, CADASTRO, 2FA, RECUPERAÇÃO)
+         TELA 1: AUTENTICAÇÃO (SPLIT SCREEN EDITORIAL + REACT BITS DOTGRID)
          ========================================== -->
     <div id="authScreen" class="auth-screen">
         <div class="auth-split">
             <aside class="auth-hero" aria-label="Apresentação do FinancialFamily">
+                <canvas id="authHeroCanvas" class="rb-dotgrid-canvas" aria-hidden="true"></canvas>
+                <button type="button" id="btnPauseDotGrid" class="rb-pause-btn" aria-label="Pausar animação do fundo" aria-pressed="false"></button>
+
                 <div class="auth-hero-top">
                     <div class="brand-hero">
                         <img src="/logo.png" alt="FinancialFamily" class="brand-logo">
                         <div>
                             <h1 class="brand-title">Financial<span class="wordmark-accent">Family</span></h1>
-                            <p class="brand-subtitle">Governança de Caixa &amp; Patrimônio Familiar</p>
+                            <p class="brand-subtitle">Orçamento e Caixa Familiar</p>
                         </div>
                     </div>
                     <button type="button" class="btn-theme-toggle" data-theme-toggle aria-label="Alternar tema claro e escuro">
@@ -31,72 +38,101 @@
                 </div>
 
                 <div class="auth-hero-content">
-                    <div class="hero-badge">
-                        <span class="hero-badge-dot" aria-hidden="true"></span>
-                        Controle Financeiro &amp; Contábil Familiar
+                    <span class="hero-eyebrow" data-rb-enter>Controle financeiro mensal para pessoas e famílias</span>
+                    <h2 data-rb-enter>Veja a <span class="rb-shiny-text">sobra livre</span> do mês antes de vencer a próxima conta.</h2>
+                    <p class="auth-hero-lead" data-rb-enter>Separe o orçamento previsto do caixa efetivamente pago, projete contas fixas automaticamente e acompanhe o consolidado familiar com papéis definidos.</p>
+
+                    <!-- Live Product UI Showcase (taste-skill: real interface instead of 3 generic feature cards) -->
+                    <div class="hero-product-frame rb-spotlight" role="img" aria-label="Prévia do painel de sobra livre e lançamentos do FinancialFamily" data-rb-enter>
+                        <div class="hero-frame-bar">
+                            <span class="hero-frame-title">Painel Financeiro | Competência Mensal</span>
+                            <span class="badge badge-paga">POSITIVO</span>
+                        </div>
+                        <div class="hero-frame-kpis">
+                            <div class="hero-frame-kpi">
+                                <span>Receita do mês</span>
+                                <strong>R$ 8.400,00</strong>
+                            </div>
+                            <div class="hero-frame-kpi">
+                                <span>Previsto (bruto)</span>
+                                <strong>R$ 5.180,00</strong>
+                            </div>
+                            <div class="hero-frame-kpi">
+                                <span>Sobra livre</span>
+                                <strong class="is-positive">R$ 3.220,00</strong>
+                            </div>
+                        </div>
+                        <div class="hero-frame-ledger">
+                            <div class="hero-ledger-row">
+                                <div class="hero-ledger-left">
+                                    <span class="badge badge-paga">Paga</span>
+                                    <span class="hero-ledger-name">Aluguel Residencial</span>
+                                    <span class="hero-ledger-tag">Fixa</span>
+                                </div>
+                                <span class="hero-ledger-val">R$ 2.150,00</span>
+                            </div>
+                            <div class="hero-ledger-row">
+                                <div class="hero-ledger-left">
+                                    <span class="badge badge-paga">Paga</span>
+                                    <span class="hero-ledger-name">Supermercado Mensal</span>
+                                    <span class="hero-ledger-tag">Alimentação</span>
+                                </div>
+                                <span class="hero-ledger-val">R$ 1.480,00</span>
+                            </div>
+                            <div class="hero-ledger-row">
+                                <div class="hero-ledger-left">
+                                    <span class="badge badge-pendente">Pendente</span>
+                                    <span class="hero-ledger-name">Energia e Internet</span>
+                                    <span class="hero-ledger-tag">Moradia</span>
+                                </div>
+                                <span class="hero-ledger-val">R$ 390,00</span>
+                            </div>
+                        </div>
                     </div>
-                    <h2>Controle rigoroso de receitas, despesas e <span class="hero-highlight">sobra livre</span>.</h2>
-                    <p>Separe com precisão o orçamento previsto do caixa efetivamente liquidado, com visão individual e familiar em um painel sóbrio e confiável.</p>
 
-                    <div class="hero-features">
-                        <div class="hero-feature-item">
-                            <div class="feature-icon-box" aria-hidden="true">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-                            </div>
-                            <div>
-                                <strong>Sobra Prevista &amp; Caixa Real</strong>
-                                <span>Identifique superávit ou déficit antes mesmo do vencimento das contas.</span>
-                            </div>
+                    <div class="hero-facts-strip" data-rb-enter>
+                        <div class="hero-fact-item">
+                            <strong>Previsto e caixa real</strong>
+                            <span>Acompanhe o saldo livre previsto separado do valor já quitado.</span>
                         </div>
-
-                        <div class="hero-feature-item">
-                            <div class="feature-icon-box" aria-hidden="true">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                            </div>
-                            <div>
-                                <strong>Projeção Mensal de Despesas Fixas</strong>
-                                <span>Contas recorrentes projetadas automaticamente na virada de cada competência.</span>
-                            </div>
+                        <div class="hero-fact-item">
+                            <strong>Gestor e membros</strong>
+                            <span>Cada participante escolhe se compartilha renda e despesas na família.</span>
                         </div>
-
-                        <div class="hero-feature-item">
-                            <div class="feature-icon-box" aria-hidden="true">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                            </div>
-                            <div>
-                                <strong>Segurança 2FA &amp; Gestão Familiar</strong>
-                                <span>Proteção em dois fatores, controle granular de renda e despesas e papéis de Gestor e Membro.</span>
-                            </div>
+                        <div class="hero-fact-item">
+                            <strong>Proteção em 2 fatores</strong>
+                            <span>Login com verificação via e-mail ou aplicativo autenticador.</span>
                         </div>
                     </div>
                 </div>
 
                 <div class="auth-hero-footer">
-                    <span>&copy; 2026 FinancialFamily &bull; Sistema de Gestão Financeira</span>
+                    <span>&copy; 2026 FinancialFamily</span>
                     <div class="footer-legal-links">
                         <a href="/termos.html" target="_blank" rel="noopener noreferrer" class="legal-inline-link">Termos de Uso</a>
-                        <span class="legal-sep" aria-hidden="true">&bull;</span>
+                        <span class="legal-sep" aria-hidden="true">/</span>
                         <a href="/privacidade.html" target="_blank" rel="noopener noreferrer" class="legal-inline-link">Política de Privacidade</a>
                     </div>
                 </div>
             </aside>
 
             <main class="auth-card-container" aria-label="Autenticação de usuário">
-                <div class="auth-card">
+                <div class="auth-card rb-spotlight">
                     <div class="auth-card-brand-top">
                         <img src="/logo.png" alt="" class="brand-logo-sm" aria-hidden="true">
-                        <span>Acesso ao Sistema</span>
+                        <span>Acesso à conta</span>
                     </div>
 
-                    <div class="auth-tabs" id="authTabsWrap" role="tablist" aria-label="Alternar entre Login e Cadastro">
-                        <button type="button" class="auth-tab active" id="tabLoginBtn" role="tab" aria-selected="true" aria-controls="formLogin">Entrar na Conta</button>
+                    <div class="auth-tabs" id="authTabsWrap" data-active-tab="login" role="tablist" aria-label="Alternar entre Login e Cadastro">
+                        <span class="rb-tab-indicator" aria-hidden="true"></span>
+                        <button type="button" class="auth-tab active" id="tabLoginBtn" role="tab" aria-selected="true" aria-controls="formLogin">Entrar</button>
                         <button type="button" class="auth-tab" id="tabRegisterBtn" role="tab" aria-selected="false" aria-controls="formRegister">Criar Conta</button>
                     </div>
 
                     <!-- 1. Login -->
                     <form id="formLogin" class="auth-form" role="tabpanel" aria-labelledby="tabLoginBtn">
                         <div class="auth-form-header">
-                            <h2>Acessar conta</h2>
+                            <h2>Acessar sua conta</h2>
                             <p>Informe seu e-mail e senha cadastrados.</p>
                         </div>
 
@@ -110,7 +146,7 @@
                                 <label for="loginSenha">Senha</label>
                                 <button type="button" class="btn-link-inline" id="btnEsqueciSenha">Esqueci minha senha</button>
                             </div>
-                            <input type="password" id="loginSenha" required placeholder="••••••••" autocomplete="current-password">
+                            <input type="password" id="loginSenha" required placeholder="Digite sua senha" autocomplete="current-password">
                         </div>
 
                         <div class="form-group">
@@ -126,9 +162,9 @@
 
                         <div class="auth-cookie-footer">
                             <button type="button" class="btn-link-inline" id="btnAbrirCookiesAuth">Preferências de Cookies</button>
-                            <span class="legal-sep" aria-hidden="true">&bull;</span>
+                            <span class="legal-sep" aria-hidden="true">/</span>
                             <a href="/termos.html" target="_blank" rel="noopener noreferrer" class="btn-link-inline">Termos de Uso</a>
-                            <span class="legal-sep" aria-hidden="true">&bull;</span>
+                            <span class="legal-sep" aria-hidden="true">/</span>
                             <a href="/privacidade.html" target="_blank" rel="noopener noreferrer" class="btn-link-inline">Privacidade</a>
                         </div>
                     </form>
@@ -137,11 +173,11 @@
                     <form id="formRegister" class="auth-form hidden" role="tabpanel" aria-labelledby="tabRegisterBtn">
                         <div class="auth-form-header">
                             <h2>Criar nova conta</h2>
-                            <p>Preencha os campos obrigatórios abaixo.</p>
+                            <p>Preencha os dados para receber o código de confirmação.</p>
                         </div>
 
                         <div class="form-group">
-                            <label for="regNome">Nome Completo *</label>
+                            <label for="regNome">Nome completo *</label>
                             <input type="text" id="regNome" required minlength="3" maxlength="100" placeholder="Ex.: Marcos Paulo" autocomplete="name">
                         </div>
 
@@ -154,16 +190,16 @@
                             <label for="regSenha">Senha *</label>
                             <input type="password" id="regSenha" required minlength="8" maxlength="100" placeholder="Mínimo de 8 caracteres" autocomplete="new-password" aria-describedby="regPwdRules">
                             <div class="pwd-rules" id="regPwdRules" aria-live="polite">
-                                <span class="pwd-rule" data-rule="len">&bull; Mín. 8 caracteres</span>
-                                <span class="pwd-rule" data-rule="upper">&bull; 1 letra maiúscula</span>
-                                <span class="pwd-rule" data-rule="lower">&bull; 1 letra minúscula</span>
-                                <span class="pwd-rule" data-rule="num">&bull; 1 número</span>
-                                <span class="pwd-rule" data-rule="spec">&bull; 1 caractere especial (@#$!%)</span>
+                                <span class="pwd-rule" data-rule="len">Mín. 8 caracteres</span>
+                                <span class="pwd-rule" data-rule="upper">1 letra maiúscula</span>
+                                <span class="pwd-rule" data-rule="lower">1 letra minúscula</span>
+                                <span class="pwd-rule" data-rule="num">1 número</span>
+                                <span class="pwd-rule" data-rule="spec">1 símbolo (@#$!%)</span>
                             </div>
                         </div>
 
                         <div class="form-group">
-                            <label for="regConfirmacaoSenha">Confirmar Senha *</label>
+                            <label for="regConfirmacaoSenha">Confirmar senha *</label>
                             <input type="password" id="regConfirmacaoSenha" required minlength="8" maxlength="100" placeholder="Repita a senha informada" autocomplete="new-password" aria-describedby="regMatchHint">
                             <small id="regMatchHint" class="match-hint" aria-live="polite"></small>
                         </div>
@@ -176,12 +212,12 @@
                     <!-- 3. Verificação de E-mail -->
                     <form id="formVerifyEmail" class="auth-form hidden" aria-label="Verificação de código por e-mail">
                         <div class="auth-form-header">
-                            <h2>Confirmar E-mail</h2>
+                            <h2>Confirmar e-mail</h2>
                             <p>Digite o código de 6 dígitos enviado para <strong id="verifyEmailTarget">seu@email.com</strong>.</p>
                         </div>
 
                         <div class="form-group">
-                            <label for="inputCodigoVerificacao">Código de Segurança (6 dígitos)</label>
+                            <label for="inputCodigoVerificacao">Código de segurança (6 dígitos)</label>
                             <input type="text" id="inputCodigoVerificacao" class="input-code-6" required minlength="6" maxlength="6" pattern="[0-9]{6}" placeholder="000000" inputmode="numeric" autocomplete="one-time-code">
                         </div>
 
@@ -191,19 +227,19 @@
 
                         <div class="verify-actions">
                             <button type="button" class="btn btn-outline btn-sm" id="btnResendCode">Reenviar código</button>
-                            <button type="button" class="btn btn-outline btn-sm" id="btnBackToLogin">Voltar ao Login</button>
+                            <button type="button" class="btn btn-outline btn-sm" id="btnBackToLogin">Voltar ao login</button>
                         </div>
                     </form>
 
                     <!-- 3b. Verificação 2FA -->
                     <form id="formVerificar2Fa" class="auth-form hidden" aria-label="Verificação em 2 fatores">
                         <div class="auth-form-header">
-                            <h2>Verificação em 2 Fatores</h2>
-                            <p id="twoFaPromptText">Digite o código de 6 dígitos para concluir seu acesso com segurança.</p>
+                            <h2>Verificação em 2 fatores</h2>
+                            <p id="twoFaPromptText">Digite o código de 6 dígitos para concluir seu acesso.</p>
                         </div>
 
                         <div class="form-group">
-                            <label for="inputCodigo2Fa">Código de Segurança (6 dígitos)</label>
+                            <label for="inputCodigo2Fa">Código de segurança (6 dígitos)</label>
                             <input type="text" id="inputCodigo2Fa" class="input-code-6" required minlength="6" maxlength="6" pattern="[0-9]{6}" placeholder="000000" inputmode="numeric" autocomplete="one-time-code">
                         </div>
 
@@ -212,19 +248,19 @@
                         </button>
 
                         <div class="verify-actions">
-                            <button type="button" class="btn btn-outline btn-sm" id="btnVoltarLogin2Fa">Cancelar e Voltar</button>
+                            <button type="button" class="btn btn-outline btn-sm" id="btnVoltarLogin2Fa">Cancelar e voltar</button>
                         </div>
                     </form>
 
                     <!-- 4. Esqueci minha senha -->
                     <form id="formEsqueciSenha" class="auth-form hidden" aria-label="Recuperar senha">
                         <div class="auth-form-header">
-                            <h2>Recuperar Senha</h2>
+                            <h2>Recuperar senha</h2>
                             <p>Receba um link por e-mail ou um código de 6 dígitos por SMS no telefone cadastrado.</p>
                         </div>
 
                         <div class="form-group">
-                            <label for="recCanal">Meio de Recuperação</label>
+                            <label for="recCanal">Meio de recuperação</label>
                             <select id="recCanal" required>
                                 <option value="EMAIL">E-mail principal cadastrado (Link)</option>
                                 <option value="EMAIL_RECUPERACAO">E-mail de recuperação (Link)</option>
@@ -238,41 +274,41 @@
                         </div>
 
                         <button type="submit" class="btn btn-primary btn-block btn-lg" id="btnEnviarRecuperacao">
-                            Enviar Código / Link
+                            Enviar Código ou Link
                         </button>
 
                         <div class="verify-actions">
-                            <button type="button" class="btn btn-outline btn-sm" id="btnTenhoTokenReset">Já tenho código/token</button>
-                            <button type="button" class="btn btn-outline btn-sm" id="btnVoltarLoginEsqueci">Voltar ao Login</button>
+                            <button type="button" class="btn btn-outline btn-sm" id="btnTenhoTokenReset">Já tenho código ou token</button>
+                            <button type="button" class="btn btn-outline btn-sm" id="btnVoltarLoginEsqueci">Voltar ao login</button>
                         </div>
                     </form>
 
                     <!-- 5. Redefinir senha -->
                     <form id="formRedefinirSenha" class="auth-form hidden" aria-label="Redefinir senha">
                         <div class="auth-form-header">
-                            <h2>Nova Senha</h2>
-                            <p>Informe o código de 6 dígitos (SMS) ou token do e-mail e defina sua nova senha.</p>
+                            <h2>Definir nova senha</h2>
+                            <p>Informe o código ou token recebido e cadastre sua nova senha.</p>
                         </div>
 
                         <div class="form-group">
-                            <label for="resetTokenInput">Código SMS (6 dígitos) ou Token *</label>
+                            <label for="resetTokenInput">Código SMS (6 dígitos) ou token *</label>
                             <input type="text" id="resetTokenInput" required placeholder="Ex.: 123456 ou token do link">
                         </div>
 
                         <div class="form-group">
-                            <label for="resetNovaSenha">Nova Senha *</label>
+                            <label for="resetNovaSenha">Nova senha *</label>
                             <input type="password" id="resetNovaSenha" required minlength="8" maxlength="100" placeholder="Mínimo de 8 caracteres" autocomplete="new-password" aria-describedby="resetPwdRules">
                             <div class="pwd-rules" id="resetPwdRules" aria-live="polite">
-                                <span class="pwd-rule" data-rule="len">&bull; Mín. 8 caracteres</span>
-                                <span class="pwd-rule" data-rule="upper">&bull; 1 letra maiúscula</span>
-                                <span class="pwd-rule" data-rule="lower">&bull; 1 letra minúscula</span>
-                                <span class="pwd-rule" data-rule="num">&bull; 1 número</span>
-                                <span class="pwd-rule" data-rule="spec">&bull; 1 caractere especial (@#$!%)</span>
+                                <span class="pwd-rule" data-rule="len">Mín. 8 caracteres</span>
+                                <span class="pwd-rule" data-rule="upper">1 letra maiúscula</span>
+                                <span class="pwd-rule" data-rule="lower">1 letra minúscula</span>
+                                <span class="pwd-rule" data-rule="num">1 número</span>
+                                <span class="pwd-rule" data-rule="spec">1 símbolo (@#$!%)</span>
                             </div>
                         </div>
 
                         <div class="form-group">
-                            <label for="resetConfirmacaoSenha">Confirmar Nova Senha *</label>
+                            <label for="resetConfirmacaoSenha">Confirmar nova senha *</label>
                             <input type="password" id="resetConfirmacaoSenha" required minlength="8" maxlength="100" placeholder="Repita a nova senha" autocomplete="new-password" aria-describedby="resetMatchHint">
                             <small id="resetMatchHint" class="match-hint" aria-live="polite"></small>
                         </div>
@@ -282,7 +318,7 @@
                         </button>
 
                         <div class="verify-actions">
-                            <button type="button" class="btn btn-outline btn-sm" id="btnVoltarLoginReset">Voltar ao Login</button>
+                            <button type="button" class="btn btn-outline btn-sm" id="btnVoltarLoginReset">Voltar ao login</button>
                         </div>
                     </form>
                 </div>
@@ -296,7 +332,7 @@
     <div id="appScreen" class="app-shell hidden">
         <div id="sidebarBackdrop" class="sidebar-backdrop hidden" aria-hidden="true"></div>
 
-        <!-- Sidebar Lateral Fixa (248px) / Drawer Mobile -->
+        <!-- Sidebar Lateral Fixa (240px) / Drawer Mobile -->
         <aside id="appSidebar" class="app-sidebar" aria-label="Menu lateral de navegação">
             <div class="sidebar-top">
                 <div class="sidebar-brand-row">
@@ -304,7 +340,7 @@
                         <img src="/logo.png" alt="" class="brand-logo" aria-hidden="true">
                         <div>
                             <h1>Financial<span class="wordmark-accent">Family</span></h1>
-                            <p>Gestão Patrimonial</p>
+                            <p>Orçamento Familiar</p>
                         </div>
                     </button>
                     <button type="button" class="btn-icon sidebar-close-btn" id="btnCloseSidebar" aria-label="Fechar menu lateral">&times;</button>
@@ -333,7 +369,7 @@
                 <div class="sidebar-user-card">
                     <button type="button" class="sidebar-user-trigger" id="btnPerfilRapido" aria-label="Abrir Minha Conta">
                         <div class="user-avatar" id="userAvatarContainer">
-                            <span id="userAvatarInitials">MP</span>
+                            <span id="userAvatarInitials">FF</span>
                             <img id="userAvatarImg" src="" alt="" class="avatar-img hidden">
                         </div>
                         <div class="user-info">
@@ -389,33 +425,33 @@
             <!-- TELA 2: PAINEL FINANCEIRO -->
             <main id="dashboardView" class="container main-content" aria-label="Painel Financeiro">
                 <section class="summary-grid" aria-label="Resumo financeiro do mês">
-                    <article class="kpi-card kpi-income">
+                    <article class="kpi-card kpi-income rb-spotlight">
                         <div class="kpi-header">
-                            <span class="kpi-label">Receita Total (Entradas)</span>
+                            <span class="kpi-label">Receita total (entradas)</span>
                             <span class="kpi-icon-box income-box" aria-hidden="true">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
                             </span>
                         </div>
                         <div class="kpi-value" id="kpiReceitaTotal">R$ 0,00</div>
                         <div class="kpi-sub">Soma das receitas registradas no mês</div>
                     </article>
 
-                    <article class="kpi-card kpi-paid">
+                    <article class="kpi-card kpi-paid rb-spotlight">
                         <div class="kpi-header">
-                            <span class="kpi-label">Despesas Pagas (Saídas)</span>
+                            <span class="kpi-label">Despesas pagas (saídas)</span>
                             <span class="kpi-icon-box paid-box" aria-hidden="true">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
                             </span>
                         </div>
                         <div class="kpi-value" id="kpiDespesasPagas">R$ 0,00</div>
                         <div class="kpi-sub" id="kpiFaltaPagar">Pendente no mês: R$ 0,00</div>
                     </article>
 
-                    <article class="kpi-card kpi-gross">
+                    <article class="kpi-card kpi-gross rb-spotlight">
                         <div class="kpi-header">
-                            <span class="kpi-label">Despesas Brutas (Previsto)</span>
+                            <span class="kpi-label">Despesas brutas (previsto)</span>
                             <span class="kpi-icon-box gross-box" aria-hidden="true">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
                             </span>
                         </div>
                         <div class="kpi-value" id="kpiDespesasBrutas">R$ 0,00</div>
@@ -425,20 +461,20 @@
                         <div class="kpi-sub" id="kpiProgressoTexto">0% das despesas do mês quitadas</div>
                     </article>
 
-                    <article class="kpi-card kpi-balance" id="cardSobraLivre">
+                    <article class="kpi-card kpi-balance rb-spotlight" id="cardSobraLivre">
                         <div class="kpi-header">
-                            <span class="kpi-label">Sobra Livre (Prevista)</span>
+                            <span class="kpi-label">Sobra livre (prevista)</span>
                             <span class="status-pill status-LIMITE" id="badgeStatusFinanceiro">LIMITE</span>
                         </div>
                         <div class="kpi-value" id="kpiSaldoDisponivel">R$ 0,00</div>
-                        <div class="kpi-sub" id="kpiSaldoSubtexto">Receita Total &minus; Despesas Previstas</div>
+                        <div class="kpi-sub" id="kpiSaldoSubtexto">Receita total menos despesas previstas</div>
                     </article>
                 </section>
 
                 <section class="analytics-grid" aria-label="Análise orçamentária do mês">
                     <div class="panel">
                         <div class="panel-header-compact">
-                            <h3>Distribuição de Gastos por Categoria</h3>
+                            <h3>Distribuição de gastos por categoria</h3>
                             <p class="panel-subtitle">Participação de cada categoria nas despesas do mês</p>
                         </div>
                         <div id="categoryBreakdown" class="category-bars">
@@ -448,18 +484,30 @@
 
                     <div class="panel">
                         <div class="panel-header-compact">
-                            <h3>Comprometimento da Renda no Mês</h3>
-                            <p class="panel-subtitle">Relação entre Receita Total e Despesas Brutas previstas</p>
+                            <h3>Comprometimento da renda</h3>
+                            <p class="panel-subtitle">Relação entre receita total e despesas previstas no mês</p>
                         </div>
-                        <div>
-                            <div class="health-stat-row">
-                                <span>Renda Comprometida (Bruto)</span>
-                                <strong id="lblComprometimento">0%</strong>
+                        <div class="health-layout">
+                            <div class="health-gauge-wrap" aria-hidden="true">
+                                <svg class="health-gauge-svg" viewBox="0 0 100 100">
+                                    <circle class="health-gauge-track" cx="50" cy="50" r="42"></circle>
+                                    <circle id="gaugeComprometimento" class="health-gauge-fill" cx="50" cy="50" r="42" stroke-dasharray="263.89" stroke-dashoffset="263.89"></circle>
+                                </svg>
+                                <div class="health-gauge-label">
+                                    <strong id="lblGaugePct">0%</strong>
+                                    <small>da renda</small>
+                                </div>
                             </div>
-                            <div class="progress-wrap progress-lg" role="progressbar" aria-label="Percentual de comprometimento da renda" aria-valuemin="0" aria-valuemax="100">
-                                <div class="progress-bar" id="barComprometimento" style="width: 0%"></div>
+                            <div class="health-details">
+                                <div class="health-stat-row">
+                                    <span>Comprometimento bruto</span>
+                                    <strong id="lblComprometimento" class="mono-num">0%</strong>
+                                </div>
+                                <div class="progress-wrap progress-lg" role="progressbar" aria-label="Percentual de comprometimento da renda" aria-valuemin="0" aria-valuemax="100">
+                                    <div class="progress-bar" id="barComprometimento" style="width: 0%"></div>
+                                </div>
+                                <p class="kpi-sub" id="txtSaudeRecomendacao">Cadastre receitas e despesas do mês para acompanhar a saúde do orçamento.</p>
                             </div>
-                            <p class="kpi-sub" id="txtSaudeRecomendacao">Cadastre suas receitas e despesas do mês para acompanhar a saúde do orçamento.</p>
                         </div>
                     </div>
                 </section>
@@ -477,9 +525,9 @@
                         <div class="filters-bar">
                             <div class="filter-tabs" role="group" aria-label="Filtrar despesas">
                                 <button type="button" class="filter-btn active" data-filter="mes">Deste Mês</button>
-                                <button type="button" class="filter-btn" data-filter="pendentes">Pendentes (Mês)</button>
-                                <button type="button" class="filter-btn" data-filter="pagas">Pagas (Mês)</button>
-                                <button type="button" class="filter-btn" data-filter="todas">Todas (Geral)</button>
+                                <button type="button" class="filter-btn" data-filter="pendentes">Pendentes</button>
+                                <button type="button" class="filter-btn" data-filter="pagas">Pagas</button>
+                                <button type="button" class="filter-btn" data-filter="todas">Todas</button>
                             </div>
                             <div class="search-wrap">
                                 <label for="inputBuscaDespesa" class="sr-only">Filtrar despesas por descrição ou categoria</label>
@@ -518,8 +566,8 @@
                     <div class="panel">
                         <div class="panel-header">
                             <div>
-                                <h2>Saldos &amp; Receitas</h2>
-                                <p class="panel-subtitle">Fontes de renda cadastradas</p>
+                                <h2>Saldos e Receitas</h2>
+                                <p class="panel-subtitle">Fontes de renda registradas por competência</p>
                             </div>
                             <button type="button" class="btn btn-success" id="btnNovoSaldo">+ Nova Receita</button>
                         </div>
@@ -544,7 +592,7 @@
                     <div class="panel-header">
                         <div>
                             <h3>Nenhum vínculo familiar ativo</h3>
-                            <p class="panel-subtitle">Convide membros ou aceite um convite nas configurações da sua conta para habilitar o painel consolidado.</p>
+                            <p class="panel-subtitle">Convide membros ou aceite um convite em Minha Conta para habilitar o painel consolidado.</p>
                         </div>
                         <button type="button" class="btn btn-primary" id="btnIrConfigurarFamilia">Configurar Família em Minha Conta</button>
                     </div>
@@ -563,33 +611,33 @@
                     </div>
 
                     <section class="summary-grid" aria-label="Indicadores consolidados da família">
-                        <article class="kpi-card kpi-income">
+                        <article class="kpi-card kpi-income rb-spotlight">
                             <div class="kpi-header">
-                                <span class="kpi-label">Renda Familiar Somada</span>
+                                <span class="kpi-label">Renda familiar somada</span>
                                 <span class="kpi-icon-box income-box" aria-hidden="true">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
                                 </span>
                             </div>
                             <div class="kpi-value" id="kpiFamReceitaTotal">R$ 0,00</div>
                             <div class="kpi-sub">Soma apenas de quem ativou o compartilhamento</div>
                         </article>
 
-                        <article class="kpi-card kpi-paid">
+                        <article class="kpi-card kpi-paid rb-spotlight">
                             <div class="kpi-header">
-                                <span class="kpi-label">Despesas Familiares Pagas</span>
+                                <span class="kpi-label">Despesas familiares pagas</span>
                                 <span class="kpi-icon-box paid-box" aria-hidden="true">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
                                 </span>
                             </div>
                             <div class="kpi-value" id="kpiFamDespesasPagas">R$ 0,00</div>
                             <div class="kpi-sub" id="kpiFamFaltaPagar">Pendente no mês: R$ 0,00</div>
                         </article>
 
-                        <article class="kpi-card kpi-gross">
+                        <article class="kpi-card kpi-gross rb-spotlight">
                             <div class="kpi-header">
-                                <span class="kpi-label">Despesas Familiares Brutas</span>
+                                <span class="kpi-label">Despesas familiares brutas</span>
                                 <span class="kpi-icon-box gross-box" aria-hidden="true">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
                                 </span>
                             </div>
                             <div class="kpi-value" id="kpiFamDespesasBrutas">R$ 0,00</div>
@@ -599,19 +647,19 @@
                             <div class="kpi-sub" id="kpiFamProgressoTexto">0% quitado pela família</div>
                         </article>
 
-                        <article class="kpi-card kpi-balance">
+                        <article class="kpi-card kpi-balance rb-spotlight">
                             <div class="kpi-header">
-                                <span class="kpi-label">Sobra Livre Familiar (Prevista)</span>
+                                <span class="kpi-label">Sobra livre familiar</span>
                                 <span class="status-pill status-LIMITE" id="badgeFamStatus">LIMITE</span>
                             </div>
                             <div class="kpi-value" id="kpiFamSaldoDisponivel">R$ 0,00</div>
-                            <div class="kpi-sub" id="kpiFamSaldoSubtexto">Renda Compartilhada &minus; Despesas Previstas</div>
+                            <div class="kpi-sub" id="kpiFamSaldoSubtexto">Renda compartilhada menos despesas previstas</div>
                         </article>
                     </section>
 
                     <section class="panel family-analytics-panel" aria-label="Distribuição de gastos familiares por categoria">
                         <div class="panel-header-compact">
-                            <h3>Distribuição de Gastos por Categoria</h3>
+                            <h3>Distribuição de gastos por categoria</h3>
                             <p class="panel-subtitle">Participação de cada categoria nas despesas familiares compartilhadas do mês</p>
                         </div>
                         <div id="famCategoryBreakdown" class="category-bars">
@@ -623,7 +671,7 @@
                         <div class="panel-header">
                             <div>
                                 <h2>Despesas Familiares do Mês</h2>
-                                <p class="panel-subtitle" id="subtituloDespesasFamilia">Visão consolidada em modo <strong>Somente Leitura</strong> — membros nunca alteram ou apagam dados de outros</p>
+                                <p class="panel-subtitle" id="subtituloDespesasFamilia">Visão consolidada em modo <strong>Somente Leitura</strong>. Membros não alteram dados de outros participantes.</p>
                             </div>
                             <span class="badge badge-cat" id="badgeModoFamilia">Somente Leitura</span>
                         </div>
@@ -632,7 +680,7 @@
 
                         <div class="filters-bar hidden" id="barraFiltroResponsavelFamilia">
                             <div class="filter-tabs" id="filtroResponsavelFamilia" role="group" aria-label="Filtrar despesas familiares por responsável"></div>
-                            <span class="income-meta" id="resumoTotalFiltradoFamilia"></span>
+                            <span class="income-meta mono-num" id="resumoTotalFiltradoFamilia"></span>
                         </div>
 
                         <div class="table-responsive">
@@ -662,17 +710,17 @@
             <section id="accountView" class="container main-content hidden" aria-label="Minha Conta e Configurações">
                 <div class="account-page-header">
                     <div>
-                        <h2>Minha Conta &amp; Configurações</h2>
-                        <p class="panel-subtitle">Gerencie seus dados cadastrais, segurança 2FA, foto de perfil e família</p>
+                        <h2>Minha Conta e Configurações</h2>
+                        <p class="panel-subtitle">Gerencie dados cadastrais, verificação em 2 fatores, foto de perfil e vínculos familiares</p>
                     </div>
                     <button type="button" class="btn btn-outline btn-sm" id="btnVoltarPainel">&#8592; Voltar ao Painel</button>
                 </div>
 
-                <div class="panel account-hero-card">
+                <div class="panel account-hero-card rb-spotlight">
                     <div class="account-hero-left">
                         <div class="avatar-upload-wrapper">
                             <div class="user-avatar user-avatar-xl" id="perfilAvatarContainer">
-                                <span id="perfilAvatarLg">MP</span>
+                                <span id="perfilAvatarLg">FF</span>
                                 <img id="perfilAvatarImgLg" src="" alt="Foto de perfil do usuário" class="avatar-img hidden">
                             </div>
                             <input type="file" id="inputFotoPerfil" accept="image/png, image/jpeg, image/webp" class="hidden">
@@ -689,11 +737,11 @@
 
                     <div class="account-stats-mini">
                         <div class="stat-mini-box">
-                            <span class="stat-mini-label">Despesas Registradas</span>
+                            <span class="stat-mini-label">Despesas registradas</span>
                             <strong id="statTotalDespesas">0</strong>
                         </div>
                         <div class="stat-mini-box">
-                            <span class="stat-mini-label">Fontes de Renda</span>
+                            <span class="stat-mini-label">Fontes de renda</span>
                             <strong id="statTotalSaldos">0</strong>
                         </div>
                     </div>
@@ -703,30 +751,30 @@
                     <div class="panel">
                         <div class="panel-header">
                             <div>
-                                <h3>Dados Cadastrais &amp; Recuperação</h3>
-                                <p class="panel-subtitle">Atualize nome, e-mail e canais de recuperação de conta</p>
+                                <h3>Dados cadastrais e recuperação</h3>
+                                <p class="panel-subtitle">Atualize nome, e-mail e canais de recuperação da conta</p>
                             </div>
                         </div>
 
                         <form id="formAtualizarPerfil">
                             <div class="form-group">
-                                <label for="perfilInputNome">Nome Completo *</label>
+                                <label for="perfilInputNome">Nome completo *</label>
                                 <input type="text" id="perfilInputNome" required minlength="3" maxlength="100" placeholder="Seu nome completo">
                             </div>
 
                             <div class="form-group">
-                                <label for="perfilInputEmail">Endereço de E-mail *</label>
+                                <label for="perfilInputEmail">Endereço de e-mail *</label>
                                 <input type="email" id="perfilInputEmail" required placeholder="seu@email.com">
                             </div>
 
                             <div class="form-row">
                                 <div class="form-group">
-                                    <label for="perfilInputTelefone">Telefone de Recuperação</label>
+                                    <label for="perfilInputTelefone">Telefone de recuperação</label>
                                     <input type="tel" id="perfilInputTelefone" maxlength="20" placeholder="(11) 99999-9999">
                                 </div>
 
                                 <div class="form-group">
-                                    <label for="perfilInputEmailRecuperacao">E-mail de Recuperação</label>
+                                    <label for="perfilInputEmailRecuperacao">E-mail de recuperação</label>
                                     <input type="email" id="perfilInputEmailRecuperacao" placeholder="secundario@email.com">
                                 </div>
                             </div>
@@ -741,37 +789,37 @@
                     <div class="panel">
                         <div class="panel-header">
                             <div>
-                                <h3>Alteração de Senha</h3>
+                                <h3>Alteração de senha</h3>
                                 <p class="panel-subtitle">Mantenha sua senha forte e atualizada</p>
                             </div>
                         </div>
 
                         <form id="formAlterarSenha">
                             <div class="form-group">
-                                <label for="senhaAtualInput">Senha Atual *</label>
+                                <label for="senhaAtualInput">Senha atual *</label>
                                 <input type="password" id="senhaAtualInput" required placeholder="Digite sua senha atual" autocomplete="current-password">
                             </div>
 
                             <div class="form-group">
-                                <label for="novaSenhaInput">Nova Senha *</label>
+                                <label for="novaSenhaInput">Nova senha *</label>
                                 <input type="password" id="novaSenhaInput" required minlength="8" maxlength="100" placeholder="Crie uma nova senha forte" autocomplete="new-password" aria-describedby="perfilPwdRules">
                                 <div class="pwd-rules" id="perfilPwdRules" aria-live="polite">
-                                    <span class="pwd-rule" data-rule="len">&bull; Mín. 8 caracteres</span>
-                                    <span class="pwd-rule" data-rule="upper">&bull; 1 letra maiúscula</span>
-                                    <span class="pwd-rule" data-rule="lower">&bull; 1 letra minúscula</span>
-                                    <span class="pwd-rule" data-rule="num">&bull; 1 número</span>
-                                    <span class="pwd-rule" data-rule="spec">&bull; 1 caractere especial (@#$!%)</span>
+                                    <span class="pwd-rule" data-rule="len">Mín. 8 caracteres</span>
+                                    <span class="pwd-rule" data-rule="upper">1 letra maiúscula</span>
+                                    <span class="pwd-rule" data-rule="lower">1 letra minúscula</span>
+                                    <span class="pwd-rule" data-rule="num">1 número</span>
+                                    <span class="pwd-rule" data-rule="spec">1 símbolo (@#$!%)</span>
                                 </div>
                             </div>
 
                             <div class="form-group">
-                                <label for="confirmacaoNovaSenhaInput">Confirmar Nova Senha *</label>
+                                <label for="confirmacaoNovaSenhaInput">Confirmar nova senha *</label>
                                 <input type="password" id="confirmacaoNovaSenhaInput" required minlength="8" maxlength="100" placeholder="Repita a nova senha" autocomplete="new-password" aria-describedby="perfilMatchHint">
                                 <small id="perfilMatchHint" class="match-hint" aria-live="polite"></small>
                             </div>
 
                             <div class="modal-footer">
-                                <button type="submit" class="btn btn-primary" id="btnAtualizarSenha">Atualizar Minha Senha</button>
+                                <button type="submit" class="btn btn-primary" id="btnAtualizarSenha">Atualizar Senha</button>
                             </div>
                         </form>
                     </div>
@@ -781,8 +829,8 @@
                 <div class="panel family-settings-panel" id="secaoSeguranca2Fa">
                     <div class="panel-header">
                         <div>
-                            <h3>Verificação em 2 Fatores (2FA)</h3>
-                            <p class="panel-subtitle">Adicione uma segunda camada de proteção exigindo código de 6 dígitos (E-mail ou App Autenticador) a cada login</p>
+                            <h3>Verificação em 2 fatores (2FA)</h3>
+                            <p class="panel-subtitle">Exija um código de 6 dígitos por e-mail ou aplicativo autenticador em cada login</p>
                         </div>
                         <span class="badge badge-pendente" id="badgeStatus2Fa">Desativado</span>
                     </div>
@@ -794,22 +842,22 @@
 
                     <div class="twofa-actions">
                         <button type="button" class="btn btn-primary btn-sm" id="btnAtivar2FaEmail">Ativar 2FA via E-mail</button>
-                        <button type="button" class="btn btn-outline btn-sm" id="btnIniciarTotp">Configurar App Autenticador (TOTP)</button>
+                        <button type="button" class="btn btn-outline btn-sm" id="btnIniciarTotp">Configurar App Autenticador</button>
                         <button type="button" class="btn btn-danger-ghost btn-sm hidden" id="btnDesativar2Fa">Desativar 2FA</button>
                     </div>
 
                     <div id="boxSetupTotp" class="totp-setup-box hidden" aria-live="polite">
-                        <h4>Configurar Aplicativo Autenticador (Google Authenticator / Authy / Apple Senhas)</h4>
-                        <p class="panel-subtitle">1. Copie a chave secreta abaixo ou abra o link no seu aplicativo autenticador:</p>
+                        <h4>Configurar Aplicativo Autenticador</h4>
+                        <p class="panel-subtitle">1. Copie a chave secreta abaixo ou abra no Google Authenticator, Authy ou Apple Senhas:</p>
                         <div class="totp-secret-row">
                             <code id="totpSecretCode" class="totp-secret-code">---</code>
                             <button type="button" class="btn btn-outline btn-sm" id="btnCopiarSegredoTotp">Copiar Chave</button>
                             <a id="linkOtpAuth" href="#" class="btn btn-outline btn-sm">Abrir no App</a>
                         </div>
-                        <p class="panel-subtitle" style="margin-top: var(--space-3);">2. Informe sua senha atual acima e o código de 6 dígitos gerado pelo aplicativo:</p>
+                        <p class="panel-subtitle" style="margin-top: var(--space-3);">2. Informe sua senha atual acima e o código de 6 dígitos gerado no aplicativo:</p>
                         <div class="inline-action-form" style="max-width: 420px; margin-top: var(--space-2);">
                             <label for="inputCodigoConfirmarTotp" class="sr-only">Código de 6 dígitos do app autenticador</label>
-                            <input type="text" id="inputCodigoConfirmarTotp" minlength="6" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" placeholder="Código 6 dígitos (ex.: 123456)">
+                            <input type="text" id="inputCodigoConfirmarTotp" minlength="6" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" placeholder="Código 6 dígitos">
                             <button type="button" class="btn btn-primary btn-sm" id="btnConfirmarTotp">Confirmar e Ativar</button>
                         </div>
                     </div>
@@ -819,14 +867,14 @@
                 <div class="panel family-settings-panel" id="secaoConfigFamilia">
                     <div class="panel-header">
                         <div>
-                            <h3>Configurações da Família &amp; Membros</h3>
-                            <p class="panel-subtitle">Gerencie convites, membros vinculados e o compartilhamento de renda e despesas</p>
+                            <h3>Configurações da Família e Membros</h3>
+                            <p class="panel-subtitle">Gerencie convites, membros vinculados e compartilhamento de renda e despesas</p>
                         </div>
                     </div>
 
                     <div id="boxConvitesRecebidos" class="invite-alert-panel hidden" role="region" aria-label="Convites familiares pendentes">
                         <div class="panel-header-compact">
-                            <h3>Convite Familiar Recebido</h3>
+                            <h3>Convite familiar recebido</h3>
                             <p class="panel-subtitle">Você foi convidado para integrar uma família no FinancialFamily</p>
                         </div>
                         <div id="listaConvitesRecebidos" class="income-list"></div>
@@ -836,7 +884,7 @@
                         <div class="family-switch-bar">
                             <div class="family-switch-info">
                                 <strong id="lblSwitchRenda">Compartilhar minha renda na soma familiar</strong>
-                                <span>Quando ativado, suas receitas entram no cálculo da Sobra Livre da Família.</span>
+                                <span>Suas receitas entram no cálculo da Sobra Livre da Família.</span>
                             </div>
                             <label class="switch-toggle">
                                 <input type="checkbox" id="chkCompartilharMinhaRenda" aria-labelledby="lblSwitchRenda">
@@ -847,7 +895,7 @@
                         <div class="family-switch-bar">
                             <div class="family-switch-info">
                                 <strong id="lblSwitchDespesas">Compartilhar minhas despesas na visão familiar</strong>
-                                <span>Quando desligado, suas despesas somem do consolidado e dos totais da família.</span>
+                                <span>Quando desligado, suas despesas saem do consolidado familiar.</span>
                             </div>
                             <label class="switch-toggle">
                                 <input type="checkbox" id="chkCompartilharMinhasDespesas" aria-labelledby="lblSwitchDespesas">
@@ -858,7 +906,7 @@
 
                     <div class="family-settings-grid">
                         <div>
-                            <h4 class="sub-box-title">Membros &amp; Convites Ativos</h4>
+                            <h4 class="sub-box-title">Membros e convites ativos</h4>
                             <div id="listaMembrosFamilia" class="income-list">
                                 <div class="empty-state-sm">Nenhum membro vinculado ainda.</div>
                             </div>
@@ -866,8 +914,8 @@
 
                         <div>
                             <div id="blocoConvidarMembro" class="compact-invite-box">
-                                <h4 class="sub-box-title">Convidar Novo Familiar</h4>
-                                <p class="panel-subtitle" style="margin-bottom: 0.65rem;">Envie um convite de visualização (validade de 48h):</p>
+                                <h4 class="sub-box-title">Convidar familiar</h4>
+                                <p class="panel-subtitle" style="margin-bottom: 0.65rem;">Envie um convite com validade de 48h:</p>
                                 <form id="formEnviarConviteFamilia" class="inline-action-form">
                                     <label for="inputEmailConvidado" class="sr-only">E-mail do familiar para convite</label>
                                     <input type="email" id="inputEmailConvidado" required placeholder="E-mail do familiar">
@@ -876,7 +924,7 @@
                             </div>
 
                             <div id="blocoAceitarCodigoConvite" class="compact-invite-box">
-                                <h4 class="sub-box-title">Possui um Código de Convite?</h4>
+                                <h4 class="sub-box-title">Possui um código de convite?</h4>
                                 <p class="panel-subtitle" style="margin-bottom: 0.65rem;">Cole o código enviado pelo gestor da família:</p>
                                 <form id="formAceitarConviteToken" class="inline-action-form">
                                     <label for="inputTokenConvite" class="sr-only">Código de convite familiar</label>
@@ -892,10 +940,10 @@
                 <div class="panel danger-panel">
                     <div class="danger-panel-inner">
                         <div>
-                            <h4>Encerrar e Excluir Conta</h4>
-                            <p>Esta ação apaga permanentemente seu usuário e todos os seus saldos e despesas registrados. Não é possível desfazer.</p>
+                            <h4>Encerrar e excluir conta</h4>
+                            <p>Esta ação apaga permanentemente seu usuário e todos os saldos e despesas vinculados.</p>
                         </div>
-                        <button type="button" class="btn btn-danger-ghost" id="btnExcluirMinhaConta">Excluir Minha Conta Permanentemente</button>
+                        <button type="button" class="btn btn-danger-ghost" id="btnExcluirMinhaConta">Excluir Minha Conta</button>
                     </div>
                 </div>
             </section>
@@ -906,9 +954,9 @@
                     <span>&copy; 2026 FinancialFamily</span>
                     <nav class="footer-legal-links" aria-label="Links legais e privacidade">
                         <a href="/termos.html" target="_blank" rel="noopener noreferrer" class="legal-inline-link">Termos de Uso</a>
-                        <span class="legal-sep" aria-hidden="true">&bull;</span>
+                        <span class="legal-sep" aria-hidden="true">/</span>
                         <a href="/privacidade.html" target="_blank" rel="noopener noreferrer" class="legal-inline-link">Política de Privacidade</a>
-                        <span class="legal-sep" aria-hidden="true">&bull;</span>
+                        <span class="legal-sep" aria-hidden="true">/</span>
                         <button type="button" class="btn-link-inline" id="btnAbrirCookiesFooter">Preferências de Cookies</button>
                     </nav>
                 </div>
@@ -940,14 +988,14 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="despesaDataVencimento">Data de Vencimento *</label>
+                        <label for="despesaDataVencimento">Data de vencimento *</label>
                         <input type="date" id="despesaDataVencimento" required>
                     </div>
                 </div>
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="despesaMes">Mês de Competência *</label>
+                        <label for="despesaMes">Mês de competência *</label>
                         <select id="despesaMes" required>
                             <option value="janeiro">Janeiro</option>
                             <option value="fevereiro">Fevereiro</option>
@@ -983,7 +1031,7 @@
                 <div class="form-group">
                     <label class="checkbox-inline">
                         <input type="checkbox" id="despesaIsFixa">
-                        <span>Despesa Fixa Mensal (projetada automaticamente todo dia 1º)</span>
+                        <span>Despesa fixa mensal (projetada automaticamente no dia 1º)</span>
                     </label>
                 </div>
 
@@ -1005,8 +1053,8 @@
                 <input type="hidden" id="saldoId">
 
                 <div class="form-group">
-                    <label for="saldoDescricao">Descrição da Renda *</label>
-                    <input type="text" id="saldoDescricao" required minlength="2" maxlength="100" placeholder="Ex.: Salário, Freelance, Bônus">
+                    <label for="saldoDescricao">Descrição da renda *</label>
+                    <input type="text" id="saldoDescricao" required minlength="3" maxlength="100" placeholder="Ex.: Salário, Freelance, Bônus">
                 </div>
 
                 <div class="form-row">
@@ -1022,7 +1070,7 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="saldoMes">Mês de Competência *</label>
+                    <label for="saldoMes">Mês de competência *</label>
                     <select id="saldoMes" required>
                         <option value="janeiro">Janeiro</option>
                         <option value="fevereiro">Fevereiro</option>
@@ -1070,20 +1118,20 @@
             <div class="cookie-options-list">
                 <div class="cookie-option-item">
                     <div>
-                        <strong>Cookies Essenciais (Obrigatórios)</strong>
-                        <p class="panel-subtitle">Necessários para funcionamento básico da sessão ativa na aba e segurança da conta.</p>
+                        <strong>Cookies essenciais (obrigatórios)</strong>
+                        <p class="panel-subtitle">Necessários para funcionamento da sessão ativa e segurança da conta.</p>
                     </div>
                     <span class="badge-pill badge-neutral">Sempre ativo</span>
                 </div>
                 <div class="cookie-option-item">
                     <label class="checkbox-inline" for="chkCookiePreferencia">
                         <input type="checkbox" id="chkCookiePreferencia">
-                        <span><strong>Cookies de Persistência / Preferências</strong> — Permitem manter a sessão ativa ao marcar "Manter conectado" e lembrar suas preferências visuais.</span>
+                        <span><strong>Cookies de persistência</strong> permitem manter a sessão ao marcar "Manter conectado" e salvar o tema escolhido.</span>
                     </label>
                 </div>
                 <p class="panel-subtitle">
-                    Consulte nossos <a href="/termos.html" target="_blank" rel="noopener noreferrer" class="legal-inline-link">Termos de Uso</a>
-                    e nossa <a href="/privacidade.html" target="_blank" rel="noopener noreferrer" class="legal-inline-link">Política de Privacidade (LGPD)</a>.
+                    Consulte os <a href="/termos.html" target="_blank" rel="noopener noreferrer" class="legal-inline-link">Termos de Uso</a>
+                    e a <a href="/privacidade.html" target="_blank" rel="noopener noreferrer" class="legal-inline-link">Política de Privacidade (LGPD)</a>.
                 </p>
             </div>
             <div class="modal-footer">
@@ -1096,7 +1144,7 @@
     <aside class="cookie-banner hidden" id="cookieBanner" role="region" aria-label="Aviso de Cookies">
         <div class="cookie-banner-content">
             <p>
-                <strong>Privacidade e Cookies:</strong> Utilizamos apenas cookies essenciais por padrão (nenhuma nova aba faz login automático sem sua autorização). Saiba mais nos
+                <strong>Privacidade e Cookies:</strong> Utilizamos apenas cookies essenciais por padrão. Saiba mais nos
                 <a href="/termos.html" target="_blank" rel="noopener noreferrer" class="legal-inline-link">Termos de Uso</a> e na
                 <a href="/privacidade.html" target="_blank" rel="noopener noreferrer" class="legal-inline-link">Política de Privacidade</a>.
             </p>

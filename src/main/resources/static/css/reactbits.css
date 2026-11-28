@@ -1,0 +1,206 @@
+/* ==========================================================================
+   REACT BITS INSPIRED INTERACTIVE LAYER (CSP-SAFE VANILLA CSS + ES MODULES)
+   Componentes: DotGrid Canvas, SpotlightCard, ShinyText, SplitText Entrance,
+   SlidingTabs Indicator, ClickSpark Overlay & Reduced-Motion Compliance
+   ========================================================================== */
+
+/* 1. React Bits — Interactive DotGrid Canvas Background (Auth Hero) */
+.rb-dotgrid-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.85;
+}
+
+.rb-pause-btn {
+    position: absolute;
+    right: var(--space-4);
+    bottom: var(--space-4);
+    z-index: 4;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1px solid var(--border-default);
+    background-color: var(--bg-surface);
+    color: var(--text-secondary);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    opacity: 0.72;
+    transition: opacity var(--m-in) var(--ease), border-color var(--m-in) var(--ease), color var(--m-in) var(--ease);
+}
+
+.rb-pause-btn:hover,
+.rb-pause-btn:focus-visible {
+    opacity: 1;
+    border-color: var(--accent-primary);
+    color: var(--text-primary);
+}
+
+/* 2. React Bits — SpotlightCard (Cursor-Following Subtle Light Reflection) */
+.rb-spotlight {
+    position: relative;
+    overflow: hidden;
+    --spot-x: 50%;
+    --spot-y: 50%;
+    --spot-opacity: 0;
+}
+
+.rb-spotlight::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(
+        340px circle at var(--spot-x) var(--spot-y),
+        var(--spotlight-color),
+        transparent 70%
+    );
+    opacity: var(--spot-opacity);
+    transition: opacity 220ms var(--ease);
+    z-index: 0;
+}
+
+.rb-spotlight > * {
+    position: relative;
+    z-index: 1;
+}
+
+/* 3. React Bits — ShinyText (Subtle Institutional Metallic Sheen) */
+.rb-shiny-text {
+    background-image: linear-gradient(
+        112deg,
+        var(--accent-secondary) 38%,
+        var(--text-primary) 50%,
+        var(--accent-secondary) 62%
+    );
+    background-size: 240% 100%;
+    background-position: 100% 0;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: rbShinySweep 5.5s linear infinite;
+}
+
+@keyframes rbShinySweep {
+    0% { background-position: 120% 0; }
+    100% { background-position: -120% 0; }
+}
+
+/* 4. React Bits — SplitText / Hero Entrance (Once on load, ~900ms, taste-skill) */
+.rb-enter-ready [data-rb-enter] {
+    opacity: 0;
+    transform: translateY(14px);
+}
+
+.rb-entered [data-rb-enter] {
+    opacity: 1;
+    transform: translateY(0);
+    transition:
+        opacity 560ms var(--ease-enter),
+        transform 640ms var(--ease-enter);
+    transition-delay: var(--rb-delay, 0ms);
+}
+
+/* 5. React Bits / taste-skill — Sliding Indicator Pill for Auth Tabs */
+.rb-tab-indicator {
+    position: absolute;
+    top: 3px;
+    bottom: 3px;
+    left: 3px;
+    width: calc(50% - 4px);
+    border-radius: var(--radius-sm);
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    box-shadow: var(--shadow-sm);
+    pointer-events: none;
+    z-index: 0;
+    transition: transform var(--m-slide) var(--ease);
+}
+
+.auth-tabs[data-active-tab="register"] .rb-tab-indicator {
+    transform: translateX(calc(100% + 2px));
+}
+
+/* 6. React Bits — ClickSpark Micro-Celebration Canvas */
+.rb-spark-canvas {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 1100;
+}
+
+/* 7. Modais & Toasts Entrance */
+@keyframes rbModalIn {
+    from {
+        opacity: 0;
+        transform: translateY(8px) scale(0.985);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes rbToastIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* 8. View Transition Subtle Settle */
+.view-active-settle {
+    animation: rbViewSettle 220ms var(--ease-enter);
+}
+
+@keyframes rbViewSettle {
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Reduced Motion — tudo repousa limpo, zero conteúdo oculto */
+@media (prefers-reduced-motion: reduce) {
+    .rb-shiny-text {
+        animation: none;
+        background: none;
+        color: var(--accent-secondary);
+        -webkit-background-clip: border-box;
+        background-clip: border-box;
+    }
+
+    .rb-spotlight::after,
+    .rb-pause-btn {
+        display: none;
+    }
+
+    .rb-enter-ready [data-rb-enter],
+    .rb-entered [data-rb-enter] {
+        opacity: 1 !important;
+        transform: none !important;
+        transition: none !important;
+    }
+
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}

@@ -35,6 +35,13 @@ import {
     renderizarStatusPill,
     showToast
 } from './ui.js';
+import {
+    animarValorMoeda,
+    dispararClickSpark,
+    inicializarDotGrid,
+    inicializarEntradaHero,
+    inicializarSpotlightCards
+} from './reactbits.js';
 
 /* ==========================================
    NAVEGAÇÃO, SESSÃO E AUTH VIEWS
@@ -95,18 +102,25 @@ function navegarPara(aba) {
         btn.removeAttribute('aria-current');
     });
 
+    const ativarView = (viewEl) => {
+        if (!viewEl) return;
+        viewEl.classList.remove('hidden', 'view-active-settle');
+        void viewEl.offsetWidth;
+        viewEl.classList.add('view-active-settle');
+    };
+
     if (aba === 'account') {
-        accountView.classList.remove('hidden');
+        ativarView(accountView);
         navAccountBtn.classList.add('active');
         navAccountBtn.setAttribute('aria-current', 'page');
         monthSelectorBar.classList.add('hidden');
-        if (topbarTitle) topbarTitle.textContent = 'Minha Conta & Configurações';
+        if (topbarTitle) topbarTitle.textContent = 'Minha Conta e Configurações';
         atualizarDadosUsuarioNaTela();
         document.getElementById('statTotalDespesas').textContent = String(state.totalDespesasCount || state.despesas.length);
         document.getElementById('statTotalSaldos').textContent = String(state.saldos.length);
         carregarModuloFamilia();
     } else if (aba === 'familia' && navFamiliaBtn && !navFamiliaBtn.classList.contains('hidden')) {
-        familiaView?.classList.remove('hidden');
+        ativarView(familiaView);
         navFamiliaBtn.classList.add('active');
         navFamiliaBtn.setAttribute('aria-current', 'page');
         monthSelectorBar.classList.remove('hidden');
@@ -114,7 +128,7 @@ function navegarPara(aba) {
         carregarModuloFamilia();
     } else {
         state.abaAtiva = 'dashboard';
-        dashboardView.classList.remove('hidden');
+        ativarView(dashboardView);
         navDashboardBtn.classList.add('active');
         navDashboardBtn.setAttribute('aria-current', 'page');
         monthSelectorBar.classList.remove('hidden');
@@ -157,6 +171,7 @@ function mostrarTelaAuth(modo = 'login', emailVerificacao = '') {
         document.getElementById('formRedefinirSenha')?.classList.remove('hidden');
     } else if (modo === 'register') {
         tabsWrap.classList.remove('hidden');
+        tabsWrap.dataset.activeTab = 'register';
         tabRegisterBtn.classList.add('active');
         tabRegisterBtn.setAttribute('aria-selected', 'true');
         tabLoginBtn.classList.remove('active');
@@ -164,6 +179,7 @@ function mostrarTelaAuth(modo = 'login', emailVerificacao = '') {
         document.getElementById('formRegister').classList.remove('hidden');
     } else {
         tabsWrap.classList.remove('hidden');
+        tabsWrap.dataset.activeTab = 'login';
         tabLoginBtn.classList.add('active');
         tabLoginBtn.setAttribute('aria-selected', 'true');
         tabRegisterBtn.classList.remove('active');
@@ -204,13 +220,13 @@ async function carregarResumoMes() {
         const saldoPrevisto = Number(resumo.saldoDisponivel || 0);
         const caixaAtual = resumo.saldoCaixaAtual !== undefined ? Number(resumo.saldoCaixaAtual) : (receita - pagas);
 
-        document.getElementById('kpiReceitaTotal').textContent = formatCurrency(receita);
-        document.getElementById('kpiDespesasPagas').textContent = formatCurrency(pagas);
+        animarValorMoeda(document.getElementById('kpiReceitaTotal'), receita, formatCurrency);
+        animarValorMoeda(document.getElementById('kpiDespesasPagas'), pagas, formatCurrency);
         document.getElementById('kpiFaltaPagar').textContent = `Pendente no mês: ${formatCurrency(faltaPagar)}`;
-        document.getElementById('kpiDespesasBrutas').textContent = formatCurrency(brutas);
+        animarValorMoeda(document.getElementById('kpiDespesasBrutas'), brutas, formatCurrency);
 
         const elSaldo = document.getElementById('kpiSaldoDisponivel');
-        elSaldo.textContent = formatCurrency(saldoPrevisto);
+        animarValorMoeda(elSaldo, saldoPrevisto, formatCurrency);
         elSaldo.classList.remove('text-danger', 'text-healthy');
         if (saldoPrevisto < 0) elSaldo.classList.add('text-danger');
         else if (saldoPrevisto > 0) elSaldo.classList.add('text-healthy');
@@ -224,30 +240,40 @@ async function carregarResumoMes() {
 
         const pctComprometido = receita > 0 ? Math.min(100, Math.round((brutas / receita) * 100)) : (brutas > 0 ? 100 : 0);
         const lblComp = document.getElementById('lblComprometimento');
+        const lblGauge = document.getElementById('lblGaugePct');
+        const gaugeCircle = document.getElementById('gaugeComprometimento');
         const barComp = document.getElementById('barComprometimento');
         const txtRec = document.getElementById('txtSaudeRecomendacao');
 
         lblComp.textContent = `${pctComprometido}%`;
+        if (lblGauge) lblGauge.textContent = `${pctComprometido}%`;
+        if (gaugeCircle) {
+            const circ = 263.89;
+            gaugeCircle.style.strokeDashoffset = String(circ - (circ * pctComprometido) / 100);
+            gaugeCircle.classList.remove('is-warning', 'is-danger');
+        }
         barComp.style.width = `${pctComprometido}%`;
         barComp.classList.remove('progress-bar--warning', 'progress-bar--danger');
         lblComp.classList.remove('text-healthy', 'text-warning', 'text-danger');
         txtRec.classList.remove('text-healthy', 'text-warning', 'text-danger');
 
         if (receita === 0 && brutas === 0) {
-            txtRec.textContent = 'Cadastre suas receitas e despesas do mês para acompanhar a saúde do orçamento.';
+            txtRec.textContent = 'Cadastre receitas e despesas do mês para acompanhar a saúde do orçamento.';
         } else if (pctComprometido <= 70) {
             lblComp.classList.add('text-healthy');
-            txtRec.textContent = 'Mais de 30% da sua renda está livre para reserva ou investimentos.';
+            txtRec.textContent = 'Mais de 30% da renda está livre para reserva ou investimentos.';
         } else if (pctComprometido <= 90) {
             barComp.classList.add('progress-bar--warning');
+            gaugeCircle?.classList.add('is-warning');
             lblComp.classList.add('text-warning');
             txtRec.classList.add('text-warning');
-            txtRec.textContent = 'Atenção: Suas despesas previstas consomem boa parte da renda mensal.';
+            txtRec.textContent = 'Atenção: as despesas previstas consomem boa parte da renda mensal.';
         } else {
             barComp.classList.add('progress-bar--danger');
+            gaugeCircle?.classList.add('is-danger');
             lblComp.classList.add('text-danger');
             txtRec.classList.add('text-danger');
-            txtRec.textContent = 'Alerta crítico: As despesas previstas atingiram ou superaram a receita cadastrada no mês.';
+            txtRec.textContent = 'Alerta crítico: as despesas previstas atingiram ou superaram a receita do mês.';
         }
     } catch (err) {
         console.error('Erro ao carregar resumo:', err);
@@ -358,7 +384,7 @@ function renderizarSaldos() {
     }
 
     container.innerHTML = filtrados.map(s => `
-        <div class="income-item">
+        <div class="income-item rb-spotlight">
             <div class="income-top">
                 <div class="income-info">
                     <h4>${escapeHtml(s.descricao)}</h4>
@@ -517,13 +543,13 @@ async function carregarResumoFamiliaMes() {
         const saldoFamPrevisto = Number(resumo.saldoDisponivelFamiliar || 0);
         const caixaFamAtual = resumo.saldoCaixaAtualFamiliar !== undefined ? Number(resumo.saldoCaixaAtualFamiliar) : (receita - pagas);
 
-        document.getElementById('kpiFamReceitaTotal').textContent = formatCurrency(receita);
-        document.getElementById('kpiFamDespesasPagas').textContent = formatCurrency(pagas);
+        animarValorMoeda(document.getElementById('kpiFamReceitaTotal'), receita, formatCurrency);
+        animarValorMoeda(document.getElementById('kpiFamDespesasPagas'), pagas, formatCurrency);
         document.getElementById('kpiFamFaltaPagar').textContent = `Pendente no mês: ${formatCurrency(falta)}`;
-        document.getElementById('kpiFamDespesasBrutas').textContent = formatCurrency(brutas);
+        animarValorMoeda(document.getElementById('kpiFamDespesasBrutas'), brutas, formatCurrency);
 
         const elFamSaldo = document.getElementById('kpiFamSaldoDisponivel');
-        elFamSaldo.textContent = formatCurrency(saldoFamPrevisto);
+        animarValorMoeda(elFamSaldo, saldoFamPrevisto, formatCurrency);
         elFamSaldo.classList.remove('text-danger', 'text-healthy');
         if (saldoFamPrevisto < 0) elFamSaldo.classList.add('text-danger');
         else if (saldoFamPrevisto > 0) elFamSaldo.classList.add('text-healthy');
@@ -803,7 +829,10 @@ function registrarAcoesDelegadas() {
         const id = Number(btn.dataset.id);
         if (!Number.isFinite(id)) return;
         switch (btn.dataset.action) {
-            case 'pagar-despesa': pagarDespesa(id); break;
+            case 'pagar-despesa':
+                dispararClickSpark(e.clientX, e.clientY);
+                pagarDespesa(id);
+                break;
             case 'estornar-despesa': estornarDespesa(id); break;
             case 'editar-despesa': abrirEditarDespesa(id); break;
             case 'excluir-despesa': excluirDespesa(id); break;
@@ -842,8 +871,12 @@ function registrarAcoesDelegadas() {
         if (!btn) return;
         const id = Number(btn.dataset.id);
         if (!Number.isFinite(id)) return;
-        if (btn.dataset.action === 'pagar-despesa-familia') pagarDespesaFamilia(id);
-        else if (btn.dataset.action === 'estornar-despesa-familia') estornarDespesaFamilia(id);
+        if (btn.dataset.action === 'pagar-despesa-familia') {
+            dispararClickSpark(e.clientX, e.clientY);
+            pagarDespesaFamilia(id);
+        } else if (btn.dataset.action === 'estornar-despesa-familia') {
+            estornarDespesaFamilia(id);
+        }
     });
 }
 
@@ -854,6 +887,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     inicializarTema();
     inicializarModaisEConfirmacao();
     registrarAcoesDelegadas();
+    inicializarEntradaHero();
+    inicializarSpotlightCards();
+    inicializarDotGrid('authHeroCanvas', 'btnPauseDotGrid');
 
     document.querySelectorAll('[data-theme-toggle]').forEach(btn => {
         btn.addEventListener('click', alternarTema);

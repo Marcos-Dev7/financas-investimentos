@@ -37,3 +37,8 @@ build/
 .env.*
 .DS_Store
 *.log
+
+### Local Agent Skills & Verification Artifacts ###
+.agents/
+.taste-skill/
+skills-lock.json

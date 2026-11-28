@@ -1,89 +1,100 @@
 /* ==========================================================================
-   FINANCIAL FAMILY v2.0 — DESIGN TOKENS (UI/UX PRO MAX FINTECH SYSTEM)
-   Tipografia: IBM Plex Sans | Modos: Dark (padrão) e Light | WCAG 2.2 AA
+   FINANCIAL FAMILY v3.0 — DESIGN TOKENS (TASTE-SKILL FINTECH + REACT BITS)
+   Paletas: Warm Black & Gold (Dark) | Teal on Paper (Light)
+   Tipografia: Instrument Sans + DM Mono | Raio Fintech: Sharp (4 / 6 / 8px)
+   Sem violeta/lavanda | Contraste WCAG 2.2 AA+ | Motion Tokens Padronizados
    ========================================================================== */
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600;700&display=swap');
 
 :root,
 [data-theme="dark"] {
     color-scheme: dark;
 
-    /* Superfícies (Slate Fintech Dark) */
-    --bg-canvas: #0B1120;
-    --bg-sidebar: #0F172A;
-    --bg-surface: #131C31;
-    --bg-elevated: #1A2540;
-    --bg-control: #0E1629;
-    --bg-hover: rgba(148, 163, 184, 0.10);
+    /* Superfícies — Warm Black & Gold (taste-skill fintech dark-neutral) */
+    --bg-canvas: #0C0A08;
+    --bg-sidebar: #110F0C;
+    --bg-surface: #161310;
+    --bg-elevated: #1E1A15;
+    --bg-control: #12100D;
+    --bg-hover: rgba(242, 236, 226, 0.055);
 
-    /* Bordas */
-    --border-subtle: rgba(148, 163, 184, 0.13);
-    --border-default: rgba(148, 163, 184, 0.24);
-    --border-strong: rgba(148, 163, 184, 0.38);
+    /* Linhas & Hairlines (12-16% ink) */
+    --border-subtle: rgba(242, 236, 226, 0.095);
+    --border-default: rgba(242, 236, 226, 0.16);
+    --border-strong: rgba(242, 236, 226, 0.28);
 
-    /* Tipografia (Contraste >= 6.4:1) */
-    --text-primary: #F8FAFC;
-    --text-secondary: #CBD5E1;
-    --text-muted: #94A3B8;
-    --text-on-accent: #FFFFFF;
+    /* Tipografia (Warm off-white ink — contraste >= 13:1) */
+    --text-primary: #F6F3EE;
+    --text-secondary: #C8C1B6;
+    --text-muted: #938B80;
+    --text-on-accent: #14110D;
 
-    /* Marca & Ações (Trust Blue + Profit Emerald) */
-    --accent-primary: #2563EB;
-    --accent-primary-hover: #1D4ED8;
-    --accent-secondary: #60A5FA;
-    --accent-soft: rgba(59, 130, 246, 0.15);
+    /* Acento Principal — Champagne Wealth Gold (nunca violeta) */
+    --accent-primary: #C9A45A;
+    --accent-primary-hover: #D8B56E;
+    --accent-secondary: #DEC082;
+    --accent-soft: rgba(201, 164, 90, 0.12);
+    --accent-border: rgba(201, 164, 90, 0.30);
 
-    --profit-solid: #059669;
-    --profit-solid-hover: #047857;
-    --profit-fg: #34D399;
-    --profit-bg: rgba(16, 185, 129, 0.15);
-    --profit-border: rgba(52, 211, 153, 0.32);
+    /* Lucro / Receita / Quitado — Institutional Emerald */
+    --profit-solid: #17855E;
+    --profit-solid-hover: #1C9B6E;
+    --profit-fg: #3AD19B;
+    --profit-bg: rgba(23, 133, 94, 0.14);
+    --profit-border: rgba(58, 209, 155, 0.28);
 
     /* Estados Semânticos */
-    --status-success-fg: #34D399;
-    --status-success-bg: rgba(16, 185, 129, 0.15);
-    --status-success-border: rgba(52, 211, 153, 0.32);
+    --status-success-fg: #3AD19B;
+    --status-success-bg: rgba(23, 133, 94, 0.14);
+    --status-success-border: rgba(58, 209, 155, 0.28);
 
-    --status-warning-fg: #FBBF24;
-    --status-warning-bg: rgba(245, 158, 11, 0.15);
-    --status-warning-border: rgba(251, 191, 36, 0.34);
+    --status-warning-fg: #EAB354;
+    --status-warning-bg: rgba(234, 179, 84, 0.13);
+    --status-warning-border: rgba(234, 179, 84, 0.30);
 
-    --status-danger-fg: #F87171;
-    --status-danger-bg: rgba(239, 68, 68, 0.15);
-    --status-danger-border: rgba(248, 113, 113, 0.35);
-    --status-danger-solid: #DC2626;
+    --status-danger-fg: #F07368;
+    --status-danger-bg: rgba(224, 82, 68, 0.14);
+    --status-danger-border: rgba(240, 115, 104, 0.32);
+    --status-danger-solid: #C93B2F;
 
-    --status-info-fg: #60A5FA;
-    --status-info-bg: rgba(59, 130, 246, 0.15);
-    --status-info-border: rgba(96, 165, 250, 0.32);
+    --status-info-fg: #7CB9C9;
+    --status-info-bg: rgba(124, 185, 201, 0.12);
+    --status-info-border: rgba(124, 185, 201, 0.28);
 
-    /* Paleta de Categorias (Dados) */
-    --cat-1: #3B82F6;
-    --cat-2: #10B981;
-    --cat-3: #F59E0B;
-    --cat-4: #8B5CF6;
-    --cat-5: #06B6D4;
-    --cat-6: #EC4899;
-    --cat-7: #6366F1;
-    --cat-8: #94A3B8;
+    /* Paleta de Categorias (Zero violeta — curadoria editorial) */
+    --cat-1: #C9A45A;
+    --cat-2: #2EB886;
+    --cat-3: #4E9BB5;
+    --cat-4: #D97B48;
+    --cat-5: #789B6E;
+    --cat-6: #D1606E;
+    --cat-7: #6F88A1;
+    --cat-8: #938B80;
+
+    /* React Bits Spotlight & Dot Grid Tokens */
+    --spotlight-color: rgba(201, 164, 90, 0.11);
+    --spotlight-border: rgba(201, 164, 90, 0.34);
+    --dot-base: rgba(242, 236, 226, 0.14);
+    --dot-active: rgba(201, 164, 90, 0.72);
+    --aurora-glow: radial-gradient(ellipse 68% 54% at 18% 12%, rgba(201, 164, 90, 0.12), rgba(23, 133, 94, 0.05) 45%, transparent 74%);
 
     /* Foco & Sombras */
-    --focus-ring: 0 0 0 3px rgba(96, 165, 250, 0.45);
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
-    --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.45);
-    --shadow-lg: 0 20px 48px rgba(0, 0, 0, 0.65);
-    --backdrop-bg: rgba(2, 6, 23, 0.72);
+    --focus-ring: 0 0 0 2px var(--bg-canvas), 0 0 0 4px var(--accent-primary);
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.42);
+    --shadow-md: 0 10px 28px rgba(0, 0, 0, 0.48);
+    --shadow-lg: 0 24px 56px rgba(0, 0, 0, 0.68);
+    --backdrop-bg: rgba(8, 6, 4, 0.78);
 
     /* Tipografia & Escala */
-    --font-sans: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    --font-sans: 'Instrument Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-mono: 'DM Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
-    --text-xs: 0.75rem;
-    --text-sm: 0.875rem;
-    --text-base: 0.9375rem;
-    --text-lg: 1.125rem;
-    --text-xl: 1.375rem;
-    --text-2xl: 1.75rem;
+    --text-xs: 0.8125rem;   /* 13px piso mínimo taste-skill */
+    --text-sm: 0.875rem;    /* 14px */
+    --text-base: 0.9375rem; /* 15px */
+    --text-lg: 1.125rem;    /* 18px */
+    --text-xl: 1.375rem;    /* 22px */
+    --text-2xl: 1.75rem;    /* 28px */
 
     --space-1: 0.25rem;
     --space-2: 0.5rem;
@@ -93,75 +104,103 @@
     --space-6: 1.5rem;
     --space-8: 2rem;
 
-    --radius-sm: 6px;
-    --radius-md: 8px;
-    --radius-lg: 12px;
-    --radius-xl: 16px;
+    /* Raio Fintech Sharp (taste-skill: 4 / 6 / 8px) */
+    --radius-sm: 4px;
+    --radius-md: 6px;
+    --radius-lg: 8px;
+    --radius-xl: 10px;
     --radius-pill: 9999px;
 
-    --sidebar-width: 228px;
-    --topbar-height: 60px;
+    /* Motion Tokens (taste-skill motion.md) */
+    --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+    --ease-enter: cubic-bezier(0.22, 1, 0.36, 1);
+    --m-in: 150ms;
+    --m-out: 120ms;
+    --m-press: 90ms;
+    --m-slide: 240ms;
+
+    --sidebar-width: 240px;
+    --topbar-height: 62px;
     --touch-target-min: 44px;
 }
 
 [data-theme="light"] {
     color-scheme: light;
 
-    /* Superfícies (Banking Clean Light — contraste real entre sidebar, canvas e cards) */
-    --bg-canvas: #F1F5F9;
-    --bg-sidebar: #F8FAFC;
+    /* Superfícies — Teal on Paper (taste-skill fintech two-tone) */
+    --bg-canvas: #F4F7F6;
+    --bg-sidebar: #EBF0EE;
     --bg-surface: #FFFFFF;
-    --bg-elevated: #F8FAFC;
-    --bg-control: #F8FAFC;
-    --bg-hover: #F1F5F9;
+    --bg-elevated: #F7F9F8;
+    --bg-control: #F7F9F8;
+    --bg-hover: rgba(6, 82, 92, 0.055);
 
-    /* Bordas */
-    --border-subtle: #E2E8F0;
-    --border-default: #CBD5E1;
-    --border-strong: #94A3B8;
+    /* Linhas & Hairlines */
+    --border-subtle: rgba(6, 54, 62, 0.11);
+    --border-default: rgba(6, 54, 62, 0.19);
+    --border-strong: rgba(6, 54, 62, 0.34);
 
-    /* Tipografia (Contraste >= 7.5:1) */
-    --text-primary: #0F172A;
-    --text-secondary: #334155;
-    --text-muted: #475569;
+    /* Tipografia (Deep institutional teal-ink — contraste >= 9:1) */
+    --text-primary: #09262B;
+    --text-secondary: #2A464B;
+    --text-muted: #4D686D;
     --text-on-accent: #FFFFFF;
 
-    /* Marca & Ações */
-    --accent-primary: #1D4ED8;
-    --accent-primary-hover: #1E40AF;
-    --accent-secondary: #1D4ED8;
-    --accent-soft: #EFF6FF;
+    /* Acento Principal — Sovereign Teal */
+    --accent-primary: #06525C;
+    --accent-primary-hover: #043E46;
+    --accent-secondary: #06525C;
+    --accent-soft: rgba(6, 82, 92, 0.09);
+    --accent-border: rgba(6, 82, 92, 0.26);
 
-    --profit-solid: #059669;
-    --profit-solid-hover: #047857;
-    --profit-fg: #047857;
-    --profit-bg: #ECFDF5;
-    --profit-border: #A7F3D0;
+    /* Lucro / Receita / Quitado */
+    --profit-solid: #0D7A57;
+    --profit-solid-hover: #0A6346;
+    --profit-fg: #0A6B4B;
+    --profit-bg: #E7F6F0;
+    --profit-border: #A8DFC9;
 
     /* Estados Semânticos */
-    --status-success-fg: #047857;
-    --status-success-bg: #ECFDF5;
-    --status-success-border: #A7F3D0;
+    --status-success-fg: #0A6B4B;
+    --status-success-bg: #E7F6F0;
+    --status-success-border: #A8DFC9;
 
-    --status-warning-fg: #B45309;
-    --status-warning-bg: #FFFBEB;
-    --status-warning-border: #FDE68A;
+    --status-warning-fg: #9A5B06;
+    --status-warning-bg: #FDF5E6;
+    --status-warning-border: #F2D399;
 
-    --status-danger-fg: #B91C1C;
-    --status-danger-bg: #FEF2F2;
-    --status-danger-border: #FECACA;
-    --status-danger-solid: #DC2626;
+    --status-danger-fg: #A82820;
+    --status-danger-bg: #FDECEB;
+    --status-danger-border: #F5BDB9;
+    --status-danger-solid: #B82E25;
 
-    --status-info-fg: #1D4ED8;
-    --status-info-bg: #EFF6FF;
-    --status-info-border: #BFDBFE;
+    --status-info-fg: #06525C;
+    --status-info-bg: #E8F3F5;
+    --status-info-border: #B5D7DD;
+
+    /* Paleta de Categorias */
+    --cat-1: #06525C;
+    --cat-2: #0D7A57;
+    --cat-3: #B67D1A;
+    --cat-4: #C05A34;
+    --cat-5: #2C6E91;
+    --cat-6: #A83E52;
+    --cat-7: #4B7A5A;
+    --cat-8: #5A7075;
+
+    /* React Bits Spotlight & Dot Grid Tokens */
+    --spotlight-color: rgba(6, 82, 92, 0.065);
+    --spotlight-border: rgba(6, 82, 92, 0.28);
+    --dot-base: rgba(6, 82, 92, 0.14);
+    --dot-active: rgba(6, 82, 92, 0.65);
+    --aurora-glow: radial-gradient(ellipse 68% 54% at 18% 12%, rgba(6, 82, 92, 0.09), rgba(13, 122, 87, 0.04) 45%, transparent 74%);
 
     /* Foco & Sombras */
-    --focus-ring: 0 0 0 3px rgba(29, 78, 216, 0.30);
-    --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06);
-    --shadow-md: 0 4px 16px rgba(15, 23, 42, 0.08);
-    --shadow-lg: 0 20px 44px rgba(15, 23, 42, 0.16);
-    --backdrop-bg: rgba(15, 23, 42, 0.50);
+    --focus-ring: 0 0 0 2px var(--bg-canvas), 0 0 0 4px var(--accent-primary);
+    --shadow-sm: 0 1px 2px rgba(6, 40, 46, 0.06);
+    --shadow-md: 0 8px 24px rgba(6, 40, 46, 0.08);
+    --shadow-lg: 0 20px 44px rgba(6, 40, 46, 0.14);
+    --backdrop-bg: rgba(9, 38, 43, 0.46);
 }
 
 *, *::before, *::after {
@@ -179,7 +218,8 @@ html, body {
     min-height: 100vh;
     overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
-    transition: background-color 0.2s ease, color 0.2s ease;
+    text-rendering: optimizeLegibility;
+    transition: background-color 180ms var(--ease), color 180ms var(--ease);
 }
 
 :focus-visible {
@@ -203,8 +243,31 @@ html, body {
     border: 0;
 }
 
+.skip-link {
+    position: fixed;
+    top: -100px;
+    left: var(--space-4);
+    z-index: 1200;
+    background: var(--accent-primary);
+    color: var(--text-on-accent);
+    padding: 0.6rem 1rem;
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    font-size: var(--text-sm);
+    text-decoration: none;
+}
+
+.skip-link:focus {
+    top: var(--space-3);
+}
+
 .text-right {
     text-align: right;
+}
+
+.mono-num {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
 }
 
 .text-healthy {
