@@ -6,12 +6,15 @@ import com.marcosdev7.financas.dto.SaldoRequestDTO;
 import com.marcosdev7.financas.dto.SaldoResponseDTO;
 import com.marcosdev7.financas.repository.SaldoRepository;
 import com.marcosdev7.usuarios.domain.Usuario;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 
@@ -34,8 +37,22 @@ class SaldoServiceTest {
     @InjectMocks
     private SaldoService saldoService;
 
+    private final Usuario usuarioPadrao = new Usuario(1L, "Marcos Paulo", "marcos@email.com", "hash");
+
+    @BeforeEach
+    void setUp() {
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(usuarioPadrao, null, usuarioPadrao.getAuthorities())
+        );
+    }
+
+    @AfterEach
+    void tearDown() {
+        SecurityContextHolder.clearContext();
+    }
+
     @Test
-    @DisplayName("Deve cadastrar e salvar um novo saldo")
+    @DisplayName("Deve cadastrar e salvar um novo saldo vinculado ao usuário autenticado")
     void deveCadastrarSaldo() {
         SaldoRequestDTO request = new SaldoRequestDTO("Salário", new BigDecimal("6000.00"), Mes.MAIO, 2026);
         Saldo salvo = new Saldo(1L, "Salário", new BigDecimal("6000.00"), Mes.MAIO, 2026);
@@ -56,7 +73,7 @@ class SaldoServiceTest {
     void deveSomarTotalEntradasDoMes() {
         Saldo salario = new Saldo(1L, "Salário", new BigDecimal("5000.00"), Mes.MAIO, 2026);
         Saldo freela = new Saldo(2L, "Freelance", new BigDecimal("1250.75"), Mes.MAIO, 2026);
-        when(saldoRepository.findByMes(Mes.MAIO)).thenReturn(List.of(salario, freela));
+        when(saldoRepository.findByMesAndUsuarioId(Mes.MAIO, 1L)).thenReturn(List.of(salario, freela));
 
         BigDecimal total = saldoService.somarTotalEntradas(Mes.MAIO);
 
@@ -66,7 +83,7 @@ class SaldoServiceTest {
     @Test
     @DisplayName("Deve retornar zero ao somar entradas de mês sem registros")
     void deveRetornarZeroQuandoMesNaoTiverEntradas() {
-        when(saldoRepository.findByMes(Mes.JANEIRO)).thenReturn(List.of());
+        when(saldoRepository.findByMesAndUsuarioId(Mes.JANEIRO, 1L)).thenReturn(List.of());
 
         BigDecimal total = saldoService.somarTotalEntradas(Mes.JANEIRO);
 
@@ -74,11 +91,11 @@ class SaldoServiceTest {
     }
 
     @Test
-    @DisplayName("Deve listar todos os saldos convertidos para SaldoResponseDTO")
+    @DisplayName("Deve listar todos os saldos do usuário convertidos para SaldoResponseDTO")
     void deveListarSaldos() {
         Saldo saldo1 = new Saldo(1L, "Salário", new BigDecimal("5000.00"), Mes.MAIO, 2026);
         Saldo saldo2 = new Saldo(2L, "Extra", new BigDecimal("800.00"), Mes.JUNHO, 2026);
-        when(saldoRepository.findAll()).thenReturn(List.of(saldo1, saldo2));
+        when(saldoRepository.findByUsuarioId(1L)).thenReturn(List.of(saldo1, saldo2));
 
         List<SaldoResponseDTO> lista = saldoService.listarSaldos();
 
@@ -93,7 +110,7 @@ class SaldoServiceTest {
     @DisplayName("Deve deletar um saldo existente pelo ID")
     void deveDeletarSaldo() {
         Saldo existente = new Saldo(1L, "Salário", new BigDecimal("5000.00"), Mes.MAIO, 2026);
-        when(saldoRepository.findById(1L)).thenReturn(Optional.of(existente));
+        when(saldoRepository.findByIdAndUsuarioId(1L, 1L)).thenReturn(Optional.of(existente));
 
         saldoService.deletarSaldos(1L);
 
@@ -103,7 +120,7 @@ class SaldoServiceTest {
     @Test
     @DisplayName("Deve lançar NoSuchElementException ao tentar deletar saldo inexistente")
     void deveLancarExcecaoAoDeletarSaldoInexistente() {
-        when(saldoRepository.findById(99L)).thenReturn(Optional.empty());
+        when(saldoRepository.findByIdAndUsuarioId(99L, 1L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> saldoService.deletarSaldos(99L))
                 .isInstanceOf(NoSuchElementException.class);
@@ -115,7 +132,7 @@ class SaldoServiceTest {
         Saldo existente = new Saldo(1L, "Salário", new BigDecimal("5000.00"), Mes.MAIO, 2026);
         SaldoRequestDTO dto = new SaldoRequestDTO("Salário Novo", new BigDecimal("5800.00"), Mes.MAIO, 2026);
 
-        when(saldoRepository.findById(1L)).thenReturn(Optional.of(existente));
+        when(saldoRepository.findByIdAndUsuarioId(1L, 1L)).thenReturn(Optional.of(existente));
         when(saldoRepository.save(existente)).thenReturn(existente);
 
         SaldoResponseDTO atualizado = saldoService.atualizarSaldos(1L, dto);
@@ -130,10 +147,24 @@ class SaldoServiceTest {
     @DisplayName("Deve lançar NoSuchElementException ao tentar atualizar saldo inexistente")
     void deveLancarExcecaoAoAtualizarSaldoInexistente() {
         SaldoRequestDTO dto = new SaldoRequestDTO("Salário", new BigDecimal("5000.00"), Mes.MAIO, 2026);
-        when(saldoRepository.findById(99L)).thenReturn(Optional.empty());
+        when(saldoRepository.findByIdAndUsuarioId(99L, 1L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> saldoService.atualizarSaldos(99L, dto))
                 .isInstanceOf(NoSuchElementException.class);
+    }
+
+    @Test
+    @DisplayName("Fail-closed: deve recusar qualquer operação de saldo sem usuário autenticado")
+    void deveRecusarOperacoesDeSaldoSemUsuarioAutenticado() {
+        SecurityContextHolder.clearContext();
+
+        assertThatThrownBy(() -> saldoService.listarSaldos())
+                .isInstanceOf(BadCredentialsException.class);
+        assertThatThrownBy(() -> saldoService.somarTotalEntradas(Mes.MAIO))
+                .isInstanceOf(BadCredentialsException.class);
+        assertThatThrownBy(() -> saldoService.deletarSaldos(1L))
+                .isInstanceOf(BadCredentialsException.class);
+        verifyNoInteractions(saldoRepository);
     }
 
     @Test

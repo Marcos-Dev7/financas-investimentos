@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class TokenServiceTest {
 
@@ -15,7 +16,8 @@ class TokenServiceTest {
     @BeforeEach
     void setUp() {
         tokenService = new TokenService();
-        ReflectionTestUtils.setField(tokenService, "secret", "chave-secreta-de-teste-2026");
+        ReflectionTestUtils.setField(tokenService, "secret", "chave-secreta-de-teste-super-segura-2026-32bytes");
+        tokenService.inicializarChave();
     }
 
     @Test
@@ -35,5 +37,36 @@ class TokenServiceTest {
     void deveRetornarNullParaTokenInvalido() {
         String subject = tokenService.validarToken("token.invalido.adulterado");
         assertThat(subject).isNull();
+    }
+
+    @Test
+    @DisplayName("Deve rejeitar chave JWT curta ou contendo segredo padrão na inicialização")
+    void deveRejeitarChaveFracaOuPadrao() {
+        TokenService curto = new TokenService();
+        ReflectionTestUtils.setField(curto, "secret", "curta-demais");
+        assertThatThrownBy(curto::inicializarChave).isInstanceOf(IllegalStateException.class);
+
+        TokenService padrao = new TokenService();
+        ReflectionTestUtils.setField(padrao, "secret", "financial-family-default-secret-key-2026-change-in-prod");
+        assertThatThrownBy(padrao::inicializarChave).isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    @DisplayName("Deve gerar chave efêmera aleatória quando JWT_SECRET estiver vazio (sem chave fixa no código)")
+    void deveGerarChaveEfemeraAleatoriaQuandoSecretVazio() {
+        Usuario usuario = new Usuario(1L, "Marcos Paulo", "marcos@email.com", "senhaHash");
+
+        TokenService svc1 = new TokenService();
+        ReflectionTestUtils.setField(svc1, "secret", "");
+        svc1.inicializarChave();
+
+        TokenService svc2 = new TokenService();
+        ReflectionTestUtils.setField(svc2, "secret", "");
+        svc2.inicializarChave();
+
+        String token1 = svc1.gerarToken(usuario);
+        assertThat(svc1.validarToken(token1)).isEqualTo("marcos@email.com");
+        // Chave aleatória distinta por instância garante ausência de segredo estático
+        assertThat(svc2.validarToken(token1)).isNull();
     }
 }

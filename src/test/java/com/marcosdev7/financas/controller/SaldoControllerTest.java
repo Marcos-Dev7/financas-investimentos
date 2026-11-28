@@ -108,7 +108,9 @@ class SaldoControllerTest {
         String json = """
                 {
                     "descricao": "Salário Reajustado",
-                    "valor": 6000.00
+                    "valor": 6000.00,
+                    "mes": "maio",
+                    "ano": 2026
                 }
                 """;
 
@@ -119,6 +121,27 @@ class SaldoControllerTest {
                 .andExpect(jsonPath("$.id").value(1))
                 .andExpect(jsonPath("$.descricao").value("Salário Reajustado"))
                 .andExpect(jsonPath("$.valor").value(6000.00));
+    }
+
+    @Test
+    @DisplayName("PUT /saldos/{id} - Deve retornar 400 quando valor for negativo ou ano fora do intervalo")
+    void deveRetornar400AoAtualizarSaldoComValorNegativoOuAnoInvalido() throws Exception {
+        String jsonInvalido = """
+                {
+                    "descricao": "Salário Fraudado",
+                    "valor": -1000.00,
+                    "mes": "maio",
+                    "ano": 1800
+                }
+                """;
+
+        mockMvc.perform(put("/saldos/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonInvalido))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$").isArray());
+
+        verify(saldoService, never()).atualizarSaldos(any(), any());
     }
 
     @Test

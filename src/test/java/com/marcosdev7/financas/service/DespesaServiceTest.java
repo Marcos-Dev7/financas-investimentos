@@ -6,6 +6,8 @@ import com.marcosdev7.financas.dto.DespesaRequestDTO;
 import com.marcosdev7.financas.dto.DespesaResponseDTO;
 import com.marcosdev7.financas.repository.DespesaRepository;
 import com.marcosdev7.usuarios.domain.Usuario;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -17,6 +19,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 
@@ -40,8 +43,22 @@ class DespesaServiceTest {
     @InjectMocks
     private DespesaService despesaService;
 
+    private final Usuario usuarioPadrao = new Usuario(1L, "Marcos Paulo", "marcos@email.com", "hash");
+
+    @BeforeEach
+    void setUp() {
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(usuarioPadrao, null, usuarioPadrao.getAuthorities())
+        );
+    }
+
+    @AfterEach
+    void tearDown() {
+        SecurityContextHolder.clearContext();
+    }
+
     @Test
-    @DisplayName("Deve listar despesas paginadas convertidas para DespesaResponseDTO")
+    @DisplayName("Deve listar despesas paginadas do usuário autenticado convertidas para DespesaResponseDTO")
     void deveListarDespesasPaginadas() {
         Pageable pageable = PageRequest.of(0, 10);
         Despesa despesa = new Despesa(
@@ -54,7 +71,7 @@ class DespesaServiceTest {
                 new BigDecimal("120.00"),
                 "Moradia"
         );
-        when(despesaRepository.findAll(pageable)).thenReturn(new PageImpl<>(List.of(despesa)));
+        when(despesaRepository.findByUsuarioId(1L, pageable)).thenReturn(new PageImpl<>(List.of(despesa)));
 
         Page<DespesaResponseDTO> resultado = despesaService.listarDespesas(pageable);
 
@@ -66,17 +83,17 @@ class DespesaServiceTest {
         assertThat(dto.mes()).isEqualTo(Mes.MAIO);
         assertThat(dto.isFixa()).isTrue();
         assertThat(dto.isPaga()).isFalse();
-        verify(despesaRepository).findAll(pageable);
+        verify(despesaRepository).findByUsuarioId(1L, pageable);
     }
 
     @Test
-    @DisplayName("Deve encontrar despesa por ID quando existir")
+    @DisplayName("Deve encontrar despesa por ID quando pertencer ao usuário autenticado")
     void deveEncontrarDespesaPorId() {
         Despesa despesa = new Despesa(
                 1L, "Luz", Mes.MAIO, LocalDate.of(2026, 5, 15),
                 false, true, new BigDecimal("200.00"), "Moradia"
         );
-        when(despesaRepository.findById(1L)).thenReturn(Optional.of(despesa));
+        when(despesaRepository.findByIdAndUsuarioId(1L, 1L)).thenReturn(Optional.of(despesa));
 
         Despesa encontrada = despesaService.encontrarDespesa(1L);
 
@@ -86,14 +103,14 @@ class DespesaServiceTest {
     @Test
     @DisplayName("Deve lançar NoSuchElementException ao buscar despesa inexistente")
     void deveLancarExcecaoQuandoDespesaNaoEncontrada() {
-        when(despesaRepository.findById(99L)).thenReturn(Optional.empty());
+        when(despesaRepository.findByIdAndUsuarioId(99L, 1L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> despesaService.encontrarDespesa(99L))
                 .isInstanceOf(NoSuchElementException.class);
     }
 
     @Test
-    @DisplayName("Deve cadastrar nova despesa com isPaga false e retornar DTO")
+    @DisplayName("Deve cadastrar nova despesa com isPaga false e vinculada ao usuário autenticado")
     void deveCadastrarDespesa() {
         LocalDate vencimento = LocalDate.of(2026, 5, 20);
         DespesaRequestDTO request = new DespesaRequestDTO(
@@ -124,6 +141,7 @@ class DespesaServiceTest {
         ArgumentCaptor<Despesa> captor = ArgumentCaptor.forClass(Despesa.class);
         verify(despesaRepository).save(captor.capture());
         assertThat(captor.getValue().getIsPaga()).isFalse();
+        assertThat(captor.getValue().getUsuario()).isSameAs(usuarioPadrao);
 
         assertThat(response.id()).isEqualTo(10L);
         assertThat(response.descricao()).isEqualTo("Supermercado");
@@ -151,7 +169,7 @@ class DespesaServiceTest {
                 null
         );
 
-        when(despesaRepository.findById(1L)).thenReturn(Optional.of(existente));
+        when(despesaRepository.findByIdAndUsuarioId(1L, 1L)).thenReturn(Optional.of(existente));
         when(despesaRepository.save(existente)).thenReturn(existente);
 
         DespesaResponseDTO response = despesaService.atualizarDespesas(1L, atualizacao);
@@ -169,7 +187,7 @@ class DespesaServiceTest {
                 1L, "Academia", Mes.MAIO, LocalDate.of(2026, 5, 10),
                 false, true, new BigDecimal("110.00"), "Saúde"
         );
-        when(despesaRepository.findById(1L)).thenReturn(Optional.of(existente));
+        when(despesaRepository.findByIdAndUsuarioId(1L, 1L)).thenReturn(Optional.of(existente));
 
         despesaService.deletarDespesas(1L);
 
@@ -183,7 +201,7 @@ class DespesaServiceTest {
                 1L, "Luz", Mes.MAIO, LocalDate.of(2026, 5, 10),
                 false, true, new BigDecimal("190.00"), "Moradia"
         );
-        when(despesaRepository.findById(1L)).thenReturn(Optional.of(despesa));
+        when(despesaRepository.findByIdAndUsuarioId(1L, 1L)).thenReturn(Optional.of(despesa));
         when(despesaRepository.save(despesa)).thenReturn(despesa);
 
         DespesaResponseDTO response = despesaService.pagarDespesa(1L);
@@ -200,7 +218,7 @@ class DespesaServiceTest {
                 1L, "Luz", Mes.MAIO, LocalDate.of(2026, 5, 10),
                 true, true, new BigDecimal("190.00"), "Moradia"
         );
-        when(despesaRepository.findById(1L)).thenReturn(Optional.of(despesa));
+        when(despesaRepository.findByIdAndUsuarioId(1L, 1L)).thenReturn(Optional.of(despesa));
         when(despesaRepository.save(despesa)).thenReturn(despesa);
 
         DespesaResponseDTO response = despesaService.estornarDespesa(1L);
@@ -226,7 +244,7 @@ class DespesaServiceTest {
                 false, false, new BigDecimal("900.00"), "Outros"
         );
 
-        when(despesaRepository.findByMes(Mes.MAIO)).thenReturn(List.of(paga1, paga2, pendente));
+        when(despesaRepository.findByMesAndUsuarioId(Mes.MAIO, 1L)).thenReturn(List.of(paga1, paga2, pendente));
 
         BigDecimal totalSaidas = despesaService.somarSaidaMes(Mes.MAIO);
 
@@ -236,7 +254,7 @@ class DespesaServiceTest {
     @Test
     @DisplayName("Deve retornar zero em somarSaidaMes quando não houver despesas pagas")
     void deveRetornarZeroQuandoNaoHouverDespesasPagas() {
-        when(despesaRepository.findByMes(Mes.MAIO)).thenReturn(List.of());
+        when(despesaRepository.findByMesAndUsuarioId(Mes.MAIO, 1L)).thenReturn(List.of());
 
         BigDecimal totalSaidas = despesaService.somarSaidaMes(Mes.MAIO);
 
@@ -246,7 +264,7 @@ class DespesaServiceTest {
     @Test
     @DisplayName("Deve retornar o total bruto do mês quando o repositório retornar valor")
     void deveRetornarTotalBrutoDoMes() {
-        when(despesaRepository.somarTotalPorMes(Mes.MAIO)).thenReturn(new BigDecimal("2520.50"));
+        when(despesaRepository.somarTotalPorMesEUsuario(Mes.MAIO, 1L)).thenReturn(new BigDecimal("2520.50"));
 
         BigDecimal totalBruto = despesaService.somarTotalBruto(Mes.MAIO);
 
@@ -256,11 +274,27 @@ class DespesaServiceTest {
     @Test
     @DisplayName("Deve retornar BigDecimal.ZERO em somarTotalBruto quando o repositório retornar null")
     void deveRetornarZeroQuandoTotalBrutoForNull() {
-        when(despesaRepository.somarTotalPorMes(Mes.MAIO)).thenReturn(null);
+        when(despesaRepository.somarTotalPorMesEUsuario(Mes.MAIO, 1L)).thenReturn(null);
 
         BigDecimal totalBruto = despesaService.somarTotalBruto(Mes.MAIO);
 
         assertThat(totalBruto).isEqualByComparingTo(BigDecimal.ZERO);
+    }
+
+    @Test
+    @DisplayName("Fail-closed: deve recusar qualquer operação quando não houver usuário autenticado")
+    void deveRecusarOperacoesSemUsuarioAutenticado() {
+        SecurityContextHolder.clearContext();
+
+        assertThatThrownBy(() -> despesaService.listarDespesas(PageRequest.of(0, 10)))
+                .isInstanceOf(BadCredentialsException.class);
+        assertThatThrownBy(() -> despesaService.encontrarDespesa(1L))
+                .isInstanceOf(BadCredentialsException.class);
+        assertThatThrownBy(() -> despesaService.somarSaidaMes(Mes.MAIO))
+                .isInstanceOf(BadCredentialsException.class);
+        assertThatThrownBy(() -> despesaService.somarTotalBruto(Mes.MAIO))
+                .isInstanceOf(BadCredentialsException.class);
+        verifyNoInteractions(despesaRepository);
     }
 
     @Test

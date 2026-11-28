@@ -146,7 +146,11 @@ class DespesaControllerTest {
         String json = """
                 {
                     "descricao": "Aluguel Atualizado",
-                    "valor": 1600.00
+                    "valor": 1600.00,
+                    "mes": "maio",
+                    "dataVencimento": "10/05/2026",
+                    "isFixa": true,
+                    "categoria": "Moradia"
                 }
                 """;
 
@@ -157,6 +161,27 @@ class DespesaControllerTest {
                 .andExpect(jsonPath("$.id").value(1))
                 .andExpect(jsonPath("$.descricao").value("Aluguel Atualizado"))
                 .andExpect(jsonPath("$.valor").value(1600.00));
+    }
+
+    @Test
+    @DisplayName("PUT /despesas/{id} - Deve retornar 400 quando valor for negativo ou nulo")
+    void deveRetornar400AoAtualizarDespesaComValorInvalido() throws Exception {
+        String jsonInvalido = """
+                {
+                    "descricao": "Aluguel Negativo",
+                    "valor": -500.00,
+                    "mes": "maio",
+                    "dataVencimento": "10/05/2026"
+                }
+                """;
+
+        mockMvc.perform(put("/despesas/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonInvalido))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$").isArray());
+
+        verify(despesaService, never()).atualizarDespesas(any(), any());
     }
 
     @Test

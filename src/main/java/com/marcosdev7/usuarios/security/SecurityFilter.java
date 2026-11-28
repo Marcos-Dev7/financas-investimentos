@@ -31,6 +31,7 @@ public class SecurityFilter extends OncePerRequestFilter {
             if (email != null) {
                 usuarioRepository.findByEmailIgnoreCase(email)
                         .or(() -> usuarioRepository.findByEmail(email))
+                        .filter(usuario -> Boolean.TRUE.equals(usuario.getEmailVerificado()))
                         .ifPresent(usuario -> {
                             var authentication = new UsernamePasswordAuthenticationToken(
                                     usuario, null, usuario.getAuthorities()

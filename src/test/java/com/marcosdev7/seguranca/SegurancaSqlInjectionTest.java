@@ -11,6 +11,7 @@ import com.marcosdev7.financas.repository.SaldoRepository;
 import com.marcosdev7.financas.service.CalculoService;
 import com.marcosdev7.financas.service.DespesaService;
 import com.marcosdev7.usuarios.controller.AuthController;
+import com.marcosdev7.usuarios.domain.Usuario;
 import com.marcosdev7.usuarios.repository.UsuarioRepository;
 import com.marcosdev7.usuarios.service.AuthService;
 import org.junit.jupiter.api.DisplayName;
@@ -26,6 +27,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.format.support.DefaultFormattingConversionService;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
@@ -34,6 +37,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -121,18 +125,27 @@ class SegurancaSqlInjectionTest {
     @Test
     @DisplayName("DespesaService deve sanitizar sort malicioso (ex.: usuario.senha / SQLi) e limitar size da paginação")
     void deveSanitizarPaginacaoEOrdenacaoContraInjecao() {
-        DespesaService despesaService = new DespesaService(despesaRepository);
-        when(despesaRepository.findAll(any(Pageable.class))).thenReturn(Page.empty());
+        Usuario usuario = new Usuario(1L, "Marcos", "marcos@email.com", "hash");
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(usuario, null, usuario.getAuthorities())
+        );
 
-        Pageable malicioso = PageRequest.of(0, 99999, Sort.by("usuario.senha", "1; DROP TABLE despesa; --"));
-        despesaService.listarDespesas(malicioso);
+        try {
+            DespesaService despesaService = new DespesaService(despesaRepository);
+            when(despesaRepository.findByUsuarioId(eq(1L), any(Pageable.class))).thenReturn(Page.empty());
 
-        ArgumentCaptor<Pageable> captor = ArgumentCaptor.forClass(Pageable.class);
-        verify(despesaRepository).findAll(captor.capture());
+            Pageable malicioso = PageRequest.of(0, 99999, Sort.by("usuario.senha", "1; DROP TABLE despesa; --"));
+            despesaService.listarDespesas(malicioso);
 
-        Pageable sanitizado = captor.getValue();
-        assertThat(sanitizado.getPageSize()).isEqualTo(100);
-        assertThat(sanitizado.getSort().getOrderFor("usuario.senha")).isNull();
-        assertThat(sanitizado.getSort().getOrderFor("dataVencimento")).isNotNull();
+            ArgumentCaptor<Pageable> captor = ArgumentCaptor.forClass(Pageable.class);
+            verify(despesaRepository).findByUsuarioId(eq(1L), captor.capture());
+
+            Pageable sanitizado = captor.getValue();
+            assertThat(sanitizado.getPageSize()).isEqualTo(100);
+            assertThat(sanitizado.getSort().getOrderFor("usuario.senha")).isNull();
+            assertThat(sanitizado.getSort().getOrderFor("dataVencimento")).isNotNull();
+        } finally {
+            SecurityContextHolder.clearContext();
+        }
     }
 }

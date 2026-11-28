@@ -74,14 +74,8 @@ public class RateLimitFilter extends OncePerRequestFilter {
     }
 
     private String extrairIpCliente(HttpServletRequest request) {
-        String forwarded = request.getHeader("X-Forwarded-For");
-        if (forwarded != null && !forwarded.isBlank()) {
-            return forwarded.split(",")[0].trim();
-        }
-        String realIp = request.getHeader("X-Real-IP");
-        if (realIp != null && !realIp.isBlank()) {
-            return realIp.trim();
-        }
+        // Confia exclusivamente no IP resolvido pelo container/proxy reverso confiável
+        // (server.forward-headers-strategy=framework), impedindo spoofing via cabeçalhos X-Forwarded-For / X-Real-IP.
         return request.getRemoteAddr() != null ? request.getRemoteAddr() : "unknown";
     }
 

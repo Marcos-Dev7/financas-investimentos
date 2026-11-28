@@ -40,7 +40,7 @@ public class DespesaController {
     @Operation(summary = "Atualiza uma despesa",
             description = "Altera os dados de uma despesa existente através do ID.")
     @PutMapping("/{id}")
-    public ResponseEntity<DespesaResponseDTO> atualizarDespesas(@PathVariable Long id, @RequestBody DespesaRequestDTO despesaDTO){
+    public ResponseEntity<DespesaResponseDTO> atualizarDespesas(@PathVariable Long id, @RequestBody @Valid DespesaRequestDTO despesaDTO){
         return ResponseEntity.ok(despesaService.atualizarDespesas(id, despesaDTO));
     }
 

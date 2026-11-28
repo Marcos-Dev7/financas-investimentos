@@ -317,11 +317,11 @@ function renderizarDespesas() {
                 <td data-label="Ações" class="text-right">
                     <div class="action-group">
                         ${d.isPaga
-                            ? `<button type="button" class="btn btn-outline btn-sm" onclick="estornarDespesa(${d.id})">Estornar</button>`
-                            : `<button type="button" class="btn btn-pay btn-sm" onclick="pagarDespesa(${d.id})">Pagar</button>`
+                            ? `<button type="button" class="btn btn-outline btn-sm" data-action="estornar-despesa" data-id="${d.id}">Estornar</button>`
+                            : `<button type="button" class="btn btn-pay btn-sm" data-action="pagar-despesa" data-id="${d.id}">Pagar</button>`
                         }
-                        <button type="button" class="btn btn-outline btn-sm" onclick="abrirEditarDespesa(${d.id})">Editar</button>
-                        <button type="button" class="btn btn-danger-ghost btn-sm" onclick="excluirDespesa(${d.id})">Excluir</button>
+                        <button type="button" class="btn btn-outline btn-sm" data-action="editar-despesa" data-id="${d.id}">Editar</button>
+                        <button type="button" class="btn btn-danger-ghost btn-sm" data-action="excluir-despesa" data-id="${d.id}">Excluir</button>
                     </div>
                 </td>
             </tr>
@@ -367,8 +367,8 @@ function renderizarSaldos() {
                 <span class="income-val">${formatCurrency(s.valor)}</span>
             </div>
             <div class="income-bottom">
-                <button type="button" class="btn btn-outline btn-sm" onclick="abrirEditarSaldo(${s.id})">Editar</button>
-                <button type="button" class="btn btn-danger-ghost btn-sm" onclick="excluirSaldo(${s.id})">Excluir</button>
+                <button type="button" class="btn btn-outline btn-sm" data-action="editar-saldo" data-id="${s.id}">Editar</button>
+                <button type="button" class="btn btn-danger-ghost btn-sm" data-action="excluir-saldo" data-id="${s.id}">Excluir</button>
             </div>
         </div>
     `).join('');
@@ -420,7 +420,7 @@ async function carregarModuloFamilia() {
                             <h4>Família de ${escapeHtml(c.nome)}</h4>
                             <span class="income-meta">${escapeHtml(c.email)} &bull; Válido até ${escapeHtml(c.dataExpiracao || '')}</span>
                         </div>
-                        <button type="button" class="btn btn-primary btn-sm" onclick="aceitarConviteDireto('${escapeHtml(c.tokenConvite)}')">
+                        <button type="button" class="btn btn-primary btn-sm" data-action="aceitar-convite" data-token="${escapeHtml(c.tokenConvite)}">
                             Aceitar Convite
                         </button>
                     </div>
@@ -473,11 +473,11 @@ async function carregarModuloFamilia() {
                                 }
                             </span>
                             <div class="action-group">
-                                ${linkConvite ? `<button type="button" class="btn btn-outline btn-sm" onclick="copiarLinkConvite('${escapeHtml(linkConvite)}', '${escapeHtml(m.tokenConvite)}')">Copiar Link</button>` : ''}
+                                ${linkConvite ? `<button type="button" class="btn btn-outline btn-sm" data-action="copiar-link" data-link="${escapeHtml(linkConvite)}" data-token="${escapeHtml(m.tokenConvite)}">Copiar Link</button>` : ''}
                                 ${(painel.souTitular && !m.isTitular)
-                                    ? `<button type="button" class="btn btn-danger-ghost btn-sm" onclick="removerMembroFamilia(${m.vinculoId}, '${escapeHtml(m.nome)}', true)">${isAceito ? 'Remover Membro' : 'Cancelar Convite'}</button>`
+                                    ? `<button type="button" class="btn btn-danger-ghost btn-sm" data-action="remover-membro" data-vinculo-id="${m.vinculoId}" data-nome="${escapeHtml(m.nome)}" data-titular="true">${isAceito ? 'Remover Membro' : 'Cancelar Convite'}</button>`
                                     : (!painel.souTitular && !m.isTitular && m.email.toLowerCase() === (state.user?.email || '').toLowerCase())
-                                        ? `<button type="button" class="btn btn-danger-ghost btn-sm" onclick="removerMembroFamilia(${m.vinculoId}, '${escapeHtml(painel.nomeTitular)}', false)">Sair da Família</button>`
+                                        ? `<button type="button" class="btn btn-danger-ghost btn-sm" data-action="remover-membro" data-vinculo-id="${m.vinculoId}" data-nome="${escapeHtml(painel.nomeTitular)}" data-titular="false">Sair da Família</button>`
                                         : ''
                                 }
                             </div>
@@ -643,8 +643,8 @@ function renderizarPainelDespesasFamilia() {
             <td data-label="Ações" class="text-right">
                 <div class="action-group">
                     ${d.isPaga
-                        ? `<button type="button" class="btn btn-outline btn-sm" onclick="estornarDespesaFamilia(${d.id})">Estornar</button>`
-                        : `<button type="button" class="btn btn-pay btn-sm" onclick="pagarDespesaFamilia(${d.id})">Pagar</button>`
+                        ? `<button type="button" class="btn btn-outline btn-sm" data-action="estornar-despesa-familia" data-id="${d.id}">Estornar</button>`
+                        : `<button type="button" class="btn btn-pay btn-sm" data-action="pagar-despesa-familia" data-id="${d.id}">Pagar</button>`
                     }
                 </div>
             </td>
@@ -674,25 +674,25 @@ async function atualizarTudo() {
 }
 
 /* ==========================================
-   AÇÕES GLOBAIS (CHAMADAS POR ONCLICK NA TABELA)
+   AÇÕES DELEGADAS (SEM HANDLERS INLINE / CSP STRICT)
    ========================================== */
-window.pagarDespesa = async (id) => {
+async function pagarDespesa(id) {
     try {
         await apiFetch(`/despesas/${id}/pagar`, { method: 'PATCH' });
         showToast('Despesa marcada como paga.');
         await atualizarTudo();
     } catch (err) { showToast(err.message, 'error'); }
-};
+}
 
-window.estornarDespesa = async (id) => {
+async function estornarDespesa(id) {
     try {
         await apiFetch(`/despesas/${id}/estornar`, { method: 'PATCH' });
         showToast('Pagamento estornado.');
         await atualizarTudo();
     } catch (err) { showToast(err.message, 'error'); }
-};
+}
 
-window.abrirEditarDespesa = (id) => {
+function abrirEditarDespesa(id) {
     const d = state.despesas.find(item => item.id === id);
     if (!d) return;
     document.getElementById('modalDespesaTitulo').textContent = 'Editar Despesa';
@@ -704,9 +704,9 @@ window.abrirEditarDespesa = (id) => {
     document.getElementById('despesaCategoria').value = d.categoria || '';
     document.getElementById('despesaIsFixa').checked = Boolean(d.isFixa);
     abrirModalAcessivel(document.getElementById('modalDespesa'), document.getElementById('despesaDescricao'));
-};
+}
 
-window.excluirDespesa = async (id) => {
+async function excluirDespesa(id) {
     const d = state.despesas.find(item => item.id === id);
     const confirmado = await confirmarAcaoDestrutiva(
         'Excluir Despesa',
@@ -719,9 +719,9 @@ window.excluirDespesa = async (id) => {
         showToast('Despesa excluída.');
         await atualizarTudo();
     } catch (err) { showToast(err.message, 'error'); }
-};
+}
 
-window.abrirEditarSaldo = (id) => {
+function abrirEditarSaldo(id) {
     const s = state.saldos.find(item => item.id === id);
     if (!s) return;
     document.getElementById('modalSaldoTitulo').textContent = 'Editar Receita';
@@ -731,9 +731,9 @@ window.abrirEditarSaldo = (id) => {
     document.getElementById('saldoMes').value = (s.mes || state.mesAtual).toLowerCase();
     document.getElementById('saldoAno').value = s.ano;
     abrirModalAcessivel(document.getElementById('modalSaldo'), document.getElementById('saldoDescricao'));
-};
+}
 
-window.excluirSaldo = async (id) => {
+async function excluirSaldo(id) {
     const s = state.saldos.find(item => item.id === id);
     const confirmado = await confirmarAcaoDestrutiva(
         'Excluir Receita',
@@ -746,43 +746,43 @@ window.excluirSaldo = async (id) => {
         showToast('Receita excluída.');
         await atualizarTudo();
     } catch (err) { showToast(err.message, 'error'); }
-};
+}
 
-window.pagarDespesaFamilia = async (id) => {
+async function pagarDespesaFamilia(id) {
     try {
         await apiFetch(`/familia/despesas/${id}/pagar`, { method: 'PATCH' });
         showToast('Despesa familiar marcada como paga.');
         await atualizarTudo();
     } catch (err) { showToast(err.message, 'error'); }
-};
+}
 
-window.estornarDespesaFamilia = async (id) => {
+async function estornarDespesaFamilia(id) {
     try {
         await apiFetch(`/familia/despesas/${id}/estornar`, { method: 'PATCH' });
         showToast('Pagamento da despesa familiar estornado.');
         await atualizarTudo();
     } catch (err) { showToast(err.message, 'error'); }
-};
+}
 
-window.aceitarConviteDireto = async (token) => {
+async function aceitarConviteDireto(token) {
     try {
         await apiFetch('/familia/convites/aceitar', { method: 'POST', body: JSON.stringify({ token }) });
         showToast('Convite aceito! Você agora faz parte da família.');
         await carregarModuloFamilia();
         navegarPara('familia');
     } catch (err) { showToast(err.message, 'error'); }
-};
+}
 
-window.copiarLinkConvite = async (link, token) => {
+async function copiarLinkConvite(link, token) {
     try {
         await navigator.clipboard.writeText(link);
         showToast('Link de convite copiado!');
     } catch (_) {
         showToast(`Código do convite: ${token}`);
     }
-};
+}
 
-window.removerMembroFamilia = async (vinculoId, nome, souTitular) => {
+async function removerMembroFamilia(vinculoId, nome, souTitular) {
     const titulo = souTitular ? 'Remover Membro / Convite' : 'Sair da Família';
     const texto = souTitular
         ? `Deseja remover "${nome}" da sua família? O acesso aos dados consolidados será cortado imediatamente.`
@@ -794,7 +794,58 @@ window.removerMembroFamilia = async (vinculoId, nome, souTitular) => {
         showToast(souTitular ? 'Membro removido com sucesso.' : 'Você saiu da família.');
         await carregarModuloFamilia();
     } catch (err) { showToast(err.message, 'error'); }
-};
+}
+
+function registrarAcoesDelegadas() {
+    document.getElementById('tbodyDespesas')?.addEventListener('click', (e) => {
+        const btn = e.target.closest('button[data-action]');
+        if (!btn) return;
+        const id = Number(btn.dataset.id);
+        if (!Number.isFinite(id)) return;
+        switch (btn.dataset.action) {
+            case 'pagar-despesa': pagarDespesa(id); break;
+            case 'estornar-despesa': estornarDespesa(id); break;
+            case 'editar-despesa': abrirEditarDespesa(id); break;
+            case 'excluir-despesa': excluirDespesa(id); break;
+        }
+    });
+
+    document.getElementById('listaSaldos')?.addEventListener('click', (e) => {
+        const btn = e.target.closest('button[data-action]');
+        if (!btn) return;
+        const id = Number(btn.dataset.id);
+        if (!Number.isFinite(id)) return;
+        if (btn.dataset.action === 'editar-saldo') abrirEditarSaldo(id);
+        else if (btn.dataset.action === 'excluir-saldo') excluirSaldo(id);
+    });
+
+    document.getElementById('listaConvitesRecebidos')?.addEventListener('click', (e) => {
+        const btn = e.target.closest('button[data-action="aceitar-convite"]');
+        if (!btn || !btn.dataset.token) return;
+        aceitarConviteDireto(btn.dataset.token);
+    });
+
+    document.getElementById('listaMembrosFamilia')?.addEventListener('click', (e) => {
+        const btn = e.target.closest('button[data-action]');
+        if (!btn) return;
+        if (btn.dataset.action === 'copiar-link') {
+            copiarLinkConvite(btn.dataset.link || '', btn.dataset.token || '');
+        } else if (btn.dataset.action === 'remover-membro') {
+            const vinculoId = Number(btn.dataset.vinculoId);
+            if (!Number.isFinite(vinculoId)) return;
+            removerMembroFamilia(vinculoId, btn.dataset.nome || 'membro', btn.dataset.titular === 'true');
+        }
+    });
+
+    document.getElementById('tbodyDespesasFamilia')?.addEventListener('click', (e) => {
+        const btn = e.target.closest('button[data-action]');
+        if (!btn) return;
+        const id = Number(btn.dataset.id);
+        if (!Number.isFinite(id)) return;
+        if (btn.dataset.action === 'pagar-despesa-familia') pagarDespesaFamilia(id);
+        else if (btn.dataset.action === 'estornar-despesa-familia') estornarDespesaFamilia(id);
+    });
+}
 
 /* ==========================================
    INICIALIZAÇÃO E EVENT LISTENERS
@@ -802,6 +853,7 @@ window.removerMembroFamilia = async (vinculoId, nome, souTitular) => {
 document.addEventListener('DOMContentLoaded', async () => {
     inicializarTema();
     inicializarModaisEConfirmacao();
+    registrarAcoesDelegadas();
 
     document.querySelectorAll('[data-theme-toggle]').forEach(btn => {
         btn.addEventListener('click', alternarTema);
@@ -1300,6 +1352,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                     emailRecuperacao: document.getElementById('perfilInputEmailRecuperacao')?.value.trim() || ''
                 })
             });
+            if (!authAtualizado?.token) {
+                resetarEstadoSessao();
+                document.getElementById('navFamiliaBtn')?.classList.add('hidden');
+                fecharSidebarMobile();
+                mostrarTelaAuth('verify', authAtualizado.email);
+                showToast('E-mail alterado! Confirme o código de 6 dígitos enviado para o novo endereço.');
+                return;
+            }
             const perfilAtualizado = await apiFetch('/auth/me');
             salvarSessao({ ...authAtualizado, ...perfilAtualizado });
             atualizarDadosUsuarioNaTela();

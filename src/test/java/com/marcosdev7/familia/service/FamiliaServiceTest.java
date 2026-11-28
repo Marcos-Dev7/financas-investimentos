@@ -333,4 +333,16 @@ class FamiliaServiceTest {
                 .isInstanceOf(AccessDeniedException.class)
                 .hasMessageContaining("gestor");
     }
+
+    @Test
+    @DisplayName("Deve bloquear aceite de convite familiar para usuário cujo e-mail não esteja verificado")
+    void deveBloquearAceiteConviteParaEmailNaoVerificado() {
+        Usuario naoVerificado = new Usuario("Ana", "ana@email.com", "hash");
+        autenticarComo(naoVerificado);
+
+        assertThatThrownBy(() -> familiaService.aceitarConvite(new AceitarConviteDTO("token_qualquer")))
+                .isInstanceOf(AccessDeniedException.class)
+                .hasMessageContaining("Verifique seu e-mail");
+        verifyNoInteractions(membroFamiliaRepository);
+    }
 }

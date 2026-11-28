@@ -46,7 +46,7 @@ public class SaldoController {
     @Operation(summary = "Atualiza um saldo",
             description = "Altera os dados de um saldo existente através do ID.")
     @PutMapping("/{id}")
-    public ResponseEntity<SaldoResponseDTO> atualizarSaldos(@PathVariable Long id, @RequestBody SaldoRequestDTO saldoDTO){
+    public ResponseEntity<SaldoResponseDTO> atualizarSaldos(@PathVariable Long id, @RequestBody @Valid SaldoRequestDTO saldoDTO){
         return ResponseEntity.ok(saldoService.atualizarSaldos(id, saldoDTO));
     }
 }

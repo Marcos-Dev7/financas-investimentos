@@ -42,7 +42,8 @@ export function escapeHtml(str) {
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
 }
 
 export function showToast(message, type = 'success') {
@@ -74,13 +75,15 @@ export function renderizarBadgePagamento(isPaga) {
         : `<span class="badge badge-pendente">${ICON_SVG.clock}<span>Pendente</span></span>`;
 }
 
+const SAFE_DATA_IMAGE_RE = /^data:image\/(jpeg|jpg|png|webp);base64,[A-Za-z0-9+/=]+$/;
+
 export function renderizarAvatarElemento(initialsElId, imgElId, nome, fotoBase64) {
     const initialsEl = document.getElementById(initialsElId);
     const imgEl = document.getElementById(imgElId);
     if (!initialsEl || !imgEl) return;
 
-    if (fotoBase64) {
-        imgEl.src = fotoBase64;
+    if (typeof fotoBase64 === 'string' && SAFE_DATA_IMAGE_RE.test(fotoBase64.trim())) {
+        imgEl.src = fotoBase64.trim();
         imgEl.classList.remove('hidden');
         initialsEl.classList.add('hidden');
     } else {

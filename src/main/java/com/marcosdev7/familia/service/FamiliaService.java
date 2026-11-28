@@ -92,6 +92,9 @@ public class FamiliaService {
     @Transactional
     public PainelFamiliaResponseDTO aceitarConvite(AceitarConviteDTO dto) {
         Usuario usuarioLogado = exigirUsuarioAutenticado();
+        if (!Boolean.TRUE.equals(usuarioLogado.getEmailVerificado())) {
+            throw new AccessDeniedException("Verifique seu e-mail antes de aceitar um convite familiar");
+        }
         String tokenLimpo = dto.token().trim();
 
         MembroFamilia convite = membroFamiliaRepository.findByTokenConvite(tokenLimpo)

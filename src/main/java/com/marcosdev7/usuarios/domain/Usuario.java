@@ -73,6 +73,15 @@ public class Usuario implements UserDetails {
     @Column(name = "tentativas_2fa", nullable = false)
     private Integer tentativas2Fa = 0;
 
+    @Column(name = "tentativas_login", nullable = false)
+    private Integer tentativasLogin = 0;
+
+    @Column(name = "bloqueado_ate")
+    private LocalDateTime bloqueadoAte;
+
+    @Column(name = "tentativas_verificacao_email", nullable = false)
+    private Integer tentativasVerificacaoEmail = 0;
+
     public Usuario(Long id, String nome, String email, String senha) {
         this.id = id;
         this.nome = nome;
@@ -92,12 +101,43 @@ public class Usuario implements UserDetails {
         this.codigoVerificacao = codigo;
         this.codigoExpiracao = expiracao;
         this.emailVerificado = false;
+        this.tentativasVerificacaoEmail = 0;
     }
 
     public void confirmarEmail() {
         this.emailVerificado = true;
         this.codigoVerificacao = null;
         this.codigoExpiracao = null;
+        this.tentativasVerificacaoEmail = 0;
+    }
+
+    public void incrementarTentativaVerificacaoEmail() {
+        this.tentativasVerificacaoEmail = (this.tentativasVerificacaoEmail == null ? 0 : this.tentativasVerificacaoEmail) + 1;
+    }
+
+    public void invalidarCodigoVerificacao() {
+        this.codigoVerificacao = null;
+        this.codigoExpiracao = null;
+        this.tentativasVerificacaoEmail = 0;
+    }
+
+    public boolean estaBloqueadoParaLogin(LocalDateTime agora) {
+        return this.bloqueadoAte != null && agora.isBefore(this.bloqueadoAte);
+    }
+
+    public void registrarFalhaLogin(int maxTentativas, int minutosBloqueio) {
+        int atual = (this.tentativasLogin == null ? 0 : this.tentativasLogin) + 1;
+        if (atual >= maxTentativas) {
+            this.tentativasLogin = 0;
+            this.bloqueadoAte = LocalDateTime.now().plusMinutes(minutosBloqueio);
+        } else {
+            this.tentativasLogin = atual;
+        }
+    }
+
+    public void limparFalhasLogin() {
+        this.tentativasLogin = 0;
+        this.bloqueadoAte = null;
     }
 
     public void atualizarNome(String novoNome) {

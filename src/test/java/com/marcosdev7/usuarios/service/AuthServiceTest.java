@@ -12,6 +12,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDateTime;
@@ -308,5 +310,117 @@ class AuthServiceTest {
 
         assertThat(autenticado.token()).isEqualTo("jwt_totp_ok");
         assertThat(usuario.getDesafio2FaToken()).isNull();
+    }
+
+    @Test
+    @DisplayName("Deve bloquear conta por 15 minutos após 5 tentativas consecutivas de senha incorreta")
+    void deveBloquearContaAposCincoTentativasDeLoginIncorretas() {
+        Usuario usuario = new Usuario(1L, "Marcos Paulo", "marcos@email.com", "hash_bcrypt");
+        when(usuarioRepository.findByEmail("marcos@email.com")).thenReturn(Optional.of(usuario));
+        when(passwordEncoder.matches("Errada@123", "hash_bcrypt")).thenReturn(false);
+
+        for (int i = 0; i < 4; i++) {
+            assertThatThrownBy(() -> authService.login(new LoginRequestDTO("marcos@email.com", "Errada@123")))
+                    .isInstanceOf(BadCredentialsException.class)
+                    .hasMessage("E-mail ou senha inválidos");
+            assertThat(usuario.getBloqueadoAte()).isNull();
+        }
+
+        // 5ª falha ativa bloqueio temporário
+        assertThatThrownBy(() -> authService.login(new LoginRequestDTO("marcos@email.com", "Errada@123")))
+                .isInstanceOf(BadCredentialsException.class)
+                .hasMessageContaining("temporariamente bloqueada");
+        assertThat(usuario.getBloqueadoAte()).isAfter(LocalDateTime.now().plusMinutes(14));
+
+        // Mesmo com a senha correta, continua bloqueada durante o período de lockout
+        assertThatThrownBy(() -> authService.login(new LoginRequestDTO("marcos@email.com", "Senha@2026")))
+                .isInstanceOf(BadCredentialsException.class)
+                .hasMessageContaining("temporariamente bloqueada");
+        verify(tokenService, never()).gerarToken(any());
+    }
+
+    @Test
+    @DisplayName("Deve invalidar código de verificação de e-mail após 5 tentativas incorretas")
+    void deveInvalidarCodigoVerificacaoEmailAposCincoTentativasIncorretas() {
+        Usuario usuario = new Usuario("Marcos Paulo", "marcos@email.com", "hash_bcrypt");
+        usuario.definirCodigoVerificacao("987654", LocalDateTime.now().plusMinutes(15));
+        when(usuarioRepository.findByEmail("marcos@email.com")).thenReturn(Optional.of(usuario));
+
+        for (int i = 0; i < 4; i++) {
+            assertThatThrownBy(() -> authService.verificarEmail(new VerificarEmailDTO("marcos@email.com", "000000")))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("Código de verificação inválido");
+            assertThat(usuario.getCodigoVerificacao()).isEqualTo("987654");
+        }
+
+        // 5ª tentativa invalida imediatamente o código
+        assertThatThrownBy(() -> authService.verificarEmail(new VerificarEmailDTO("marcos@email.com", "000000")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Muitas tentativas");
+        assertThat(usuario.getCodigoVerificacao()).isNull();
+    }
+
+    @Test
+    @DisplayName("Deve rejeitar fotoPerfil com MIME perigoso (SVG/HTML/javascript) e aceitar JPEG base64")
+    void deveValidarMimeDaFotoPerfil() {
+        Usuario usuario = new Usuario(1L, "Marcos Paulo", "marcos@email.com", "hash_bcrypt");
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(usuario, null, usuario.getAuthorities())
+        );
+
+        try {
+            when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+
+            AtualizarPerfilDTO dtoSvg = new AtualizarPerfilDTO(
+                    "Marcos Paulo", "marcos@email.com",
+                    "data:image/svg+xml;base64,PHN2ZyBvbmxvYWQ9YWxlcnQoMSk+PC9zdmc+",
+                    null, null
+            );
+            assertThatThrownBy(() -> authService.atualizarPerfil(dtoSvg))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("Formato de imagem inválido");
+
+            when(usuarioRepository.save(any(Usuario.class))).thenAnswer(inv -> inv.getArgument(0));
+            when(tokenService.gerarToken(usuario)).thenReturn("novo_jwt");
+
+            AtualizarPerfilDTO dtoJpeg = new AtualizarPerfilDTO(
+                    "Marcos Paulo", "marcos@email.com",
+                    "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQ==",
+                    null, null
+            );
+            AuthResponseDTO resp = authService.atualizarPerfil(dtoJpeg);
+            assertThat(resp.fotoPerfil()).isEqualTo("data:image/jpeg;base64,/9j/4AAQSkZJRgABAQ==");
+        } finally {
+            SecurityContextHolder.clearContext();
+        }
+    }
+
+    @Test
+    @DisplayName("Ao alterar e-mail no perfil, deve marcar como não verificado, enviar código e não emitir JWT")
+    void deveExigirReverificacaoAoAlterarEmailNoPerfil() {
+        Usuario usuario = new Usuario(1L, "Marcos Paulo", "antigo@email.com", "hash_bcrypt");
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(usuario, null, usuario.getAuthorities())
+        );
+
+        try {
+            when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+            when(usuarioRepository.existsByEmail("novo@email.com")).thenReturn(false);
+            when(usuarioRepository.save(any(Usuario.class))).thenAnswer(inv -> inv.getArgument(0));
+            when(emailService.enviarCodigoVerificacao(eq("novo@email.com"), eq("Marcos Paulo"), anyString()))
+                    .thenReturn(true);
+
+            AuthResponseDTO resp = authService.atualizarPerfil(
+                    new AtualizarPerfilDTO("Marcos Paulo", "novo@email.com", null, null, null)
+            );
+
+            assertThat(resp.token()).isNull();
+            assertThat(resp.email()).isEqualTo("novo@email.com");
+            assertThat(usuario.getEmailVerificado()).isFalse();
+            assertThat(usuario.getCodigoVerificacao()).matches("\\d{6}");
+            verify(tokenService, never()).gerarToken(any());
+        } finally {
+            SecurityContextHolder.clearContext();
+        }
     }
 }

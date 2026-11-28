@@ -12,6 +12,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -31,12 +32,8 @@ public class DespesaService {
 
     public Page<DespesaResponseDTO> listarDespesas(Pageable paginacao){
         Pageable paginacaoSegura = sanitizarPaginacao(paginacao);
-        Usuario usuario = AuthService.obterUsuarioAutenticado();
-        if (usuario != null) {
-            return despesaRepository.findByUsuarioId(usuario.getId(), paginacaoSegura)
-                    .map(this::paraDTO);
-        }
-        return despesaRepository.findAll(paginacaoSegura)
+        Usuario usuario = exigirUsuarioAutenticado();
+        return despesaRepository.findByUsuarioId(usuario.getId(), paginacaoSegura)
                 .map(this::paraDTO);
     }
 
@@ -59,25 +56,19 @@ public class DespesaService {
     }
 
     public Despesa encontrarDespesa(Long id){
-        Usuario usuario = AuthService.obterUsuarioAutenticado();
-        if (usuario != null) {
-            return despesaRepository.findByIdAndUsuarioId(id, usuario.getId()).orElseThrow();
-        }
-        return despesaRepository.findById(id).orElseThrow();
+        Usuario usuario = exigirUsuarioAutenticado();
+        return despesaRepository.findByIdAndUsuarioId(id, usuario.getId()).orElseThrow();
     }
 
     public DespesaResponseDTO cadastrarDespesas(DespesaRequestDTO despesaRequestDTO) {
+        Usuario usuario = exigirUsuarioAutenticado();
         Despesa despesa = new Despesa(despesaRequestDTO.descricao(),
                 despesaRequestDTO.mes(),
                 despesaRequestDTO.valor(),
                 despesaRequestDTO.isFixa(),
                 despesaRequestDTO.dataVencimento(),
                 despesaRequestDTO.categoria());
-
-        Usuario usuario = AuthService.obterUsuarioAutenticado();
-        if (usuario != null) {
-            despesa.setUsuario(usuario);
-        }
+        despesa.setUsuario(usuario);
 
         return paraDTO(despesaRepository.save(despesa));
     }
@@ -106,10 +97,8 @@ public class DespesaService {
     }
 
     public BigDecimal somarSaidaMes(Mes mes){
-        Usuario usuario = AuthService.obterUsuarioAutenticado();
-        var resumoDespesasMes = (usuario != null)
-                ? despesaRepository.findByMesAndUsuarioId(mes, usuario.getId())
-                : despesaRepository.findByMes(mes);
+        Usuario usuario = exigirUsuarioAutenticado();
+        var resumoDespesasMes = despesaRepository.findByMesAndUsuarioId(mes, usuario.getId());
 
         return resumoDespesasMes.stream()
                 .filter(d -> Boolean.TRUE.equals(d.getIsPaga()))
@@ -131,16 +120,22 @@ public class DespesaService {
     }
 
     public BigDecimal somarTotalBruto(Mes mes) {
-        Usuario usuario = AuthService.obterUsuarioAutenticado();
-        var resultado = (usuario != null)
-                ? despesaRepository.somarTotalPorMesEUsuario(mes, usuario.getId())
-                : despesaRepository.somarTotalPorMes(mes);
+        Usuario usuario = exigirUsuarioAutenticado();
+        var resultado = despesaRepository.somarTotalPorMesEUsuario(mes, usuario.getId());
 
         if (resultado == null){
             return BigDecimal.ZERO;
         } else {
             return resultado;
         }
+    }
+
+    private Usuario exigirUsuarioAutenticado() {
+        Usuario usuario = AuthService.obterUsuarioAutenticado();
+        if (usuario == null) {
+            throw new BadCredentialsException("Usuário não autenticado");
+        }
+        return usuario;
     }
 
 }

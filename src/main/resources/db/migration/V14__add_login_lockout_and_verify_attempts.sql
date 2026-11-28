@@ -1,0 +1,4 @@
+ALTER TABLE usuario
+    ADD COLUMN IF NOT EXISTS tentativas_login INTEGER NOT NULL DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS bloqueado_ate TIMESTAMP,
+    ADD COLUMN IF NOT EXISTS tentativas_verificacao_email INTEGER NOT NULL DEFAULT 0;

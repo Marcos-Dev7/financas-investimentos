@@ -18,6 +18,7 @@ import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 @Service
 @RequiredArgsConstructor
@@ -28,7 +29,12 @@ public class AuthService {
     private static final int MINUTOS_EXPIRACAO_RECUPERACAO = 30;
     private static final int MINUTOS_EXPIRACAO_2FA = 5;
     private static final int MAX_TENTATIVAS_2FA = 5;
+    private static final int MAX_TENTATIVAS_LOGIN = 5;
+    private static final int MINUTOS_BLOQUEIO_LOGIN = 15;
+    private static final int MAX_TENTATIVAS_VERIFICACAO_EMAIL = 5;
     private static final int MAX_FOTO_BASE64_LEN = 750_000;
+    private static final Pattern FOTO_PERFIL_PATTERN =
+            Pattern.compile("^data:image/(jpeg|jpg|png|webp);base64,[A-Za-z0-9+/=]+$");
 
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
@@ -58,7 +64,7 @@ public class AuthService {
         return gerarEEnviarCodigo(novoUsuario);
     }
 
-    @Transactional
+    @Transactional(dontRollbackOn = IllegalArgumentException.class)
     public AuthResponseDTO verificarEmail(VerificarEmailDTO dto) {
         String emailNormalizado = dto.email().trim().toLowerCase();
         String codigoLimpo = dto.codigo().trim();
@@ -71,12 +77,32 @@ public class AuthService {
             return paraAuthResponse(token, usuario);
         }
 
-        if (usuario.getCodigoVerificacao() == null || !usuario.getCodigoVerificacao().equals(codigoLimpo)) {
-            throw new IllegalArgumentException("Código de verificação inválido");
+        if (usuario.getCodigoExpiracao() == null || LocalDateTime.now().isAfter(usuario.getCodigoExpiracao())) {
+            usuario.invalidarCodigoVerificacao();
+            usuarioRepository.save(usuario);
+            throw new IllegalArgumentException("O código de verificação expirou. Solicite um novo código.");
         }
 
-        if (usuario.getCodigoExpiracao() == null || LocalDateTime.now().isAfter(usuario.getCodigoExpiracao())) {
-            throw new IllegalArgumentException("O código de verificação expirou. Solicite um novo código.");
+        int tentativasAtuais = usuario.getTentativasVerificacaoEmail() == null ? 0 : usuario.getTentativasVerificacaoEmail();
+        if (tentativasAtuais >= MAX_TENTATIVAS_VERIFICACAO_EMAIL) {
+            usuario.invalidarCodigoVerificacao();
+            usuarioRepository.save(usuario);
+            throw new IllegalArgumentException("Muitas tentativas incorretas. Solicite um novo código de verificação.");
+        }
+
+        boolean codigoValido = usuario.getCodigoVerificacao() != null && MessageDigest.isEqual(
+                codigoLimpo.getBytes(StandardCharsets.UTF_8),
+                usuario.getCodigoVerificacao().getBytes(StandardCharsets.UTF_8)
+        );
+        if (!codigoValido) {
+            usuario.incrementarTentativaVerificacaoEmail();
+            if (usuario.getTentativasVerificacaoEmail() >= MAX_TENTATIVAS_VERIFICACAO_EMAIL) {
+                usuario.invalidarCodigoVerificacao();
+                usuarioRepository.save(usuario);
+                throw new IllegalArgumentException("Muitas tentativas incorretas. Código invalidado — solicite um novo código.");
+            }
+            usuarioRepository.save(usuario);
+            throw new IllegalArgumentException("Código de verificação inválido");
         }
 
         usuario.confirmarEmail();
@@ -100,15 +126,33 @@ public class AuthService {
         return gerarEEnviarCodigo(usuario);
     }
 
-    @Transactional
+    @Transactional(dontRollbackOn = BadCredentialsException.class)
     public AuthResponseDTO login(LoginRequestDTO dto) {
         String emailNormalizado = dto.email().trim().toLowerCase();
 
         Usuario usuario = usuarioRepository.findByEmail(emailNormalizado)
                 .orElseThrow(() -> new BadCredentialsException("E-mail ou senha inválidos"));
 
+        LocalDateTime agora = LocalDateTime.now();
+        if (usuario.estaBloqueadoParaLogin(agora)) {
+            throw new BadCredentialsException(
+                    "Conta temporariamente bloqueada devido a múltiplas tentativas inválidas. Tente novamente em alguns minutos.");
+        }
+
         if (!passwordEncoder.matches(dto.senha(), usuario.getSenha())) {
+            usuario.registrarFalhaLogin(MAX_TENTATIVAS_LOGIN, MINUTOS_BLOQUEIO_LOGIN);
+            usuarioRepository.save(usuario);
+            if (usuario.estaBloqueadoParaLogin(LocalDateTime.now())) {
+                throw new BadCredentialsException(
+                        "Conta temporariamente bloqueada por " + MINUTOS_BLOQUEIO_LOGIN
+                                + " minutos após múltiplas tentativas inválidas.");
+            }
             throw new BadCredentialsException("E-mail ou senha inválidos");
+        }
+
+        if ((usuario.getTentativasLogin() != null && usuario.getTentativasLogin() > 0) || usuario.getBloqueadoAte() != null) {
+            usuario.limparFalhasLogin();
+            usuarioRepository.save(usuario);
         }
 
         if (Boolean.FALSE.equals(usuario.getEmailVerificado())) {
@@ -277,6 +321,7 @@ public class AuthService {
 
         usuario.atualizarNome(dto.nome());
 
+        boolean emailAlterado = false;
         if (dto.email() != null && !dto.email().isBlank()) {
             String novoEmail = dto.email().trim().toLowerCase();
             if (!novoEmail.equals(usuario.getEmail())) {
@@ -284,6 +329,7 @@ public class AuthService {
                     throw new IllegalArgumentException("Este e-mail já está em uso por outra conta");
                 }
                 usuario.atualizarEmail(novoEmail);
+                emailAlterado = true;
             }
         }
 
@@ -291,10 +337,14 @@ public class AuthService {
             if (dto.fotoPerfil().isBlank() || "REMOVER".equals(dto.fotoPerfil())) {
                 usuario.atualizarFotoPerfil(null);
             } else {
-                if (dto.fotoPerfil().length() > MAX_FOTO_BASE64_LEN) {
+                String fotoLimpa = dto.fotoPerfil().trim();
+                if (fotoLimpa.length() > MAX_FOTO_BASE64_LEN) {
                     throw new IllegalArgumentException("A imagem selecionada é muito grande. Escolha uma foto menor.");
                 }
-                usuario.atualizarFotoPerfil(dto.fotoPerfil());
+                if (!FOTO_PERFIL_PATTERN.matcher(fotoLimpa).matches()) {
+                    throw new IllegalArgumentException("Formato de imagem inválido. Envie apenas PNG, JPEG ou WEBP.");
+                }
+                usuario.atualizarFotoPerfil(fotoLimpa);
             }
         }
 
@@ -308,6 +358,11 @@ public class AuthService {
                 throw new IllegalArgumentException("O e-mail de recuperação deve ser diferente do e-mail principal");
             }
             usuario.atualizarEmailRecuperacao(recLimpo);
+        }
+
+        if (emailAlterado) {
+            gerarEEnviarCodigo(usuario);
+            return paraAuthResponse(null, usuario);
         }
 
         Usuario salvo = usuarioRepository.save(usuario);

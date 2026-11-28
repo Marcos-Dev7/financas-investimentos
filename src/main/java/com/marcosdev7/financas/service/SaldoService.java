@@ -8,6 +8,7 @@ import com.marcosdev7.financas.repository.SaldoRepository;
 import com.marcosdev7.usuarios.domain.Usuario;
 import com.marcosdev7.usuarios.service.AuthService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -20,24 +21,19 @@ public class SaldoService {
     private final SaldoRepository saldoRepository;
 
     public Saldo cadastrarSaldo(SaldoRequestDTO saldoRequestDTO){
+        Usuario usuario = exigirUsuarioAutenticado();
         Saldo saldo = new Saldo(saldoRequestDTO.descricao(),
                 saldoRequestDTO.valor(),
                 saldoRequestDTO.mes(),
                 saldoRequestDTO.ano());
-
-        Usuario usuario = AuthService.obterUsuarioAutenticado();
-        if (usuario != null) {
-            saldo.setUsuario(usuario);
-        }
+        saldo.setUsuario(usuario);
 
         return saldoRepository.save(saldo);
     }
 
     public BigDecimal somarTotalEntradas(Mes mes){
-        Usuario usuario = AuthService.obterUsuarioAutenticado();
-        var resumoSaldoMes = (usuario != null)
-                ? saldoRepository.findByMesAndUsuarioId(mes, usuario.getId())
-                : saldoRepository.findByMes(mes);
+        Usuario usuario = exigirUsuarioAutenticado();
+        var resumoSaldoMes = saldoRepository.findByMesAndUsuarioId(mes, usuario.getId());
 
         return resumoSaldoMes.stream()
                 .map(Saldo::getValor)
@@ -45,10 +41,8 @@ public class SaldoService {
     }
 
     public List<SaldoResponseDTO> listarSaldos() {
-        Usuario usuario = AuthService.obterUsuarioAutenticado();
-        var saldos = (usuario != null)
-                ? saldoRepository.findByUsuarioId(usuario.getId())
-                : saldoRepository.findAll();
+        Usuario usuario = exigirUsuarioAutenticado();
+        var saldos = saldoRepository.findByUsuarioId(usuario.getId());
 
         return saldos.stream()
                 .map(this::paraDTO)
@@ -67,11 +61,16 @@ public class SaldoService {
     }
 
     private Saldo encontrarSaldo(Long id) {
+        Usuario usuario = exigirUsuarioAutenticado();
+        return saldoRepository.findByIdAndUsuarioId(id, usuario.getId()).orElseThrow();
+    }
+
+    private Usuario exigirUsuarioAutenticado() {
         Usuario usuario = AuthService.obterUsuarioAutenticado();
-        if (usuario != null) {
-            return saldoRepository.findByIdAndUsuarioId(id, usuario.getId()).orElseThrow();
+        if (usuario == null) {
+            throw new BadCredentialsException("Usuário não autenticado");
         }
-        return saldoRepository.findById(id).orElseThrow();
+        return usuario;
     }
 
     private SaldoResponseDTO paraDTO(Saldo saldo){

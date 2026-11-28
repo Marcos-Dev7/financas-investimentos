@@ -9,7 +9,7 @@
   [![Java](https://img.shields.io/badge/Java-25-f59e0b?style=for-the-badge&logo=openjdk&logoColor=white)](https://openjdk.org/)
   [![Spring Boot](https://img.shields.io/badge/Spring_Boot-4.0.3-6db33f?style=for-the-badge&logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
   [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Neon_Cloud-336791?style=for-the-badge&logo=postgresql&logoColor=white)](https://neon.tech/)
-  [![Tests](https://img.shields.io/badge/Tests-111_Passing-10b981?style=for-the-badge&logo=junit5&logoColor=white)](#%EF%B8%8F-testes-automatizados)
+  [![Tests](https://img.shields.io/badge/Tests-123_Passing-10b981?style=for-the-badge&logo=junit5&logoColor=white)](#%EF%B8%8F-testes-automatizados)
 
   🌐 **Acesse a Plataforma Online:** [https://financial-family.onrender.com](https://financial-family.onrender.com)
 </div>
@@ -79,10 +79,10 @@ O sistema resolve um problema clássico do orçamento doméstico: separar o que 
 | :--- | :--- |
 | **Linguagem & Runtime** | Java 25 |
 | **Framework Backend** | Spring Boot 4.0.3 (WebMVC, Validation, Scheduling, Mail) |
-| **Segurança & Carga** | Spring Security 6 + Token JWT + Rate Limiting Filter por IP |
-| **Banco de Dados & Migrations** | PostgreSQL (Neon Serverless) + Spring Data JPA / Hibernate + Flyway (`V1` a `V10`) |
-| **Frontend** | HTML5 Semântico (App Shell Sidebar + Dark/Light Mode), CSS3 Modular (IBM Plex Sans & WCAG 2.2 AA), Vanilla ES Modules & Canvas API |
-| **Testes** | JUnit 5, Mockito, AssertJ e Spring `MockMvc` (87 testes automatizados) |
+| **Segurança & Carga** | Spring Security + JWT (HMAC-SHA256 sem fallback hardcoded), CSP Strict, CORS restrito, Lockout de conta e Rate Limiting por IP |
+| **Banco de Dados & Migrations** | PostgreSQL (Neon Serverless) + Spring Data JPA / Hibernate + Flyway (`V1` a `V14`) |
+| **Frontend** | HTML5 Semântico (App Shell Sidebar + Dark/Light Mode), CSS3 Modular (IBM Plex Sans & WCAG 2.2 AA), Vanilla ES Modules (zero inline JS) & Canvas API |
+| **Testes** | JUnit 5, Mockito, AssertJ e Spring `MockMvc` (123 testes automatizados) |
 | **Infraestrutura & Deploy** | Docker (Multi-Stage Build), Docker Compose, Render & Neon Cloud |
 
 ---
@@ -155,7 +155,7 @@ Acesse em seguida: **`http://localhost:8080`**
    DB_URL=jdbc:postgresql://localhost:5432/financas_db
    DB_USERNAME=postgres
    DB_PASSWORD=sua_senha
-   JWT_SECRET=sua_chave_secreta_jwt_aqui
+   JWT_SECRET=sua_chave_secreta_jwt_com_pelo_menos_32_caracteres_aqui
 
    # Opcional (para envio externo de e-mail via Brevo HTTPS API ou SMTP)
    BREVO_API_KEY=
@@ -171,7 +171,7 @@ Acesse em seguida: **`http://localhost:8080`**
 
 ## 🧪 Testes Automatizados
 
-O projeto conta com **87 testes automatizados** cobrindo Entidades de Domínio, Enums, Conversores, Validador de Senha Forte, Rate Limiting, Módulo Família, Services (Mockito) e Controllers (MockMvc). Para executá-los:
+O projeto conta com **123 testes automatizados** cobrindo Entidades de Domínio, Enums, Conversores, Validador de Senha Forte, Segurança (JWT, XSS/MIME, Lockout, Rate Limiting anti-spoofing, SQL Injection e Fail-Closed IDOR), Módulo Família, Services (Mockito) e Controllers (MockMvc). Para executá-los:
 
 ```bash
 ./mvnw test -Dtest="*Test"
